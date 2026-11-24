@@ -13,7 +13,8 @@ const DEPARTMENTS: Array<'all' | Department> = [
 ];
 
 export const ExecutiveBoardModal: React.FC = () => {
-  const { activeModal, closeModal, executiveMembers } = useHeritageStore();
+  const { activeModal, closeModal, executiveMembers, boardDepartmentFilter, setBoardDepartmentFilter } =
+    useHeritageStore();
   const [selectedTerm, setSelectedTerm] = useState<string>('all');
   const [selectedDept, setSelectedDept] = useState<'all' | Department>('all');
   const [onlyFounders, setOnlyFounders] = useState(false);
@@ -22,12 +23,23 @@ export const ExecutiveBoardModal: React.FC = () => {
 
   useEffect(() => {
     if (activeModal === 'shirt') {
+      if (boardDepartmentFilter && boardDepartmentFilter !== 'ALL') {
+        setSelectedDept(boardDepartmentFilter as Department);
+        setSelectedTerm('all');
+        setOnlyFounders(false);
+        setSearchQuery('');
+      }
       const timer = window.setTimeout(() => {
         searchInputRef.current?.focus();
       }, 40);
       return () => window.clearTimeout(timer);
     }
-  }, [activeModal]);
+  }, [activeModal, boardDepartmentFilter]);
+
+  const handleClose = () => {
+    setBoardDepartmentFilter('ALL');
+    closeModal();
+  };
 
   if (activeModal !== 'shirt') return null;
 
@@ -69,7 +81,7 @@ export const ExecutiveBoardModal: React.FC = () => {
       onClick={(e) => {
         e.stopPropagation();
         if (e.target === e.currentTarget) {
-          closeModal();
+          handleClose();
         }
       }}
     >
@@ -97,7 +109,7 @@ export const ExecutiveBoardModal: React.FC = () => {
 
           <button
             type="button"
-            onClick={closeModal}
+            onClick={handleClose}
             className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
             aria-label="Đóng cửa sổ Ban Chủ Nhiệm"
             title="Đóng (ESC)"

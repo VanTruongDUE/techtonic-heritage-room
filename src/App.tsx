@@ -11,7 +11,7 @@ import { useHeritageStore } from './store/useHeritageStore';
 import { useAudio } from './hooks/useAudio';
 
 export const App: React.FC = () => {
-  const { activeModal, openModal, closeModal, setLocked, loadHeritageData, loadGuestbook } =
+  const { activeModal, openModal, closeModal, setHasEntered, loadHeritageData, loadGuestbook } =
     useHeritageStore();
   const { initAudio, playChime } = useAudio();
 
@@ -28,15 +28,11 @@ export const App: React.FC = () => {
     }
   }, [activeModal, playChime]);
 
-  // Handle Enter Experience from LoadingScreen
+  // Handle Enter Experience from LoadingScreen (keeps visible console mouse cursor enabled)
   const handleEnter = () => {
     initAudio();
     playChime(523.25);
-    const canvas = document.querySelector('canvas');
-    if (canvas) {
-      Promise.resolve(canvas.requestPointerLock?.()).catch(() => {});
-    }
-    setLocked(true);
+    setHasEntered(true);
   };
 
   // Global ESC & [H] keyboard shortcuts

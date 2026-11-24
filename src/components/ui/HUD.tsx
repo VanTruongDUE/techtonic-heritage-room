@@ -10,11 +10,18 @@ import {
   SlidersHorizontal,
   MapPin,
   MousePointerClick,
+  MousePointer2,
+  Crosshair as CrosshairIcon,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 export const HUD: React.FC = () => {
   const {
+    hasEntered,
+    controlMode,
+    setControlMode,
     isLocked,
     isMuted,
     toggleMute,
@@ -26,6 +33,19 @@ export const HUD: React.FC = () => {
     hoverPreview,
   } = useHeritageStore();
   const [showControlsHint, setShowControlsHint] = useState(true);
+  const [showTeleportBar, setShowTeleportBar] = useState(true);
+
+  const handleToggleControlMode = () => {
+    if (controlMode === 'cursor') {
+      setControlMode('fps');
+      const canvas = document.querySelector('canvas');
+      if (canvas) {
+        Promise.resolve(canvas.requestPointerLock?.()).catch(() => {});
+      }
+    } else {
+      setControlMode('cursor');
+    }
+  };
 
   const handleResumeLock = () => {
     const canvas = document.querySelector('canvas');
@@ -57,6 +77,33 @@ export const HUD: React.FC = () => {
 
         {/* Top Right: Utility Controls */}
         <div className="flex items-center space-x-2.5">
+          <button
+            type="button"
+            onClick={handleToggleControlMode}
+            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl glass-panel transition-all text-xs font-medium cursor-pointer ${
+              controlMode === 'cursor'
+                ? 'text-tech-cyan border-tech-cyan/50'
+                : 'text-amber-300 border-amber-400/50'
+            }`}
+            title={
+              controlMode === 'cursor'
+                ? 'Đang bật Con trỏ tự do (luôn hiện chuột). Nhấp để chuyển sang Khóa FPS'
+                : 'Đang dùng Khóa FPS. Nhấp để bật lại Con trỏ tự do'
+            }
+          >
+            {controlMode === 'cursor' ? (
+              <>
+                <MousePointer2 className="w-4 h-4 text-tech-cyan" aria-hidden="true" />
+                <span className="hidden lg:inline">Con trỏ tự do</span>
+              </>
+            ) : (
+              <>
+                <CrosshairIcon className="w-4 h-4 text-amber-300" aria-hidden="true" />
+                <span className="hidden lg:inline">Chế độ FPS</span>
+              </>
+            )}
+          </button>
+
           <button
             type="button"
             onClick={() => openModal('instructions')}
@@ -101,8 +148,8 @@ export const HUD: React.FC = () => {
         </div>
       </div>
 
-      {/* Middle/Left: Controls Guide when locked */}
-      {showControlsHint && isLocked && !activeModal && (
+      {/* Middle/Left: Controls Guide */}
+      {showControlsHint && hasEntered && !activeModal && (
         <aside
           aria-label="Hướng dẫn điều khiển 3D"
           className="self-start glass-panel p-3.5 rounded-xl w-64 mt-4 pointer-events-auto animate-fade-in text-xs border border-tech-cyan/25"
@@ -128,25 +175,25 @@ export const HUD: React.FC = () => {
               </kbd>
             </div>
             <div className="flex justify-between items-center">
+              <span>Xoay góc nhìn:</span>
+              <span className="text-[11px] font-mono text-tech-cyan">
+                {controlMode === 'cursor' ? 'Kéo chuột' : 'Di chuột'}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
               <span>Chạy nhanh:</span>
               <kbd className="px-1.5 py-0.5 bg-black/60 border border-white/20 rounded font-mono text-[10px] text-tech-cyan">
                 Shift
               </kbd>
             </div>
             <div className="flex justify-between items-center">
-              <span>Tương tác:</span>
-              <span className="text-[11px] font-mono text-tech-cyan">Chuột trái / E</span>
+              <span>Xem chi tiết:</span>
+              <span className="text-[11px] font-mono text-tech-cyan">Click / E</span>
             </div>
             <div className="flex justify-between items-center">
               <span>Bản đồ nhanh:</span>
               <kbd className="px-1.5 py-0.5 bg-black/60 border border-white/20 rounded font-mono text-[10px] text-tech-cyan">
                 H
-              </kbd>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>Mở con trỏ chuột:</span>
-              <kbd className="px-1.5 py-0.5 bg-black/60 border border-white/20 rounded font-mono text-[10px] text-tech-cyan">
-                ESC
               </kbd>
             </div>
           </div>
@@ -187,7 +234,7 @@ export const HUD: React.FC = () => {
 
           {hoverPreview.bullets && hoverPreview.bullets.length > 0 && (
             <ul className="space-y-1.5 mb-3 pt-2 border-t border-white/10">
-              {hoverPreview.bullets.slice(0, 3).map((b, i) => (
+              {hoverPreview.bullets.slice(0, 4).map((b, i) => (
                 <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-200 leading-snug">
                   <CheckCircle2 className="w-3.5 h-3.5 text-tech-cyan shrink-0 mt-0.5" aria-hidden="true" />
                   <span>{b}</span>
@@ -197,50 +244,77 @@ export const HUD: React.FC = () => {
           )}
 
           <div className="pt-2 border-t border-white/10 text-[11px] font-mono text-tech-cyan">
-            [Chuột trái / E] {hoverPreview.actionLabel ?? 'Xem toàn bộ chi tiết'}
+            [Click chuột / E] {hoverPreview.actionLabel ?? 'Xem toàn bộ chi tiết'}
           </div>
         </aside>
       )}
 
-      {/* Bottom-docked Pause & Quick-Teleport Bar when unlocked (leaves center 3D view clear) */}
-      {!isLocked && !activeModal && (
-        <div className="mt-auto mb-3 self-center glass-panel px-4 py-3 rounded-2xl border border-tech-cyan/30 pointer-events-auto max-w-4xl w-full animate-panel-in">
-          <div className="flex flex-wrap items-center justify-between gap-2.5 mb-2.5">
+      {/* Bottom-docked Quick-Teleport Bar (always clickable with free console cursor) */}
+      {hasEntered && !activeModal && (controlMode === 'cursor' || !isLocked) && (
+        <div className="mt-auto mb-3 self-center glass-panel px-4 py-2.5 rounded-2xl border border-tech-cyan/30 pointer-events-auto max-w-5xl w-full animate-panel-in">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <MousePointerClick className="w-4 h-4 text-tech-cyan shrink-0" aria-hidden="true" />
-              <span className="text-xs md:text-sm font-medium text-white">
-                Rê chuột lên vật phẩm để xem trước thông tin chi tiết • Chọn khu vực để dịch chuyển
+              <span className="text-xs text-white font-medium">
+                {controlMode === 'cursor'
+                  ? 'Con trỏ tự do đang bật: Di chuột & click trực tiếp để xem • Giữ chuột kéo để xoay góc nhìn'
+                  : 'Đang tạm mở con trỏ • Chọn khu vực dịch chuyển hoặc nhấn tiếp tục FPS'}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={handleResumeLock}
-              className="px-3.5 py-1.5 rounded-lg bg-tech-cyan text-slate-950 font-semibold text-xs hover:bg-[#33f3ff] transition cursor-pointer shrink-0"
-            >
-              Tiếp tục tham quan 3D
-            </button>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {controlMode === 'fps' && !isLocked && (
+                <button
+                  type="button"
+                  onClick={handleResumeLock}
+                  className="px-3 py-1 rounded-lg bg-tech-cyan text-slate-950 font-semibold text-xs hover:bg-[#33f3ff] transition cursor-pointer"
+                >
+                  Khóa góc nhìn FPS
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowTeleportBar((prev) => !prev)}
+                className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/15 text-slate-200 text-[11px] font-medium inline-flex items-center gap-1 cursor-pointer"
+                aria-expanded={showTeleportBar}
+              >
+                {showTeleportBar ? (
+                  <>
+                    <span>Thu gọn</span>
+                    <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+                  </>
+                ) : (
+                  <>
+                    <span>Dịch chuyển nhanh</span>
+                    <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-1.5">
-            {TELEPORT_ZONES.map((zone) => {
-              const isActive = currentZone === zone.label;
-              return (
-                <button
-                  key={zone.id}
-                  type="button"
-                  onClick={() => requestTeleport(zone.id)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
-                    isActive
-                      ? 'bg-tech-cyan/20 text-tech-cyan border border-tech-cyan/60'
-                      : 'bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 hover:border-tech-cyan/40'
-                  }`}
-                >
-                  <MapPin className="w-3 h-3 text-tech-cyan" aria-hidden="true" />
-                  <span>{zone.shortLabel}</span>
-                </button>
-              );
-            })}
-          </div>
+          {showTeleportBar && (
+            <div className="flex flex-wrap gap-1.5 mt-2.5 pt-2 border-t border-white/10">
+              {TELEPORT_ZONES.map((zone) => {
+                const isActive = currentZone === zone.label;
+                return (
+                  <button
+                    key={zone.id}
+                    type="button"
+                    onClick={() => requestTeleport(zone.id)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
+                      isActive
+                        ? 'bg-tech-cyan/20 text-tech-cyan border border-tech-cyan/60'
+                        : 'bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 hover:border-tech-cyan/40'
+                    }`}
+                  >
+                    <MapPin className="w-3 h-3 text-tech-cyan" aria-hidden="true" />
+                    <span>{zone.shortLabel}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

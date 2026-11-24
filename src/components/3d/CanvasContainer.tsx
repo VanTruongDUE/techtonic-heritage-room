@@ -2,10 +2,22 @@ import React from 'react';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Scene } from './Scene';
+import { useHeritageStore } from '../../store/useHeritageStore';
 
 export const CanvasContainer: React.FC = () => {
+  const { controlMode, isHoveringInteractive, isDraggingCamera, activeModal } = useHeritageStore();
+
+  const cursorClass =
+    activeModal || controlMode === 'fps'
+      ? 'cursor-default'
+      : isDraggingCamera
+      ? 'cursor-grabbing'
+      : isHoveringInteractive
+      ? 'cursor-pointer'
+      : 'cursor-default';
+
   return (
-    <div className="absolute inset-0 w-full h-full bg-[#080d17]">
+    <div className={`absolute inset-0 w-full h-full bg-[#080d17] ${cursorClass}`}>
       <Canvas
         shadows="soft"
         camera={{

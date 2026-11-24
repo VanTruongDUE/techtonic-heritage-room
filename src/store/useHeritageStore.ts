@@ -28,9 +28,15 @@ import type {
 } from '../types/heritage';
 
 interface HeritageState {
-  // Controls & Pointer state
+  // Entry, Controls & Pointer state
+  hasEntered: boolean;
+  setHasEntered: (entered: boolean) => void;
+  controlMode: 'cursor' | 'fps';
+  setControlMode: (mode: 'cursor' | 'fps') => void;
   isLocked: boolean;
   setLocked: (locked: boolean) => void;
+  isDraggingCamera: boolean;
+  setDraggingCamera: (dragging: boolean) => void;
   mouseSensitivity: number;
   setMouseSensitivity: (value: number) => void;
 
@@ -41,7 +47,7 @@ interface HeritageState {
   requestTeleport: (zoneId: string) => void;
   clearTeleportTarget: () => void;
 
-  // Crosshair hover, rich live preview (before clicking) & [E] quick-interact state
+  // Crosshair / cursor hover, rich live preview & [E] quick-interact state
   isHoveringInteractive: boolean;
   hoverTooltip: string;
   hoverPreview: HoverPreview | null;
@@ -57,7 +63,10 @@ interface HeritageState {
   // Modal system
   activeModal: ModalType;
   modalData: ExhibitItem | null;
+  boardDepartmentFilter: string;
+  setBoardDepartmentFilter: (dept: string) => void;
   openModal: (type: ModalType, data?: ExhibitItem | null) => void;
+  openExecutiveBoard: (department?: string) => void;
   closeModal: () => void;
 
   // Audio state
@@ -85,8 +94,23 @@ interface HeritageState {
 }
 
 export const useHeritageStore = create<HeritageState>((set, get) => ({
+  hasEntered: false,
+  setHasEntered: (entered) => set({ hasEntered: entered }),
+  controlMode: 'cursor',
+  setControlMode: (mode) => {
+    if (mode === 'cursor' && document.pointerLockElement && document.exitPointerLock) {
+      try {
+        document.exitPointerLock();
+      } catch {
+        // Ignore if already unlocked
+      }
+    }
+    set({ controlMode: mode, isLocked: false });
+  },
   isLocked: false,
   setLocked: (locked) => set({ isLocked: locked }),
+  isDraggingCamera: false,
+  setDraggingCamera: (dragging) => set({ isDraggingCamera: dragging }),
 
   mouseSensitivity: 1.0,
   setMouseSensitivity: (value) =>
@@ -129,8 +153,10 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
 
   activeModal: null,
   modalData: null,
+  boardDepartmentFilter: 'ALL',
+  setBoardDepartmentFilter: (dept) => set({ boardDepartmentFilter: dept }),
   openModal: (type, data = null) => {
-    if (document.exitPointerLock) {
+    if (document.pointerLockElement && document.exitPointerLock) {
       try {
         document.exitPointerLock();
       } catch (e) {
@@ -140,7 +166,29 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
     set({
       activeModal: type,
       modalData: data,
+      ...(type === 'shirt' ? {} : {}),
       isLocked: false,
+      isDraggingCamera: false,
+      isHoveringInteractive: false,
+      hoverTooltip: '',
+      hoverPreview: null,
+      hoverAction: null,
+    });
+  },
+  openExecutiveBoard: (department = 'ALL') => {
+    if (document.pointerLockElement && document.exitPointerLock) {
+      try {
+        document.exitPointerLock();
+      } catch {
+        // Ignore
+      }
+    }
+    set({
+      activeModal: 'shirt',
+      modalData: null,
+      boardDepartmentFilter: department,
+      isLocked: false,
+      isDraggingCamera: false,
       isHoveringInteractive: false,
       hoverTooltip: '',
       hoverPreview: null,

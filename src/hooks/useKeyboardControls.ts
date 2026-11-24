@@ -21,14 +21,15 @@ const INITIAL_MOVEMENT: MovementKeys = {
 
 export const useKeyboardControls = () => {
   const [movement, setMovement] = useState<MovementKeys>(INITIAL_MOVEMENT);
-  const { isLocked, activeModal } = useHeritageStore();
+  const { hasEntered, controlMode, isLocked, activeModal } = useHeritageStore();
+  const canMove = hasEntered && !activeModal && (controlMode === 'cursor' || isLocked);
 
-  // Reset held keys whenever pointer unlocks or modal opens so movement never gets stuck
+  // Reset held keys whenever movement is disallowed so keys never stick
   useEffect(() => {
-    if (!isLocked || activeModal) {
+    if (!canMove) {
       setMovement(INITIAL_MOVEMENT);
     }
-  }, [isLocked, activeModal]);
+  }, [canMove]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

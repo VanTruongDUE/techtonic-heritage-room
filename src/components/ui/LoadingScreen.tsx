@@ -13,7 +13,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
   const [isReady, setIsReady] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
-  const { isLocked } = useHeritageStore();
+  const { hasEntered: storeHasEntered, isLocked } = useHeritageStore();
 
   useEffect(() => {
     const checkMobile = () => {
@@ -48,7 +48,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
     onEnter();
   };
 
-  if (hasEntered || (isLocked && isReady)) {
+  if (hasEntered || storeHasEntered || (isLocked && isReady)) {
     return null;
   }
 

@@ -180,20 +180,20 @@ export const InstructionsModal: React.FC = () => {
                   <kbd className="font-mono text-tech-cyan">W A S D / Mũi tên</kbd>
                 </div>
                 <div className="flex justify-between">
+                  <span>Xoay góc nhìn 360°</span>
+                  <kbd className="font-mono text-tech-cyan">Nhấn giữ & kéo chuột</kbd>
+                </div>
+                <div className="flex justify-between">
                   <span>Chạy nhanh / Nhảy</span>
                   <kbd className="font-mono text-tech-cyan">Shift / Space</kbd>
                 </div>
                 <div className="flex justify-between">
                   <span>Mở chi tiết vật phẩm</span>
-                  <kbd className="font-mono text-tech-cyan">Chuột trái hoặc E</kbd>
+                  <kbd className="font-mono text-tech-cyan">Click trực tiếp hoặc E</kbd>
                 </div>
                 <div className="flex justify-between">
                   <span>Mở / Đóng bản đồ này</span>
-                  <kbd className="font-mono text-tech-cyan">H</kbd>
-                </div>
-                <div className="flex justify-between">
-                  <span>Mở con trỏ chuột</span>
-                  <kbd className="font-mono text-tech-cyan">ESC</kbd>
+                  <kbd className="font-mono text-tech-cyan">H / ESC</kbd>
                 </div>
               </div>
             </div>

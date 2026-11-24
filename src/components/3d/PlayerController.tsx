@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { PointerLockControls } from '@react-three/drei';
 import type { PointerLockControls as PointerLockControlsImpl } from 'three-stdlib';
 import { CapsuleCollider, RapierRigidBody, RigidBody } from '@react-three/rapier';
@@ -13,9 +13,11 @@ const SPEED_RUN = 7.4;
 const JUMP_FORCE = 4.5;
 const BASE_FOV = 65;
 const SPRINT_FOV = 67.5;
+const DRAG_THRESHOLD_PX = 5;
 
 function detectZone(x: number, z: number): string {
   if (z > 8.2) return 'Hành Lang Lối Vào';
+  if (Math.hypot(x + 9.6, z + 12.2) < 5.5) return 'Cây Sơ Đồ Ban Chủ Nhiệm';
   if (z > 0.2 && x < -4.2) return 'Đối Tác & Kết Nối';
   if (z > 0.2 && x > 4.2) return 'Cảm Nhận Thành Viên';
   if (x > 2.8 && z < -9.5) return 'Góc Truyền Thông & Lưu Bút';
@@ -35,10 +37,14 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
 }) => {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const controlsRef = useRef<PointerLockControlsImpl | null>(null);
+  const { camera, gl } = useThree();
   const { forward, backward, left, right, shift, jump } = useKeyboardControls();
   const {
+    hasEntered,
+    controlMode,
     isLocked,
     setLocked,
+    setDraggingCamera,
     activeModal,
     mouseSensitivity,
     setCurrentZone,
@@ -56,34 +62,134 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
   const bobAmount = useRef(0);
   const prevModalRef = useRef<ModalType>(null);
 
+  // Drag-to-look state for Free-Cursor mode
+  const isPointerDownRef = useRef(false);
+  const pointerDownButtonRef = useRef<number>(0);
+  const pointerStartRef = useRef({ x: 0, y: 0 });
+  const pointerLastRef = useRef({ x: 0, y: 0 });
+  const dragExceededRef = useRef(false);
+  const suppressNextClickRef = useRef(false);
+
   const handleLock = () => setLocked(true);
   const handleUnlock = () => setLocked(false);
 
-  // Support [E] shortcut to inspect targeted 3D exhibit while walking in FPS mode
+  // Support [E] shortcut to inspect targeted 3D exhibit in both Free-Cursor and FPS modes
   useEffect(() => {
     const handleInteractKey = (e: KeyboardEvent) => {
-      if (e.code === 'KeyE' && isLocked && !activeModal) {
+      if (e.code === 'KeyE' && hasEntered && !activeModal) {
         triggerHoveredInteraction();
       }
     };
     window.addEventListener('keydown', handleInteractKey);
     return () => window.removeEventListener('keydown', handleInteractKey);
-  }, [isLocked, activeModal, triggerHoveredInteraction]);
+  }, [hasEntered, activeModal, triggerHoveredInteraction]);
 
-  // Central logic: unlock when modal opens, re-lock when modal closes
+  // Drag-to-look on WebGL canvas while keeping OS mouse cursor visible everywhere
+  useEffect(() => {
+    const dom = gl.domElement;
+    if (!dom) return;
+
+    const resetDrag = () => {
+      if (dragExceededRef.current) {
+        suppressNextClickRef.current = true;
+        window.setTimeout(() => {
+          suppressNextClickRef.current = false;
+        }, 80);
+      }
+      isPointerDownRef.current = false;
+      dragExceededRef.current = false;
+      setDraggingCamera(false);
+    };
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (!hasEntered || activeModal || controlMode !== 'cursor') return;
+      if (e.button !== 0 && e.button !== 2) return;
+      isPointerDownRef.current = true;
+      pointerDownButtonRef.current = e.button;
+      pointerStartRef.current = { x: e.clientX, y: e.clientY };
+      pointerLastRef.current = { x: e.clientX, y: e.clientY };
+      dragExceededRef.current = false;
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!isPointerDownRef.current || !hasEntered || activeModal || controlMode !== 'cursor') return;
+      const totalDist = Math.hypot(
+        e.clientX - pointerStartRef.current.x,
+        e.clientY - pointerStartRef.current.y
+      );
+      if (!dragExceededRef.current && totalDist > DRAG_THRESHOLD_PX) {
+        dragExceededRef.current = true;
+        setDraggingCamera(true);
+      }
+
+      if (dragExceededRef.current) {
+        const dx = e.clientX - pointerLastRef.current.x;
+        const dy = e.clientY - pointerLastRef.current.y;
+        const sensitivity = 0.0028 * mouseSensitivity;
+
+        cameraEuler.current.setFromQuaternion(camera.quaternion, 'YXZ');
+        cameraEuler.current.y -= dx * sensitivity;
+        cameraEuler.current.x = THREE.MathUtils.clamp(
+          cameraEuler.current.x - dy * sensitivity,
+          -1.32,
+          1.32
+        );
+        cameraEuler.current.z = 0;
+        camera.quaternion.setFromEuler(cameraEuler.current);
+      }
+
+      pointerLastRef.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const onClickCapture = (e: MouseEvent) => {
+      if (suppressNextClickRef.current || dragExceededRef.current) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        suppressNextClickRef.current = false;
+      }
+    };
+
+    const onContextMenu = (e: MouseEvent) => {
+      if (controlMode === 'cursor' && (dragExceededRef.current || pointerDownButtonRef.current === 2)) {
+        e.preventDefault();
+      }
+    };
+
+    dom.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', resetDrag);
+    window.addEventListener('blur', resetDrag);
+    dom.addEventListener('click', onClickCapture, true);
+    dom.addEventListener('contextmenu', onContextMenu);
+
+    return () => {
+      dom.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', resetDrag);
+      window.removeEventListener('blur', resetDrag);
+      dom.removeEventListener('click', onClickCapture, true);
+      dom.removeEventListener('contextmenu', onContextMenu);
+    };
+  }, [gl, camera, hasEntered, activeModal, controlMode, mouseSensitivity, setDraggingCamera]);
+
+  // Unlock pointer when modal opens; only re-lock automatically if user explicitly chose FPS mode
   useEffect(() => {
     if (activeModal) {
       if (controlsRef.current?.isLocked) {
         controlsRef.current.unlock();
       }
-      if (document.pointerLockElement) {
+      if (document.pointerLockElement && document.exitPointerLock) {
         try {
           document.exitPointerLock();
         } catch {
           // Ignore exitPointerLock errors when already unlocked
         }
       }
-    } else if (prevModalRef.current !== null && activeModal === null) {
+    } else if (
+      controlMode === 'fps' &&
+      prevModalRef.current !== null &&
+      activeModal === null
+    ) {
       const timer = setTimeout(() => {
         if (controlsRef.current && !controlsRef.current.isLocked) {
           try {
@@ -97,7 +203,7 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
       return () => clearTimeout(timer);
     }
     prevModalRef.current = activeModal;
-  }, [activeModal]);
+  }, [activeModal, controlMode]);
 
   useFrame((state, delta) => {
     if (!rigidBodyRef.current) return;
@@ -124,8 +230,9 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
     setCurrentZone(detectZone(pos.x, pos.z));
 
     const damping = 1 - Math.exp(-14 * dt);
+    const canExplore = hasEntered && !activeModal && (controlMode === 'cursor' || isLocked);
 
-    if (!isLocked || activeModal) {
+    if (!canExplore) {
       smoothVel.current.x = THREE.MathUtils.lerp(smoothVel.current.x, 0, damping);
       smoothVel.current.z = THREE.MathUtils.lerp(smoothVel.current.z, 0, damping);
       bobAmount.current = THREE.MathUtils.lerp(bobAmount.current, 0, damping);
@@ -150,12 +257,11 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
       direction.current.normalize().multiplyScalar(speed);
     }
 
-    cameraEuler.current.setFromQuaternion(state.camera.quaternion);
+    cameraEuler.current.setFromQuaternion(state.camera.quaternion, 'YXZ');
     cameraEuler.current.x = 0;
     cameraEuler.current.z = 0;
     direction.current.applyEuler(cameraEuler.current);
 
-    // Smooth exponential acceleration & deceleration
     smoothVel.current.x = THREE.MathUtils.lerp(smoothVel.current.x, direction.current.x, damping);
     smoothVel.current.z = THREE.MathUtils.lerp(smoothVel.current.z, direction.current.z, damping);
 
@@ -170,7 +276,6 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
       true
     );
 
-    // Subtle natural walk head-bob scaled by actual ground velocity
     const horizSpeed = Math.hypot(smoothVel.current.x, smoothVel.current.z);
     if (isGrounded && horizSpeed > 0.4) {
       bobPhase.current += dt * (shift ? 11.5 : 8.2);
@@ -181,7 +286,6 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
     const headBobY = Math.sin(bobPhase.current) * bobAmount.current;
     state.camera.position.set(pos.x, pos.y + 0.6 + headBobY, pos.z);
 
-    // Subtle smooth sprint FOV transition
     if (state.camera instanceof THREE.PerspectiveCamera) {
       const targetFov = hasInput && shift ? SPRINT_FOV : BASE_FOV;
       if (Math.abs(state.camera.fov - targetFov) > 0.02) {
@@ -190,7 +294,6 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
       }
     }
 
-    // Respawn if fallen below floor
     if (pos.y < -5) {
       rigidBodyRef.current.setTranslation(
         { x: initialPosition[0], y: initialPosition[1], z: initialPosition[2] },
@@ -203,13 +306,15 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
 
   return (
     <>
-      <PointerLockControls
-        ref={controlsRef}
-        enabled={!activeModal}
-        pointerSpeed={mouseSensitivity}
-        onLock={handleLock}
-        onUnlock={handleUnlock}
-      />
+      {controlMode === 'fps' && (
+        <PointerLockControls
+          ref={controlsRef}
+          enabled={!activeModal}
+          pointerSpeed={mouseSensitivity}
+          onLock={handleLock}
+          onUnlock={handleUnlock}
+        />
+      )}
       <RigidBody
         ref={rigidBodyRef}
         colliders={false}
