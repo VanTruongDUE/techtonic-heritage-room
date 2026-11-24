@@ -23,7 +23,12 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
   const fabricMaps = useMemo(() => createFabricMaps(), []);
   const marbleMap = useMemo(() => createMarbleTexture(), []);
   const plaqueMap = useMemo(
-    () => createPedestalPlaqueTexture('Áo Chính Thức TechTonic Club', '2022 - 2026', 'Ban Chủ Nhiệm'),
+    () =>
+      createPedestalPlaqueTexture(
+        'Áo Chính Thức TechTonic Club',
+        '2024 - 2027',
+        'ĐH Kinh Tế - ĐH Đà Nẵng'
+      ),
     []
   );
 
@@ -109,7 +114,7 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
       ctx.fillText('TECHTONIC', 256, 84);
       ctx.fillStyle = '#38bdf8';
       ctx.font = '600 22px "JetBrains Mono", monospace';
-      ctx.fillText('EST. 2022 • HERITAGE', 256, 126);
+      ctx.fillText('DREAM IT • CODE IT', 256, 126);
     }
     const tex = new THREE.CanvasTexture(canvas);
     tex.anisotropy = 8;

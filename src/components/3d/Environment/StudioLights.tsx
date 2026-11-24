@@ -217,6 +217,29 @@ export const StudioLights: React.FC = () => {
         decay={1.2}
         color="#bae6fd"
       />
+
+      {/* 9. Back-Left Core Values Wing & Front Inner Walls Gentle Gallery Fill */}
+      <pointLight
+        position={[-13.4, 4.8, -14.5]}
+        intensity={18}
+        distance={14}
+        decay={1.2}
+        color="#e0f2fe"
+      />
+      <pointLight
+        position={[-9.6, 4.8, 4.5]}
+        intensity={18}
+        distance={14}
+        decay={1.2}
+        color="#e8f1ff"
+      />
+      <pointLight
+        position={[9.6, 4.8, 4.5]}
+        intensity={18}
+        distance={14}
+        decay={1.2}
+        color="#e8f1ff"
+      />
     </group>
   );
 };

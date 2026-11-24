@@ -16,10 +16,12 @@ const SPRINT_FOV = 67.5;
 
 function detectZone(x: number, z: number): string {
   if (z > 8.2) return 'Hành Lang Lối Vào';
-  if (z < -12 && Math.abs(x) < 6) return 'Vách Tâm Điểm';
-  if (x > 4 && z < -9.5) return 'Góc Truyền Thông & Lưu Bút';
-  if (x > 8.5 && z >= -9.5) return 'Khu Vực Ban Chủ Nhiệm';
-  if (x < -8.5) return 'Dòng Thời Gian & Kỷ Yếu';
+  if (z > 0.2 && x < -4.2) return 'Đối Tác & Kết Nối';
+  if (z > 0.2 && x > 4.2) return 'Cảm Nhận Thành Viên';
+  if (x > 2.8 && z < -9.5) return 'Góc Truyền Thông & Lưu Bút';
+  if (z < -10.2 && x < 4.2) return 'Vách Tâm Điểm';
+  if (x > 4.5 && z >= -9.5) return 'Áo CLB & Ban Chủ Nhiệm';
+  if (x < -4.5 && z >= -9.5) return 'Dòng Thời Gian & Hoạt Động';
   if (Math.hypot(x, z + 5) < 6.2) return 'Đảo Vinh Danh 360°';
   return 'Đại Sảnh Danh Dự';
 }

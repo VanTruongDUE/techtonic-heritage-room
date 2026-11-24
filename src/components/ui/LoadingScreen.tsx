@@ -79,7 +79,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
           Phòng Truyền Thống TechTonic
         </h1>
         <p className="text-sm md:text-base text-slate-300 mb-7 max-w-lg leading-relaxed">
-          Khám phá hành trình đổi mới công nghệ, các mốc son thành tích và thế hệ tài năng TechTonic trong không gian 3D tương tác.
+          Trường Đại học Kinh tế - Đại học Đà Nẵng • Dream it - Code it. Khám phá hành trình, giá trị cốt lõi và thành tựu TechTonic Club trong không gian 3D.
         </p>
 
         {/* Progress bar */}

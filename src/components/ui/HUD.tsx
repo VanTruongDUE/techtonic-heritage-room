@@ -150,26 +150,26 @@ export const HUD: React.FC = () => {
         </aside>
       )}
 
-      {/* Unlocked Pause & Quick-Teleport Bar when user is not in a modal */}
+      {/* Bottom-docked Pause & Quick-Teleport Bar when unlocked (leaves center 3D view clear) */}
       {!isLocked && !activeModal && (
-        <div className="self-center glass-panel px-5 py-4 rounded-2xl border border-tech-cyan/30 pointer-events-auto max-w-2xl w-full animate-panel-in">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-            <div className="flex items-center gap-2.5">
-              <MousePointerClick className="w-5 h-5 text-tech-cyan shrink-0" aria-hidden="true" />
-              <span className="text-sm font-semibold text-white">
-                Con trỏ chuột đang mở — chọn khu vực để dịch chuyển hoặc quay lại góc nhìn 360°
+        <div className="mt-auto mb-3 self-center glass-panel px-4 py-3 rounded-2xl border border-tech-cyan/30 pointer-events-auto max-w-4xl w-full animate-panel-in">
+          <div className="flex flex-wrap items-center justify-between gap-2.5 mb-2.5">
+            <div className="flex items-center gap-2">
+              <MousePointerClick className="w-4 h-4 text-tech-cyan shrink-0" aria-hidden="true" />
+              <span className="text-xs md:text-sm font-medium text-white">
+                Chọn khu vực để tham quan nhanh hoặc quay lại góc nhìn 360°
               </span>
             </div>
             <button
               type="button"
               onClick={handleResumeLock}
-              className="px-4 py-2 rounded-xl bg-tech-cyan text-slate-950 font-semibold text-xs hover:bg-[#33f3ff] transition cursor-pointer shrink-0"
+              className="px-3.5 py-1.5 rounded-lg bg-tech-cyan text-slate-950 font-semibold text-xs hover:bg-[#33f3ff] transition cursor-pointer shrink-0"
             >
               Tiếp tục tham quan 3D
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {TELEPORT_ZONES.map((zone) => {
               const isActive = currentZone === zone.label;
               return (
@@ -177,7 +177,7 @@ export const HUD: React.FC = () => {
                   key={zone.id}
                   type="button"
                   onClick={() => requestTeleport(zone.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
                     isActive
                       ? 'bg-tech-cyan/20 text-tech-cyan border border-tech-cyan/60'
                       : 'bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 hover:border-tech-cyan/40'

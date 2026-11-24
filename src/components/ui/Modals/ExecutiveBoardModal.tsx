@@ -1,21 +1,22 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useHeritageStore } from '../../../store/useHeritageStore';
-import { X, Users, Shield, Search, RotateCcw } from 'lucide-react';
+import { X, Users, Shield, Search, RotateCcw, Star } from 'lucide-react';
 import type { Department } from '../../../types/heritage';
 
 const DEPARTMENTS: Array<'all' | Department> = [
   'all',
   'Ban Chủ Nhiệm',
   'Ban Chuyên Môn',
-  'Ban Truyền Thông',
-  'Ban Đối Ngoại',
   'Ban Sự Kiện',
+  'Ban Nhân Sự',
+  'Ban Truyền Thông',
 ];
 
 export const ExecutiveBoardModal: React.FC = () => {
   const { activeModal, closeModal, executiveMembers } = useHeritageStore();
   const [selectedTerm, setSelectedTerm] = useState<string>('all');
   const [selectedDept, setSelectedDept] = useState<'all' | Department>('all');
+  const [onlyFounders, setOnlyFounders] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -36,19 +37,25 @@ export const ExecutiveBoardModal: React.FC = () => {
   const filteredMembers = executiveMembers.filter((m) => {
     const matchTerm = selectedTerm === 'all' || m.term === selectedTerm;
     const matchDept = selectedDept === 'all' || m.department === selectedDept;
+    const matchFounder = !onlyFounders || Boolean(m.isFounder);
     const matchSearch =
       !normalizedQuery ||
       m.name.toLowerCase().includes(normalizedQuery) ||
       m.role.toLowerCase().includes(normalizedQuery) ||
       (m.bio ?? '').toLowerCase().includes(normalizedQuery);
-    return matchTerm && matchDept && matchSearch;
+    return matchTerm && matchDept && matchFounder && matchSearch;
   });
 
-  const hasFilters = selectedTerm !== 'all' || selectedDept !== 'all' || normalizedQuery.length > 0;
+  const hasFilters =
+    selectedTerm !== 'all' ||
+    selectedDept !== 'all' ||
+    onlyFounders ||
+    normalizedQuery.length > 0;
 
   const resetFilters = () => {
     setSelectedTerm('all');
     setSelectedDept('all');
+    setOnlyFounders(false);
     setSearchQuery('');
   };
 
@@ -80,10 +87,10 @@ export const ExecutiveBoardModal: React.FC = () => {
                 id="bcn-modal-title"
                 className="text-xl md:text-2xl font-bold text-white tracking-tight"
               >
-                ĐỘI NGŨ BAN CHỦ NHIỆM TECHTONIC CLUB
+                BAN CHỦ NHIỆM & NHÀ SÁNG LẬP TECHTONIC
               </h2>
               <p className="text-xs text-slate-300 mt-0.5">
-                Tương tác Áo Câu Lạc Bộ • Danh sách điều hành qua các nhiệm kỳ
+                Trực thuộc Hội Sinh viên Trường ĐH Kinh tế - ĐH Đà Nẵng • 3 Nhiệm kỳ (2024–2027)
               </p>
             </div>
           </div>
@@ -102,7 +109,7 @@ export const ExecutiveBoardModal: React.FC = () => {
         {/* Filter & Search Bar */}
         <div className="px-6 py-3.5 bg-black/45 border-b border-white/10 flex flex-col gap-3 text-xs">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="relative flex-1 min-w-[220px]">
+            <div className="relative flex-1 min-w-[200px]">
               <Search
                 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
                 aria-hidden="true"
@@ -112,14 +119,27 @@ export const ExecutiveBoardModal: React.FC = () => {
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm theo tên hoặc chức vụ..."
+                placeholder="Tìm theo tên, vai trò hoặc nhiệm kỳ..."
                 aria-label="Tìm kiếm thành viên Ban Chủ Nhiệm"
                 className="w-full pl-9 pr-3 py-2 rounded-lg bg-[#121824] border border-white/15 text-slate-100 placeholder-slate-400 text-xs focus:outline-none focus:border-tech-cyan"
               />
             </div>
 
-            <div className="flex items-center space-x-2">
-              <label htmlFor="bcn-term-select" className="text-slate-300 font-medium">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setOnlyFounders((prev) => !prev)}
+                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition cursor-pointer ${
+                  onlyFounders
+                    ? 'bg-amber-400 text-slate-950 font-semibold'
+                    : 'bg-[#121824] border border-white/15 text-slate-200 hover:border-amber-400/50'
+                }`}
+              >
+                <Star className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>8 Co-Founders</span>
+              </button>
+
+              <label htmlFor="bcn-term-select" className="text-slate-300 font-medium ml-1">
                 Nhiệm kỳ:
               </label>
               <select
@@ -167,7 +187,7 @@ export const ExecutiveBoardModal: React.FC = () => {
                 Không tìm thấy thành viên phù hợp
               </p>
               <p className="text-xs text-slate-300 mb-4">
-                Thử thay đổi từ khóa tìm kiếm, nhiệm kỳ hoặc ban chuyên môn khác.
+                Thử thay đổi từ khóa tìm kiếm, nhiệm kỳ hoặc ban chức năng khác.
               </p>
               {hasFilters && (
                 <button
@@ -213,7 +233,13 @@ export const ExecutiveBoardModal: React.FC = () => {
                       <Shield className="w-3.5 h-3.5 text-tech-cyan" aria-hidden="true" />
                       {member.department}
                     </span>
-                    <span className="text-tech-cyan font-mono text-[11px]">TechTonic Leader</span>
+                    {member.isFounder ? (
+                      <span className="text-amber-300 font-mono text-[11px] font-semibold">
+                        Co-Founder
+                      </span>
+                    ) : (
+                      <span className="text-tech-cyan font-mono text-[11px]">TechTonic Leader</span>
+                    )}
                   </div>
                 </article>
               ))}
@@ -224,7 +250,7 @@ export const ExecutiveBoardModal: React.FC = () => {
         {/* Footer info */}
         <div className="px-6 py-3.5 bg-[#0a0d14] border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-300">
           <span>
-            Áo CLB đại diện cho bản sắc kỹ thuật và tinh thần cống hiến của mọi thế hệ thành viên.
+            Cơ cấu chính thức: 3 Quản lý BCN • 27 TV các ban (Chuyên Môn, Sự Kiện, Nhân Sự, Truyền Thông) • 45+ Thành viên tự do.
           </span>
           <button
             type="button"

@@ -130,24 +130,36 @@ export const InteractiveCorner: React.FC = () => {
           ctx.stroke();
         }
 
+        const slideIndex = Math.floor(elapsed / 5.5) % 3;
+        const slideTitles = [
+          'TECHTONIC CLUB • DREAM IT - CODE IT',
+          'CHUYÊN MÔN HẰNG TUẦN • FE • BE • AI & DATA',
+          'CHUỖI SỰ KIỆN • TECHXPLORE • TECHWARE • ĐÔNG - XUÂN',
+        ];
+        const slideSubtitles = [
+          '10+ Giải thưởng  •  100+ Thành viên  •  20+ Dự án  •  ĐH Kinh Tế - ĐH Đà Nẵng',
+          'Product Team  •  Lớp CSLT & CSDL  •  Thi đấu ICPC-OLP & NCKH',
+          'Mentor - Mentee (From Us To You)  •  Tech Threads  •  Happy Hour & Kiện toàn',
+        ];
+
         ctx.fillStyle = '#f8fafc';
-        ctx.font = 'bold 36px Inter, sans-serif';
+        ctx.font = 'bold 34px Inter, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('TECHTONIC PROMO REEL • VIRTUAL EXHIBIT', w / 2, 82);
+        ctx.fillText(slideTitles[slideIndex], w / 2, 82);
 
         ctx.fillStyle = isScreenPaused ? '#fbbf24' : '#38bdf8';
         ctx.font = '600 20px "JetBrains Mono", monospace';
         ctx.fillText(
           isScreenPaused
             ? 'TRẠNG THÁI: TẠM DỪNG • NHẤP ĐỂ TIẾP TỤC'
-            : `SYSTEM RUNTIME: ${elapsed.toFixed(1)}s • LIVE SIGNAL`,
+            : `SLIDE 0${slideIndex + 1}/03  •  RUNTIME ${elapsed.toFixed(1)}s`,
           w / 2,
           122
         );
 
         ctx.fillStyle = '#cbd5e1';
-        ctx.font = '400 18px Inter, sans-serif';
-        ctx.fillText('Pioneering the Next Generation of Digital Builders', w / 2, h - 56);
+        ctx.font = '500 21px Inter, sans-serif';
+        ctx.fillText(slideSubtitles[slideIndex], w / 2, h - 56);
 
         textureRef.current.needsUpdate = true;
       }

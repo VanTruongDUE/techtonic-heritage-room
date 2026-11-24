@@ -1,18 +1,19 @@
 export type Department =
   | 'Ban Chủ Nhiệm'
   | 'Ban Chuyên Môn'
-  | 'Ban Truyền Thông'
-  | 'Ban Đối Ngoại'
-  | 'Ban Sự Kiện';
+  | 'Ban Sự Kiện'
+  | 'Ban Nhân Sự'
+  | 'Ban Truyền Thông';
 
 export interface ExecutiveMember {
   id: string;
   name: string;
   role: string;
-  term: string; // e.g. "Nhiệm kỳ 2023 - 2024", "Nhiệm kỳ 2024 - 2025"
+  term: string; // e.g. "Nhiệm kỳ 2024 - 2025", "Nhiệm kỳ 2025 - 2026", "Nhiệm kỳ 2026 - 2027"
   avatar?: string;
   bio?: string;
   department: Department;
+  isFounder?: boolean;
 }
 
 export type ExhibitCategory = 'trophy' | 'certificate' | 'activity' | 'history';
@@ -25,6 +26,9 @@ export interface ExhibitItem {
   description: string;
   image?: string;
   highlight?: string;
+  bullets?: string[];
+  metrics?: Array<{ label: string; value: string }>;
+  links?: Array<{ label: string; url: string }>;
 }
 
 export interface TimelineMilestone {
