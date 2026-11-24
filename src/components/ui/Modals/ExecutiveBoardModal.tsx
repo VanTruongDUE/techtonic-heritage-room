@@ -205,13 +205,22 @@ export const ExecutiveBoardModal: React.FC = () => {
               {filteredMembers.map((member) => (
                 <article
                   key={member.id}
-                  className="group p-4 rounded-xl bg-[#0e1422]/85 border border-white/10 hover:border-tech-cyan/45 hover:bg-[#121a2c] transition-all duration-200 flex flex-col justify-between"
+                  className="group p-4 rounded-xl bg-[#0e1422]/85 border border-white/10 hover:border-tech-cyan/45 hover:bg-[#121a2c] hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between"
                 >
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="flex items-center space-x-3 min-w-0">
-                      <div className="w-11 h-11 shrink-0 rounded-xl bg-[#152036] flex items-center justify-center text-tech-cyan font-bold text-base">
-                        {member.name.trim().split(/\s+/).slice(-1)[0]?.[0] ?? 'T'}
-                      </div>
+                      {member.avatar ? (
+                        <img
+                          src={member.avatar}
+                          alt={member.name}
+                          loading="lazy"
+                          className="w-11 h-11 shrink-0 rounded-xl object-cover border border-tech-cyan/35 bg-[#152036]"
+                        />
+                      ) : (
+                        <div className="w-11 h-11 shrink-0 rounded-xl bg-[#152036] flex items-center justify-center text-tech-cyan font-bold text-base">
+                          {member.name.trim().split(/\s+/).slice(-1)[0]?.[0] ?? 'T'}
+                        </div>
+                      )}
                       <div className="min-w-0">
                         <h3 className="text-base font-bold text-white group-hover:text-tech-cyan transition-colors truncate">
                           {member.name}

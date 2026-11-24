@@ -7,6 +7,7 @@ import { PerimeterGallery } from './Exhibits/PerimeterGallery';
 import { CentralIsland } from './Exhibits/CentralIsland';
 import { InteractiveCorner } from './Exhibits/InteractiveCorner';
 import { PlayerController } from './PlayerController';
+import { HallParticleField, OrgConstellationOrbit } from './Effects/AmbientMotion';
 
 export const Scene: React.FC = () => {
   return (
@@ -16,6 +17,10 @@ export const Scene: React.FC = () => {
 
       {/* Lighting System outside Physics */}
       <StudioLights />
+
+      {/* Subtle Ambient Motion Layers */}
+      <HallParticleField />
+      <OrgConstellationOrbit />
 
       {/* Physics World for Collisions and Character Movement */}
       <Physics gravity={[0, -9.81, 0]}>

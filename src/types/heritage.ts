@@ -31,6 +31,15 @@ export interface ExhibitItem {
   links?: Array<{ label: string; url: string }>;
 }
 
+export interface HoverPreview {
+  title: string;
+  badge?: string;
+  summary: string;
+  bullets?: string[];
+  metrics?: Array<{ label: string; value: string }>;
+  actionLabel?: string;
+}
+
 export interface TimelineMilestone {
   id: string;
   year: string;
@@ -46,6 +55,8 @@ export interface ActivityHighlight {
   year: string;
   color: string;
   summary: string;
+  goal?: string;
+  audience?: string;
 }
 
 export interface GuestbookEntry {

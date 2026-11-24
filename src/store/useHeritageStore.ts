@@ -21,6 +21,7 @@ import type {
   GuestbookCreateInput,
   GuestbookEntry,
   GuestbookStorageMode,
+  HoverPreview,
   ModalType,
   TeleportZone,
   TimelineMilestone,
@@ -40,11 +41,17 @@ interface HeritageState {
   requestTeleport: (zoneId: string) => void;
   clearTeleportTarget: () => void;
 
-  // Crosshair hover & [E] quick-interact state
+  // Crosshair hover, rich live preview (before clicking) & [E] quick-interact state
   isHoveringInteractive: boolean;
   hoverTooltip: string;
+  hoverPreview: HoverPreview | null;
   hoverAction: (() => void) | null;
-  setHoveringInteractive: (hovering: boolean, tooltip?: string, action?: (() => void) | null) => void;
+  setHoveringInteractive: (
+    hovering: boolean,
+    tooltip?: string,
+    action?: (() => void) | null,
+    preview?: HoverPreview | null
+  ) => void;
   triggerHoveredInteraction: () => void;
 
   // Modal system
@@ -104,12 +111,14 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
 
   isHoveringInteractive: false,
   hoverTooltip: '',
+  hoverPreview: null,
   hoverAction: null,
-  setHoveringInteractive: (hovering, tooltip = '', action = null) =>
+  setHoveringInteractive: (hovering, tooltip = '', action = null, preview = null) =>
     set({
       isHoveringInteractive: hovering,
       hoverTooltip: hovering ? tooltip : '',
       hoverAction: hovering ? action : null,
+      hoverPreview: hovering ? preview : null,
     }),
   triggerHoveredInteraction: () => {
     const action = get().hoverAction;
@@ -134,6 +143,7 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
       isLocked: false,
       isHoveringInteractive: false,
       hoverTooltip: '',
+      hoverPreview: null,
       hoverAction: null,
     });
   },
@@ -169,7 +179,6 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
         isLoadingData: false,
       });
     } catch {
-      // Keep bundled seed data silently when offline or in static preview
       set({ isLoadingData: false });
     }
   },

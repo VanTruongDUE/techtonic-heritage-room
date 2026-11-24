@@ -10,6 +10,7 @@ import {
   SlidersHorizontal,
   MapPin,
   MousePointerClick,
+  CheckCircle2,
 } from 'lucide-react';
 
 export const HUD: React.FC = () => {
@@ -21,6 +22,8 @@ export const HUD: React.FC = () => {
     activeModal,
     currentZone,
     requestTeleport,
+    isHoveringInteractive,
+    hoverPreview,
   } = useHeritageStore();
   const [showControlsHint, setShowControlsHint] = useState(true);
 
@@ -57,7 +60,7 @@ export const HUD: React.FC = () => {
           <button
             type="button"
             onClick={() => openModal('instructions')}
-            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl glass-panel text-slate-200 hover:text-tech-cyan hover:border-tech-cyan/50 transition-all text-xs font-medium"
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl glass-panel text-slate-200 hover:text-tech-cyan hover:border-tech-cyan/50 transition-all text-xs font-medium cursor-pointer"
             aria-label="Mở bản đồ di chuyển nhanh và cài đặt"
             title="Di chuyển nhanh & Cài đặt (H)"
           >
@@ -71,7 +74,7 @@ export const HUD: React.FC = () => {
           <button
             type="button"
             onClick={toggleMute}
-            className="p-2.5 rounded-xl glass-panel text-slate-200 hover:text-white hover:border-tech-cyan/50 transition-all"
+            className="p-2.5 rounded-xl glass-panel text-slate-200 hover:text-white hover:border-tech-cyan/50 transition-all cursor-pointer"
             aria-label={isMuted ? 'Bật âm thanh nền' : 'Tắt âm thanh nền'}
             title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
           >
@@ -85,7 +88,7 @@ export const HUD: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowControlsHint((prev) => !prev)}
-            className={`p-2.5 rounded-xl glass-panel transition-all ${
+            className={`p-2.5 rounded-xl glass-panel transition-all cursor-pointer ${
               showControlsHint
                 ? 'text-tech-cyan border-tech-cyan/45'
                 : 'text-slate-200 hover:text-white hover:border-tech-cyan/50'
@@ -111,7 +114,7 @@ export const HUD: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowControlsHint(false)}
-              className="text-slate-300 hover:text-white text-[11px] px-1.5 py-0.5 rounded hover:bg-white/10 transition"
+              className="text-slate-300 hover:text-white text-[11px] px-1.5 py-0.5 rounded hover:bg-white/10 transition cursor-pointer"
               aria-label="Ẩn hướng dẫn điều khiển"
             >
               Ẩn
@@ -150,6 +153,55 @@ export const HUD: React.FC = () => {
         </aside>
       )}
 
+      {/* Right Edge: Rich Live Hover Preview Card BEFORE clicking (non-blocking) */}
+      {isHoveringInteractive && hoverPreview && !activeModal && (
+        <aside
+          aria-live="polite"
+          className="fixed right-6 top-20 w-80 max-w-[calc(100vw-3rem)] max-h-[calc(100vh-13rem)] overflow-hidden pointer-events-none z-30 glass-panel-glow rounded-2xl p-4 animate-panel-in"
+        >
+          {hoverPreview.badge && (
+            <div className="text-[11px] font-mono text-tech-cyan font-semibold mb-1.5">
+              {hoverPreview.badge}
+            </div>
+          )}
+          <h3 className="text-sm font-bold text-white leading-snug mb-2">
+            {hoverPreview.title}
+          </h3>
+          <p className="text-xs text-slate-200 leading-relaxed mb-2.5">
+            {hoverPreview.summary}
+          </p>
+
+          {hoverPreview.metrics && hoverPreview.metrics.length > 0 && (
+            <div className="grid grid-cols-2 gap-1.5 mb-2.5">
+              {hoverPreview.metrics.slice(0, 4).map((m) => (
+                <div
+                  key={m.label}
+                  className="px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 flex items-center justify-between text-xs"
+                >
+                  <span className="text-slate-300">{m.label}</span>
+                  <span className="font-bold text-tech-cyan tabular-nums">{m.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {hoverPreview.bullets && hoverPreview.bullets.length > 0 && (
+            <ul className="space-y-1.5 mb-3 pt-2 border-t border-white/10">
+              {hoverPreview.bullets.slice(0, 3).map((b, i) => (
+                <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-200 leading-snug">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-tech-cyan shrink-0 mt-0.5" aria-hidden="true" />
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="pt-2 border-t border-white/10 text-[11px] font-mono text-tech-cyan">
+            [Chuột trái / E] {hoverPreview.actionLabel ?? 'Xem toàn bộ chi tiết'}
+          </div>
+        </aside>
+      )}
+
       {/* Bottom-docked Pause & Quick-Teleport Bar when unlocked (leaves center 3D view clear) */}
       {!isLocked && !activeModal && (
         <div className="mt-auto mb-3 self-center glass-panel px-4 py-3 rounded-2xl border border-tech-cyan/30 pointer-events-auto max-w-4xl w-full animate-panel-in">
@@ -157,7 +209,7 @@ export const HUD: React.FC = () => {
             <div className="flex items-center gap-2">
               <MousePointerClick className="w-4 h-4 text-tech-cyan shrink-0" aria-hidden="true" />
               <span className="text-xs md:text-sm font-medium text-white">
-                Chọn khu vực để tham quan nhanh hoặc quay lại góc nhìn 360°
+                Rê chuột lên vật phẩm để xem trước thông tin chi tiết • Chọn khu vực để dịch chuyển
               </span>
             </div>
             <button

@@ -17,6 +17,21 @@ export const CLUB_PROFILE = {
     'Trở thành câu lạc bộ học thuật hàng đầu trực thuộc Hội Sinh viên tại trường Đại học Kinh Tế - Đại học Đà Nẵng, nơi trao đi những giá trị sâu sắc cho sinh viên trong khoảng thời gian học đại học và tương lai.',
   mission:
     'Câu lạc bộ TechTonic là một môi trường học thuật cạnh tranh, lành mạnh, giúp cải thiện kiến thức, kỹ năng, thái độ, kinh nghiệm, các mối quan hệ theo đúng lĩnh vực Công nghệ thông tin, thông qua sự dẫn dắt chân thành, lòng biết ơn, và trách nhiệm cao của mỗi cá nhân với bản thân và cộng đồng.',
+  missionKeywords: ['Học thuật', 'Kết nối', 'Phát triển', 'Trải nghiệm', 'Chân thành'],
+  benefits: [
+    {
+      title: 'Anh chị tốt',
+      desc: 'Kết nối thế hệ trước & sau, hỗ trợ định hướng phát triển nghề nghiệp nhanh và đúng hướng.',
+    },
+    {
+      title: 'Cơ sở học thuật tốt',
+      desc: 'Cung cấp tài liệu, phương pháp, khóa chia sẻ và lộ trình thực hành dự án thực tế.',
+    },
+    {
+      title: 'Bạn bè cùng chí hướng',
+      desc: 'Đồng hành cùng cộng đồng sinh viên yêu công nghệ, sẵn sàng sẻ chia và phát triển.',
+    },
+  ],
   metrics: [
     { label: 'Giải thưởng', value: '10+' },
     { label: 'Thành viên', value: '100+' },
@@ -24,15 +39,39 @@ export const CLUB_PROFILE = {
     { label: 'Năm hoạt động', value: '2+' },
   ],
   coreValues: [
-    { name: 'Tinh thần chia sẻ', note: 'Hiểu' },
-    { name: 'Sự tương trợ', note: 'Hiểu rồi mới giúp được' },
-    { name: 'Sự chân thành', note: 'Hiểu và giúp bằng sự chân thành' },
-    { name: 'Sự tôn trọng', note: 'Có sự tôn trọng lẫn nhau' },
-    { name: 'Sự trách nhiệm', note: 'Ý thức xây dựng và phát triển CLB' },
-    { name: 'Sự đổi mới', note: 'Cơ chế phản chứng' },
-    { name: 'Sự vui vẻ', note: 'Study Hard - Play Harder' },
+    {
+      name: 'Tinh thần chia sẻ',
+      note: 'Hiểu — Chủ động chia sẻ khó khăn lẫn thành công để gắn kết.',
+    },
+    {
+      name: 'Sự tương trợ',
+      note: 'Hiểu rồi mới giúp được — Sẵn sàng hỗ trợ kiến thức & kỹ năng.',
+    },
+    {
+      name: 'Sự chân thành',
+      note: 'Hiểu và giúp bằng sự chân thành — Cùng tiến bộ lâu dài.',
+    },
+    {
+      name: 'Sự tôn trọng',
+      note: 'Trân trọng đóng góp của cá nhân, tập thể & người đi trước.',
+    },
+    {
+      name: 'Sự trách nhiệm',
+      note: 'Ý thức với bản thân, CLB và cộng đồng đang tham gia.',
+    },
+    {
+      name: 'Sự đổi mới',
+      note: 'Cơ chế phản chứng — Dám thử, dám sai, dám cải tiến.',
+    },
+    {
+      name: 'Sự vui vẻ',
+      note: 'Study Hard - Play Harder — Cân bằng học tập & đời sống tinh thần.',
+    },
   ],
-  partners: ['VTC Academy', 'MGM Technology'],
+  partners: [
+    { name: 'VTC Academy', logo: '/assets/images/achievement/vtc_academy.webp' },
+    { name: 'MGM Technology', logo: '/assets/images/achievement/mgm_technology.webp' },
+  ],
   contact: {
     website: 'https://www.techtonic-club.id.vn/',
     email: 'techtonic.clb@gmail.com',
@@ -43,10 +82,21 @@ export const CLUB_PROFILE = {
     instagram: 'https://www.instagram.com/techtonic.club',
     threads: 'https://www.threads.com/@techtonic.club',
   },
+  recruitmentSummary: {
+    steps: [
+      '1. Chinh phục TechXplore (Vòng đơn → Phỏng vấn; riêng BCN thêm Training & Thực tập)',
+      '2. Tham gia buổi giới thiệu gặp gỡ thành viên & ban chuyên môn',
+      '3. Bắt đầu coding qua các buổi học thuật hằng tuần & Product Team',
+    ],
+    faqHighlights: [
+      'Đối tượng: Sinh viên năm 1–2 DUE Đà Nẵng (ưu tiên khối ngành có yếu tố CNTT)',
+      'Không yêu cầu biết code trước khi đăng ký • Không thu phí thành viên',
+    ],
+  },
   testimonials: [
     {
       name: 'Đinh Sỹ Quốc Doanh',
-      role: 'Co-Founder • Trưởng Ban Chuyên Môn (2024–2025) • Mentor BE mùa đầu tiên',
+      role: 'Cựu SV 48K14.2 • Co-Founder • Trưởng Ban Chuyên Môn (2024–2025) • Mentor BE mùa 1 • Giải KK Olympic Tin học SV VN lần 34',
     },
     {
       name: 'Phan Nhật Minh Anh',
@@ -54,33 +104,56 @@ export const CLUB_PROFILE = {
     },
     {
       name: 'Nguyễn Hoàng',
-      role: 'Cựu sinh viên • Mentor Chuyên môn Frontend nhiệm kỳ 2025–2026',
+      role: 'Cựu sinh viên • Mentor Chuyên môn Front-end CLB TechTonic nhiệm kỳ 2025–2026',
     },
     {
       name: 'Hồ Văn Trường',
-      role: 'Sinh viên năm 3 • Trưởng Ban Chuyên Môn nhiệm kỳ 2026–2027',
+      role: 'Sinh viên năm 3 • Trưởng Ban Chuyên Môn CLB TechTonic nhiệm kỳ 2026–2027',
     },
   ],
   weeklyTracks: [
     {
       title: 'Chuyên môn Front-end (FE)',
       schedule: 'Hằng tuần',
-      desc: 'Xây dựng giao diện và trải nghiệm người dùng cho website & ứng dụng hiện đại.',
+      desc: 'Xây dựng giao diện và trải nghiệm người dùng trực quan, hiện đại cho website và ứng dụng với công nghệ Front-end phổ biến.',
     },
     {
       title: 'Chuyên môn Back-end (BE)',
       schedule: 'Hằng tuần',
-      desc: 'Xử lý hệ thống, API, cơ sở dữ liệu và logic vận hành phía máy chủ qua dự án thực tế.',
+      desc: 'Xử lý hệ thống, API, cơ sở dữ liệu và logic vận hành phía máy chủ qua các buổi học và dự án thực tế.',
     },
     {
       title: 'Chuyên môn AI & Data',
       schedule: 'Hằng tuần',
-      desc: 'Xử lý dữ liệu, phân tích dữ liệu, Machine Learning và ứng dụng AI vào thực tiễn.',
+      desc: 'Xử lý dữ liệu, phân tích dữ liệu, Machine Learning và xu hướng ứng dụng AI vào bài toán thực tế.',
     },
     {
-      title: 'CSLT & CSDL • Product Team • MIS',
-      schedule: 'Hằng tuần & Tháng',
-      desc: 'Củng cố Cơ sở lập trình & CSDL, báo cáo Product Team, talkshow Người trong ngành MIS và Happy Hour.',
+      title: 'Chia sẻ CSLT & CSDL',
+      schedule: 'Hằng tuần',
+      desc: 'Củng cố nền tảng Cơ sở lập trình (CSLT) và Cơ sở dữ liệu (CSDL) theo hướng dễ hiểu, thực tiễn.',
+    },
+    {
+      title: 'Product Team & Happy Hour',
+      schedule: 'Định kỳ & Tháng',
+      desc: 'Báo cáo tiến độ đội dự án, góp ý chuyên môn, rèn thuyết trình; kết hợp Happy Hour gắn kết đội ngũ hằng tháng.',
+    },
+  ],
+  departmentStructure: [
+    {
+      name: 'Ban Chuyên Môn (8 TV)',
+      summary: 'Đầu mối học thuật: lộ trình khóa học, biên soạn tài liệu, quản lý dự án FE/BE/AI & Data, khuyến khích thi ICPC-OLP, NCKH.',
+    },
+    {
+      name: 'Ban Sự Kiện (7 TV)',
+      summary: 'Ý tưởng, kịch bản, timeline, âm thanh/ánh sáng và điều phối Mentor-Mentee, TechXplore, TechWare, Kiện toàn.',
+    },
+    {
+      name: 'Ban Truyền Thông (9 TV)',
+      summary: 'Nghiên cứu insight, sáng tạo nội dung, thiết kế ấn phẩm, chụp ảnh/quay phim recap và vận hành kênh truyền thông.',
+    },
+    {
+      name: 'Ban Nhân Sự (3 TV)',
+      summary: 'Gây quỹ, proposal/đối ngoại nhà tài trợ, quản lý hồ sơ thành viên, tài chính thu chi minh bạch và hậu cần.',
     },
   ],
 };
@@ -157,6 +230,7 @@ export const EXECUTIVE_MEMBERS_SEED: ExecutiveMember[] = [
     role: 'Trưởng Ban Nhân Sự (Co-Founder)',
     term: 'Nhiệm kỳ 2026 - 2027',
     department: 'Ban Nhân Sự',
+    avatar: '/assets/images/founders/Nguyen_Anh_Tu.jpg',
     isFounder: true,
     bio: 'Co-Founder CLB; phụ trách gây quỹ, đối ngoại nhà tài trợ, nhân sự và hậu cần minh bạch.',
   },
@@ -192,6 +266,7 @@ export const EXECUTIVE_MEMBERS_SEED: ExecutiveMember[] = [
     role: 'Phó Chủ nhiệm CLB (Co-Founder)',
     term: 'Nhiệm kỳ 2025 - 2026',
     department: 'Ban Chủ Nhiệm',
+    avatar: '/assets/images/founders/Nguyen_Van_Quang.jpg',
     isFounder: true,
     bio: 'Co-Founder & Cựu Chủ nhiệm sáng lập, tiếp tục cố vấn điều hành trong nhiệm kỳ 2025 - 2026.',
   },
@@ -217,6 +292,7 @@ export const EXECUTIVE_MEMBERS_SEED: ExecutiveMember[] = [
     role: 'Trưởng Ban Sự Kiện (Co-Founder)',
     term: 'Nhiệm kỳ 2025 - 2026',
     department: 'Ban Sự Kiện',
+    avatar: '/assets/images/founders/Nguyen_Anh_Tu.jpg',
     isFounder: true,
     bio: 'Tổ chức chuỗi sự kiện TechXplore, Mentor - Mentee, Tech Threads và TechWare.',
   },
@@ -226,6 +302,7 @@ export const EXECUTIVE_MEMBERS_SEED: ExecutiveMember[] = [
     role: 'Trưởng Ban Nhân Sự (Co-Founder)',
     term: 'Nhiệm kỳ 2025 - 2026',
     department: 'Ban Nhân Sự',
+    avatar: '/assets/images/founders/Nguyen_Thi_Kim_Phuong.jpg',
     isFounder: true,
     bio: 'Quản lý hồ sơ thành viên, tài chính quỹ và kết nối đối tác tài trợ.',
   },
@@ -245,6 +322,7 @@ export const EXECUTIVE_MEMBERS_SEED: ExecutiveMember[] = [
     role: 'Chủ nhiệm CLB (Co-Founder)',
     term: 'Nhiệm kỳ 2024 - 2025',
     department: 'Ban Chủ Nhiệm',
+    avatar: '/assets/images/founders/Nguyen_Van_Quang.jpg',
     isFounder: true,
     bio: 'Co-Founder, Chủ nhiệm đầu tiên đặt nền móng xây dựng CLB TechTonic tại DUE.',
   },
@@ -254,6 +332,7 @@ export const EXECUTIVE_MEMBERS_SEED: ExecutiveMember[] = [
     role: 'Phó Chủ nhiệm & Trưởng Ban Chuyên Môn (Co-Founder)',
     term: 'Nhiệm kỳ 2024 - 2025',
     department: 'Ban Chuyên Môn',
+    avatar: '/assets/images/founders/Dinh_Sy_Quoc_Doanh.jpg',
     isFounder: true,
     bio: 'Co-Founder, Mentor chuyên môn BE mùa đầu tiên; đạt Giải Khuyến Khích Olympic Tin học SV VN lần thứ 34.',
   },
@@ -263,6 +342,7 @@ export const EXECUTIVE_MEMBERS_SEED: ExecutiveMember[] = [
     role: 'Phó Ban Chuyên Môn (Co-Founder)',
     term: 'Nhiệm kỳ 2024 - 2025',
     department: 'Ban Chuyên Môn',
+    avatar: '/assets/images/founders/Nguyen_Dinh_Khoa.jpg',
     isFounder: true,
     bio: 'Co-Founder, đồng xây dựng chương trình đào tạo CSLT, CSDL và dự án học thuật.',
   },
@@ -272,6 +352,7 @@ export const EXECUTIVE_MEMBERS_SEED: ExecutiveMember[] = [
     role: 'Phó Chủ nhiệm & Trưởng Ban Sự Kiện (Co-Founder)',
     term: 'Nhiệm kỳ 2024 - 2025',
     department: 'Ban Sự Kiện',
+    avatar: '/assets/images/founders/Nguyen_Anh_Tu.jpg',
     isFounder: true,
     bio: 'Co-Founder, dẫn dắt Ban Sự Kiện tổ chức Mentor - Mentee và TechWare mùa đầu tiên.',
   },
@@ -281,6 +362,7 @@ export const EXECUTIVE_MEMBERS_SEED: ExecutiveMember[] = [
     role: 'Phó Chủ nhiệm & Trưởng Ban Nhân Sự (Co-Founder)',
     term: 'Nhiệm kỳ 2024 - 2025',
     department: 'Ban Nhân Sự',
+    avatar: '/assets/images/founders/Nguyen_Thi_Kim_Phuong.jpg',
     isFounder: true,
     bio: 'Co-Founder, xây dựng quy trình nhân sự, hậu cần và gây quỹ cho CLB.',
   },
@@ -290,6 +372,7 @@ export const EXECUTIVE_MEMBERS_SEED: ExecutiveMember[] = [
     role: 'Phó Ban Nhân Sự (Co-Founder)',
     term: 'Nhiệm kỳ 2024 - 2025',
     department: 'Ban Nhân Sự',
+    avatar: '/assets/images/founders/Le_Minh_Thu.jpg',
     isFounder: true,
     bio: 'Co-Founder, phụ trách quản lý thành viên và kết nối đối ngoại.',
   },
@@ -299,6 +382,7 @@ export const EXECUTIVE_MEMBERS_SEED: ExecutiveMember[] = [
     role: 'Phó Chủ nhiệm & Trưởng Ban Truyền Thông (Co-Founder)',
     term: 'Nhiệm kỳ 2024 - 2025',
     department: 'Ban Truyền Thông',
+    avatar: '/assets/images/founders/Pham_Bao_Han.jpg',
     isFounder: true,
     bio: 'Co-Founder, xây dựng bộ nhận diện và các kênh truyền thông chính thức của CLB.',
   },
@@ -308,6 +392,7 @@ export const EXECUTIVE_MEMBERS_SEED: ExecutiveMember[] = [
     role: 'Phó Ban Truyền Thông (Co-Founder)',
     term: 'Nhiệm kỳ 2024 - 2025',
     department: 'Ban Truyền Thông',
+    avatar: '/assets/images/founders/Nguyen_Thi_Anh_Tuyet.jpg',
     isFounder: true,
     bio: 'Co-Founder, đồng kiến tạo nội dung và hình ảnh truyền thông trong giai đoạn ra mắt.',
   },
@@ -319,6 +404,7 @@ export const EXHIBIT_ITEMS_SEED: ExhibitItem[] = [
     title: 'Olympic Tin Học Sinh Viên Việt Nam Lần Thứ 34',
     category: 'trophy',
     year: '2025',
+    image: '/assets/images/activity/olp_icpc.webp',
     highlight: 'Khối Chuyên Tin • Giải Khuyến Khích',
     description:
       'Dấu ấn thi đấu học thuật tiêu biểu được ghi nhận tại Olympic Tin học Sinh viên Việt Nam lần thứ 34 — Khối Chuyên Tin (Đinh Sỹ Quốc Doanh, lớp 48K14.2, Co-Founder & Mentor Back-end).',
@@ -333,13 +419,14 @@ export const EXHIBIT_ITEMS_SEED: ExhibitItem[] = [
     title: 'Chứng Nhận Ra Mắt Chính Thức CLB TechTonic',
     category: 'certificate',
     year: '09/04/2025',
+    image: '/assets/images/activity/mentor_mentee.webp',
     highlight: 'Hội Sinh Viên ĐH Kinh Tế - ĐH Đà Nẵng',
     description:
       'Câu lạc bộ TechTonic chính thức ra mắt trực thuộc Hội Sinh viên Trường Đại học Kinh tế - Đại học Đà Nẵng với tôn chỉ "Dream it - Code it", hướng tới môi trường học thuật công nghệ chuyên sâu và chân thành.',
     bullets: [
       'Đơn vị chủ quản: Hội Sinh viên Trường Đại học Kinh tế - Đại học Đà Nẵng',
       '8 Nhà sáng lập (Co-Founders) khởi xướng từ 01/07/2024',
-      'Cơ cấu gồm 3 Quản lý BCN, 4 Ban chức năng (27 thành viên), Cố vấn học thuật & 45+ Thành viên tự do',
+      'Cơ cấu gồm 3 Quản lý BCN, 4 Ban chức năng (27 TV), Cố vấn học thuật & 45+ Thành viên tự do',
     ],
   },
   {
@@ -347,6 +434,7 @@ export const EXHIBIT_ITEMS_SEED: ExhibitItem[] = [
     title: 'Hệ Sinh Thái Chuyên Môn FE • BE • AI & Data',
     category: 'trophy',
     year: '05/2025',
+    image: '/assets/images/activity/cshd.webp',
     highlight: '20+ Dự Án & Thi Đấu ICPC-OLP / NCKH',
     description:
       'Các nhóm chuyên môn Front-end, Back-end, AI & Data cùng Product Team duy trì sinh hoạt học thuật hằng tuần, rèn luyện kỹ năng lập trình qua dự án thực tế và tham gia ICPC-OLP, NCKH, Hackathon.',
@@ -361,6 +449,7 @@ export const EXHIBIT_ITEMS_SEED: ExhibitItem[] = [
     title: 'Dấu Ấn Phát Triển & Hợp Tác Doanh Nghiệp',
     category: 'trophy',
     year: '2024 - 2026',
+    image: '/assets/images/activity/techware.webp',
     highlight: '10+ Giải Thưởng • 100+ Thành Viên',
     description:
       'Sau hơn 2 năm hoạt động, TechTonic Club quy tụ hơn 100 thành viên, thực hiện hơn 20 dự án, gặt hái trên 10 giải thưởng và đồng hành cùng các đối tác công nghệ như VTC Academy và MGM Technology.',
@@ -379,7 +468,7 @@ export const TIMELINE_MILESTONES_SEED: TimelineMilestone[] = [
     year: '01/07/2024',
     title: 'Hình Thành Ý Tưởng',
     description:
-      'Ý tưởng về môi trường học thuật công nghệ tại DUE được hình thành và biến thành hành động thực tế.',
+      'Ý tưởng về môi trường học thuật công nghệ tại DUE được hình thành và chuyển thành hành động thực tế.',
     highlights: ['8 Co-Founders khởi xướng'],
   },
   {
@@ -387,8 +476,8 @@ export const TIMELINE_MILESTONES_SEED: TimelineMilestone[] = [
     year: '09/2024',
     title: 'Mentor - Mentee Mùa 1',
     description:
-      'Tổ chức chương trình Mentor - Mentee (From Us To You) mùa đầu tiên cho tân sinh viên.',
-    highlights: ['Định hướng sinh viên năm 1-2'],
+      'Tổ chức chương trình Mentor - Mentee (From Us To You) mùa đầu tiên định hướng tân sinh viên.',
+    highlights: ['Sinh viên năm 1-2 DUE'],
   },
   {
     id: 'tl-3',
@@ -423,8 +512,10 @@ export const ACTIVITY_HIGHLIGHTS_SEED: ActivityHighlight[] = [
     tag: 'SỰ KIỆN MỞ ĐẦU',
     year: 'Định kỳ mỗi nhiệm kỳ',
     color: '#38bdf8',
+    goal: 'Định hướng phát triển cá nhân cho sinh viên năm 1–2 DUE & giới thiệu TechTonic trước đợt tuyển.',
+    audience: 'Tân sinh viên & SV năm 1–2 DUE (ưu tiên ngành có yếu tố CNTT)',
     summary:
-      'Định hướng phát triển cá nhân cho sinh viên năm 1–2 DUE có đam mê CNTT và giới thiệu TechTonic trước đợt tuyển.',
+      'Chuỗi chương trình gần gũi giữa thành viên CLB và sinh viên ngoài CLB, tập trung giá trị định hướng thực chất.',
   },
   {
     id: 'act-2',
@@ -432,44 +523,54 @@ export const ACTIVITY_HIGHLIGHTS_SEED: ActivityHighlight[] = [
     tag: 'TUYỂN THÀNH VIÊN',
     year: 'Thường niên',
     color: '#00F0FF',
+    goal: 'Xây dựng đội ngũ Thành viên tự do và Thành viên Ban Chủ Nhiệm cho mỗi nhiệm kỳ.',
+    audience: 'SV năm 1–2 DUE (không yêu cầu biết code trước • không thu phí)',
     summary:
-      'Tuyển Thành viên tự do (Vòng đơn, Phỏng vấn) và BCN (thêm Training & Thực tập), không thu phí thành viên.',
+      'Thành viên tự do: Vòng đơn → Phỏng vấn. Thành viên BCN: Vòng đơn → Phỏng vấn → Training → Thực tập.',
   },
   {
     id: 'act-3',
     title: 'Tech Threads & Tình Nguyện Đông - Xuân',
-    tag: 'KẾT NỐI NỘI BỘ',
+    tag: 'KẾT NỐI NỘI BỘ 1 & 2',
     year: 'Hằng năm',
     color: '#60a5fa',
+    goal: 'Chào đón tân thành viên (Tech Threads) & gắn kết chiều sâu qua thiện nguyện (Đông - Xuân).',
+    audience: 'Thành viên TechTonic & sinh viên ĐH Kinh tế - ĐH Đà Nẵng',
     summary:
-      'Chào đón tân thành viên qua Tech Threads và lan tỏa giá trị cộng đồng sâu sắc với Tình nguyện Đông - Xuân.',
+      'Lan tỏa tinh thần "Lá lành đùm lá rách" qua gây quỹ và đóng quân thiện nguyện tại địa phương.',
   },
   {
     id: 'act-4',
     title: 'Team Bonding - TechWare',
-    tag: 'ĐỘI NHÓM & THỬ THÁCH',
+    tag: 'KẾT NỐI NỘI BỘ 3',
     year: 'Trước mỗi nhiệm kỳ',
     color: '#fbbf24',
+    goal: 'Thử thách phối hợp thực chiến giữa các vai trò Dev, BA, Tester, UX và IT Support.',
+    audience: 'Thành viên CLB & Cựu thành viên trước một nhiệm kỳ',
     summary:
-      'Thử thách phối hợp vai trò Dev, BA, Tester, UX, IT Support giúp gắn kết thành viên và cựu thành viên CLB.',
+      'Hoạt động Team Bonding kéo dài có tính ganh đua trực tiếp, rèn tinh thần đồng đội bền chặt.',
   },
   {
     id: 'act-5',
-    title: 'Người Trong Ngành MIS & Chia Sẻ CSLT/CSDL',
+    title: 'Người Trong Ngành MIS & CSLT/CSDL',
     tag: 'HỌC THUẬT CHUYÊN SÂU',
     year: 'Hằng tuần',
     color: '#34d399',
+    goal: 'Củng cố nền tảng CSLT, CSDL và kết nối góc nhìn nghề nghiệp thực tế cùng anh chị đi trước.',
+    audience: 'Sinh viên DUE yêu thích Python, Web, AI, Chatbot, Data & Testing',
     summary:
-      'Talkshow giao lưu nghề nghiệp AI, Chatbot, Data, Testing cùng lớp học nội bộ Python, BA, CSDL và Web.',
+      'Lớp chia sẻ nội bộ hằng tuần kết hợp talkshow định hướng chuyên sâu ngành MIS & CNTT.',
   },
   {
     id: 'act-6',
     title: 'Happy Hour & Kiện Toàn CLB',
     tag: 'VĂN HÓA & TỔNG KẾT',
-    year: 'Hằng tháng / Cuối nhiệm kỳ',
+    year: 'Hằng tháng / Cuối kỳ',
     color: '#a78bfa',
+    goal: 'Thư giãn gắn kết hằng tháng (Happy Hour) và tổng kết chuyển giao Ban Chủ Nhiệm mới.',
+    audience: 'Thành viên CLB, Ban Chủ Nhiệm & Đại diện Hội Sinh viên',
     summary:
-      'Không gian giao lưu Happy Hour hằng tháng và lễ Kiện toàn tổng kết, chuyển giao Ban Chủ Nhiệm nhiệm kỳ mới.',
+      'Cùng nhìn lại hành trình nhiệm kỳ đã qua, chia sẻ câu chuyện và chọn ra BCN nhiệm kỳ kế tiếp.',
   },
 ];
 
@@ -553,7 +654,7 @@ export const TELEPORT_ZONES: TeleportZone[] = [
     id: 'partners-wall',
     label: 'Đối Tác & Kết Nối',
     shortLabel: 'Đối tác',
-    description: 'Đối tác VTC Academy, MGM Technology, địa chỉ và kênh kết nối chính thức.',
+    description: 'Đối tác VTC Academy, MGM Technology, lộ trình TechXplore & kênh liên hệ.',
     position: [-6.5, 1.4, 1.0],
     lookAt: [-9.6, 2.9, 8.05],
   },

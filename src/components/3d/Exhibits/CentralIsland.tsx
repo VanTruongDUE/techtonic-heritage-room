@@ -440,7 +440,14 @@ export const CentralIsland: React.FC = () => {
               onPointerOver={(e) => {
                 e.stopPropagation();
                 setHoveredIdx(idx);
-                setHoveringInteractive(true, `Xem: ${ex.item.title}`, handleOpen);
+                setHoveringInteractive(true, `Xem: ${ex.item.title}`, handleOpen, {
+                  title: ex.item.title,
+                  badge: `${ex.item.year}${ex.item.highlight ? ` • ${ex.item.highlight}` : ''}`,
+                  summary: ex.item.description,
+                  bullets: ex.item.bullets,
+                  metrics: ex.item.metrics,
+                  actionLabel: 'Mở chi tiết hiện vật vinh danh',
+                });
               }}
               onPointerOut={() => {
                 setHoveredIdx((prev) => (prev === idx ? null : prev));

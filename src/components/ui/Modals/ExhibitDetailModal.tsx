@@ -121,6 +121,16 @@ export const ExhibitDetailModal: React.FC = () => {
 
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#0a0d14]/85">
+          {item.image && (
+            <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0e1422]">
+              <img
+                src={item.image}
+                alt={item.title}
+                className="w-full h-44 object-cover"
+              />
+            </div>
+          )}
+
           {item.highlight && (
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-tech-cyan/15 border border-tech-cyan/35 text-tech-cyan">
               {item.highlight}

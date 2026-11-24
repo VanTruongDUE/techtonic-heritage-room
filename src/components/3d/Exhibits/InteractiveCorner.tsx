@@ -7,7 +7,7 @@ import { useHeritageStore } from '../../../store/useHeritageStore';
 import { createMarbleTexture, createOpenBookPageTexture } from '../utils/proceduralMaterials';
 
 export const InteractiveCorner: React.FC = () => {
-  const { setHoveringInteractive, openModal } = useHeritageStore();
+  const { setHoveringInteractive, openModal, guestbookEntries } = useHeritageStore();
   const bookGroupRef = useRef<THREE.Group>(null);
   const penGroupRef = useRef<THREE.Group>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -194,7 +194,19 @@ export const InteractiveCorner: React.FC = () => {
           setHoveringInteractive(
             true,
             isScreenPaused ? 'Tiếp tục trình chiếu LED' : 'Tạm dừng màn hình LED',
-            toggleScreen
+            toggleScreen,
+            {
+              title: 'Màn Hình Trình Chiếu TechTonic',
+              badge: isScreenPaused ? 'ĐANG TẠM DỪNG' : 'ĐANG PHÁT TRỰC TIẾP',
+              summary:
+                'Trình chiếu tổng quan TechTonic Club: Tôn chỉ Dream it - Code it, các mảng chuyên môn FE/BE/AI & Data và chuỗi hoạt động nhiệm kỳ.',
+              bullets: [
+                'Slide 01: 10+ Giải thưởng • 100+ Thành viên • 20+ Dự án',
+                'Slide 02: Chuyên môn hằng tuần FE, BE, AI & Data, Product Team',
+                'Slide 03: TechXplore • TechWare • Tình nguyện Đông - Xuân',
+              ],
+              actionLabel: isScreenPaused ? 'Tiếp tục trình chiếu' : 'Tạm dừng màn hình',
+            }
           );
         }}
         onPointerOut={() => setHoveringInteractive(false)}
@@ -247,7 +259,22 @@ export const InteractiveCorner: React.FC = () => {
         onPointerOver={(e) => {
           e.stopPropagation();
           setIsBookHovered(true);
-          setHoveringInteractive(true, 'Ghi Lời chúc Sổ lưu bút', openGuestbook);
+          const latest = guestbookEntries[0];
+          setHoveringInteractive(true, 'Ghi Lời chúc Sổ lưu bút', openGuestbook, {
+            title: 'Sổ Lưu Bút Danh Dự TechTonic',
+            badge: `${guestbookEntries.length} LỜI CHÚC ĐÃ LƯU`,
+            summary:
+              'Ghi lại dấu ấn và lời chúc gửi tới các thế hệ thành viên CLB TechTonic — dữ liệu được đồng bộ qua máy chủ API.',
+            bullets: latest
+              ? [
+                  `Mới nhất (${latest.author}): "${latest.message.slice(0, 90)}${
+                    latest.message.length > 90 ? '…' : ''
+                  }"`,
+                  `Đơn vị: ${latest.roleOrAffiliation}`,
+                ]
+              : ['Hãy là người đầu tiên viết lời chúc vào sổ lưu bút!'],
+            actionLabel: 'Mở Sổ Lưu Bút để viết lời chúc',
+          });
         }}
         onPointerOut={() => {
           setIsBookHovered(false);

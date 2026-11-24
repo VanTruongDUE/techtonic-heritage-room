@@ -4,7 +4,46 @@ import * as THREE from 'three';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { CLUB_PROFILE } from '../../../data/heritageSeed';
 import { ClubShirtExhibit } from './ClubShirtExhibit';
-import type { ExhibitItem } from '../../../types/heritage';
+import type { ExhibitItem, HoverPreview } from '../../../types/heritage';
+
+function drawWrappedText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  startY: number,
+  maxWidth: number,
+  lineHeight: number,
+  maxLines = 4
+): number {
+  const words = text.split(' ');
+  let line = '';
+  let y = startY;
+  let lineCount = 0;
+
+  for (let i = 0; i < words.length; i += 1) {
+    const word = words[i];
+    const test = line ? `${line} ${word}` : word;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      if (lineCount + 1 >= maxLines) {
+        const truncated = `${line.replace(/[.,;:\s]+$/, '')}…`;
+        ctx.fillText(truncated, x, y);
+        return y + lineHeight;
+      }
+      ctx.fillText(line, x, y);
+      line = word;
+      y += lineHeight;
+      lineCount += 1;
+    } else {
+      line = test;
+    }
+  }
+
+  if (line && lineCount < maxLines) {
+    ctx.fillText(line, x, y);
+    return y + lineHeight;
+  }
+  return y;
+}
 
 export const PerimeterGallery: React.FC = () => {
   const {
@@ -68,11 +107,10 @@ export const PerimeterGallery: React.FC = () => {
         ctx.arc(x, 512, 24, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Card container (width 360px, centered around x, cleanly separated from neighbors)
         const cardW = 360;
-        const cardH = 220;
+        const cardH = 228;
         const cardX = Math.max(54, Math.min(2048 - 54 - cardW, x - cardW / 2));
-        const cardY = isAbove ? 170 : 624;
+        const cardY = isAbove ? 166 : 624;
 
         ctx.fillStyle = '#121b2e';
         ctx.fillRect(cardX, cardY, cardW, cardH);
@@ -81,32 +119,16 @@ export const PerimeterGallery: React.FC = () => {
         ctx.strokeRect(cardX, cardY, cardW, cardH);
 
         ctx.fillStyle = '#38bdf8';
-        ctx.font = '800 30px "JetBrains Mono", monospace';
-        ctx.fillText(m.year, cardX + 22, cardY + 46);
+        ctx.font = '800 28px "JetBrains Mono", monospace';
+        ctx.fillText(m.year, cardX + 22, cardY + 44);
 
         ctx.fillStyle = '#f8fafc';
-        ctx.font = 'bold 26px Inter, sans-serif';
-        ctx.fillText(m.title, cardX + 22, cardY + 86);
+        ctx.font = 'bold 25px Inter, sans-serif';
+        ctx.fillText(m.title, cardX + 22, cardY + 84);
 
         ctx.fillStyle = '#cbd5e1';
-        ctx.font = '400 20px Inter, sans-serif';
-        const words = m.description.split(' ');
-        let line = '';
-        let ly = cardY + 124;
-        for (const w of words) {
-          const test = line ? `${line} ${w}` : w;
-          if (ctx.measureText(test).width > cardW - 44) {
-            ctx.fillText(line, cardX + 22, ly);
-            line = w;
-            ly += 28;
-            if (ly > cardY + cardH - 18) break;
-          } else {
-            line = test;
-          }
-        }
-        if (line && ly <= cardY + cardH - 14) {
-          ctx.fillText(line, cardX + 22, ly);
-        }
+        ctx.font = '400 19px Inter, sans-serif';
+        drawWrappedText(ctx, m.description, cardX + 22, cardY + 120, cardW - 44, 27, 4);
       });
 
       ctx.fillStyle = '#7dd3fc';
@@ -118,7 +140,7 @@ export const PerimeterGallery: React.FC = () => {
     return texture;
   }, [timelineMilestones]);
 
-  // Left Wall Bay 2: 6 Fixed Term Events (clean 3x2 grid)
+  // Left Wall Bay 2: 6 Fixed Term Events (clean 3x2 grid with Goal & Audience)
   const activityTexture = useMemo(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 1680;
@@ -133,16 +155,16 @@ export const PerimeterGallery: React.FC = () => {
       ctx.strokeRect(24, 24, 1632, 976);
 
       ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 42px Inter, sans-serif';
-      ctx.fillText('CHUỖI HOẠT ĐỘNG TRỌNG TÂM MỖI NHIỆM KỲ', 60, 94);
+      ctx.font = 'bold 40px Inter, sans-serif';
+      ctx.fillText('CHUỖI HOẠT ĐỘNG TRỌNG TÂM MỖI NHIỆM KỲ', 60, 92);
 
       activityHighlights.slice(0, 6).forEach((c, idx) => {
         const col = idx % 3;
         const row = Math.floor(idx / 3);
         const x = 60 + col * 530;
-        const y = 140 + row * 395;
+        const y = 136 + row * 398;
         const cardW = 496;
-        const cardH = 355;
+        const cardH = 362;
 
         ctx.fillStyle = '#131d32';
         ctx.fillRect(x, y, cardW, cardH);
@@ -152,58 +174,48 @@ export const PerimeterGallery: React.FC = () => {
         ctx.strokeRect(x, y, cardW, cardH);
 
         ctx.fillStyle = c.color;
-        ctx.font = '600 18px "JetBrains Mono", monospace';
-        ctx.fillText(`[ ${c.tag} ]`, x + 26, y + 48);
+        ctx.font = '600 17px "JetBrains Mono", monospace';
+        ctx.fillText(`[ ${c.tag} • ${c.year} ]`, x + 24, y + 42);
 
         ctx.fillStyle = '#f8fafc';
-        ctx.font = 'bold 28px Inter, sans-serif';
-        const titleWords = c.title.split(' ');
-        let tLine = '';
-        let tY = y + 96;
-        for (const w of titleWords) {
-          const test = tLine ? `${tLine} ${w}` : w;
-          if (ctx.measureText(test).width > cardW - 52) {
-            ctx.fillText(tLine, x + 26, tY);
-            tLine = w;
-            tY += 36;
-          } else {
-            tLine = test;
-          }
-        }
-        ctx.fillText(tLine, x + 26, tY);
+        ctx.font = 'bold 26px Inter, sans-serif';
+        const nextY = drawWrappedText(ctx, c.title, x + 24, y + 84, cardW - 48, 33, 2);
 
         ctx.fillStyle = '#cbd5e1';
-        ctx.font = '400 21px Inter, sans-serif';
-        const words = c.summary.split(' ');
-        let line = '';
-        let lineY = tY + 46;
-        for (const word of words) {
-          const test = line ? `${line} ${word}` : word;
-          if (ctx.measureText(test).width > cardW - 52) {
-            ctx.fillText(line, x + 26, lineY);
-            line = word;
-            lineY += 30;
-          } else {
-            line = test;
-          }
-        }
-        ctx.fillText(line, x + 26, lineY);
+        ctx.font = '400 19px Inter, sans-serif';
+        const afterSummaryY = drawWrappedText(ctx, c.summary, x + 24, nextY + 8, cardW - 48, 26, 3);
 
-        ctx.fillStyle = '#7dd3fc';
-        ctx.font = '500 18px "JetBrains Mono", monospace';
-        ctx.fillText(c.year, x + 26, y + cardH - 28);
+        // Divider + Goal/Audience block anchored inside card footer
+        const footerY = Math.max(afterSummaryY + 6, y + cardH - 96);
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x + 24, footerY);
+        ctx.lineTo(x + cardW - 24, footerY);
+        ctx.stroke();
+
+        if (c.goal) {
+          ctx.fillStyle = '#7dd3fc';
+          ctx.font = '500 16px Inter, sans-serif';
+          drawWrappedText(ctx, `Mục tiêu: ${c.goal}`, x + 24, footerY + 26, cardW - 48, 22, 2);
+        }
+        if (c.audience) {
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '500 15px "JetBrains Mono", monospace';
+          ctx.fillText(`Đối tượng: ${c.audience}`, x + 24, y + cardH - 18);
+        }
       });
 
       ctx.fillStyle = '#7dd3fc';
       ctx.font = '500 20px "JetBrains Mono", monospace';
-      ctx.fillText('• Nhấp hoặc nhấn [E] để xem chi tiết chuỗi sự kiện & tuyển thành viên', 60, 962);
+      ctx.fillText('• Nhấp hoặc nhấn [E] để xem chi tiết chuỗi sự kiện & tuyển thành viên', 60, 964);
     }
     const texture = new THREE.CanvasTexture(canvas);
     texture.anisotropy = 16;
     return texture;
   }, [activityHighlights]);
 
-  // Right Wall Bay 1: Org Structure & Executive Board
+  // Right Wall Bay 1: 3-Term BCN Leadership & 4 Functional Departments
   const shirtPlaqueTexture = useMemo(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 1440;
@@ -218,59 +230,63 @@ export const PerimeterGallery: React.FC = () => {
       ctx.strokeRect(20, 20, 1400, 720);
 
       ctx.fillStyle = '#38bdf8';
-      ctx.font = '600 24px "JetBrains Mono", monospace';
-      ctx.fillText('CƠ CẤU TỔ CHỨC & BAN CHỦ NHIỆM (2024 - 2027)', 68, 92);
+      ctx.font = '600 22px "JetBrains Mono", monospace';
+      ctx.fillText('CƠ CẤU TỔ CHỨC & BAN CHỦ NHIỆM (2024 - 2027)', 68, 76);
 
       ctx.fillStyle = '#f8fafc';
-      ctx.font = 'bold 46px Inter, sans-serif';
-      ctx.fillText('ÁO CÂU LẠC BỘ & 4 BAN CHỨC NĂNG', 68, 156);
+      ctx.font = 'bold 42px Inter, sans-serif';
+      ctx.fillText('ÁO CÂU LẠC BỘ & 4 BAN CHỨC NĂNG', 68, 134);
 
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '400 24px Inter, sans-serif';
+      // 3-Term BCN Leadership strip
+      ctx.fillStyle = '#101a2d';
+      ctx.fillRect(68, 158, 1300, 74);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(68, 158, 1300, 74);
+
+      ctx.fillStyle = '#7dd3fc';
+      ctx.font = '600 18px "JetBrains Mono", monospace';
+      ctx.fillText('CHỦ NHIỆM QUA CÁC NHIỆM KỲ:', 92, 188);
+
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '500 20px Inter, sans-serif';
       ctx.fillText(
-        '8 Co-Founders • 3 Quản lý BCN + 27 Thành viên các ban • Cố vấn học thuật • 45+ Thành viên tự do',
-        68,
+        'NK 2024–2025: Nguyễn Văn Quang  •  NK 2025–2026: Phan Nhật Minh Anh  •  NK 2026–2027: Đặng Nguyên Quốc Bảo',
+        92,
         218
       );
 
-      const depts = [
-        { name: 'Ban Chuyên Môn (8 TV)', desc: 'Lập lộ trình học thuật, dự án FE / BE / AI & Data, ICPC-OLP.' },
-        { name: 'Ban Sự Kiện (7 TV)', desc: 'Ý tưởng, kịch bản, điều phối Mentor-Mentee, TechXplore, TechWare.' },
-        { name: 'Ban Truyền Thông (9 TV)', desc: 'Chiến dịch nội dung, thiết kế ấn phẩm, media & lan tỏa hình ảnh.' },
-        { name: 'Ban Nhân Sự (3 TV)', desc: 'Gây quỹ, đối ngoại tài trợ, hồ sơ thành viên, tài chính & hậu cần.' },
-      ];
-
-      depts.forEach((d, idx) => {
+      CLUB_PROFILE.departmentStructure.slice(0, 4).forEach((d, idx) => {
         const col = idx % 2;
         const row = Math.floor(idx / 2);
         const x = 68 + col * 665;
-        const y = 264 + row * 170;
+        const y = 258 + row * 196;
 
         ctx.fillStyle = '#131d32';
-        ctx.fillRect(x, y, 635, 144);
+        ctx.fillRect(x, y, 635, 174);
         ctx.strokeStyle = 'rgba(56, 189, 248, 0.28)';
         ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, 635, 144);
+        ctx.strokeRect(x, y, 635, 174);
 
         ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 26px Inter, sans-serif';
-        ctx.fillText(d.name, x + 24, y + 48);
+        ctx.font = 'bold 25px Inter, sans-serif';
+        ctx.fillText(d.name, x + 24, y + 46);
 
         ctx.fillStyle = '#cbd5e1';
-        ctx.font = '400 20px Inter, sans-serif';
-        ctx.fillText(d.desc, x + 24, y + 96);
+        ctx.font = '400 19px Inter, sans-serif';
+        drawWrappedText(ctx, d.summary, x + 24, y + 88, 587, 27, 3);
       });
 
       ctx.fillStyle = '#7dd3fc';
-      ctx.font = '600 24px "JetBrains Mono", monospace';
-      ctx.fillText('→ Nhấp vào Áo CLB hoặc bảng này / nhấn [E] để tra cứu 3 nhiệm kỳ BCN', 68, 678);
+      ctx.font = '600 22px "JetBrains Mono", monospace';
+      ctx.fillText('→ Nhấp vào Áo CLB hoặc bảng này / nhấn [E] để tra cứu 26 hồ sơ BCN & Co-Founders', 68, 696);
     }
     const texture = new THREE.CanvasTexture(canvas);
     texture.anisotropy = 16;
     return texture;
   }, []);
 
-  // Right Wall Bay 2: Weekly Academic Tracks
+  // Right Wall Bay 2: All 5 Weekly Academic Tracks (3 top + 2 bottom balanced cards)
   const academicTexture = useMemo(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 1440;
@@ -285,20 +301,20 @@ export const PerimeterGallery: React.FC = () => {
       ctx.strokeRect(20, 20, 1400, 760);
 
       ctx.fillStyle = '#38bdf8';
-      ctx.font = '600 24px "JetBrains Mono", monospace';
-      ctx.fillText('SINH HOẠT HỌC THUẬT HẰNG TUẦN', 68, 92);
+      ctx.font = '600 22px "JetBrains Mono", monospace';
+      ctx.fillText('SINH HOẠT HỌC THUẬT HẰNG TUẦN • 5 ĐỘI CHUYÊN MÔN', 68, 84);
 
       ctx.fillStyle = '#f8fafc';
-      ctx.font = 'bold 44px Inter, sans-serif';
-      ctx.fillText('CHUYÊN MÔN & ĐỘI DỰ ÁN PRODUCT TEAM', 68, 154);
+      ctx.font = 'bold 42px Inter, sans-serif';
+      ctx.fillText('CHUYÊN MÔN & ĐỘI DỰ ÁN PRODUCT TEAM', 68, 142);
 
-      CLUB_PROFILE.weeklyTracks.forEach((track, idx) => {
-        const col = idx % 2;
-        const row = Math.floor(idx / 2);
-        const x = 68 + col * 665;
-        const y = 204 + row * 238;
-        const w = 635;
-        const h = 210;
+      const tracks = CLUB_PROFILE.weeklyTracks.slice(0, 5);
+      tracks.forEach((track, idx) => {
+        const isTopRow = idx < 3;
+        const w = isTopRow ? 418 : 635;
+        const h = 232;
+        const x = isTopRow ? 68 + idx * 441 : 68 + (idx - 3) * 665;
+        const y = isTopRow ? 182 : 440;
 
         ctx.fillStyle = '#131d32';
         ctx.fillRect(x, y, w, h);
@@ -307,41 +323,28 @@ export const PerimeterGallery: React.FC = () => {
         ctx.strokeRect(x, y, w, h);
 
         ctx.fillStyle = '#38bdf8';
-        ctx.font = '600 18px "JetBrains Mono", monospace';
-        ctx.fillText(`[ ${track.schedule.toUpperCase()} ]`, x + 24, y + 44);
+        ctx.font = '600 17px "JetBrains Mono", monospace';
+        ctx.fillText(`[ ${track.schedule.toUpperCase()} ]`, x + 22, y + 40);
 
         ctx.fillStyle = '#f8fafc';
-        ctx.font = 'bold 26px Inter, sans-serif';
-        ctx.fillText(track.title, x + 24, y + 88);
+        ctx.font = isTopRow ? 'bold 23px Inter, sans-serif' : 'bold 25px Inter, sans-serif';
+        const afterTitleY = drawWrappedText(ctx, track.title, x + 22, y + 78, w - 44, 30, 2);
 
         ctx.fillStyle = '#cbd5e1';
-        ctx.font = '400 20px Inter, sans-serif';
-        const words = track.desc.split(' ');
-        let line = '';
-        let ly = y + 130;
-        for (const word of words) {
-          const test = line ? `${line} ${word}` : word;
-          if (ctx.measureText(test).width > w - 48) {
-            ctx.fillText(line, x + 24, ly);
-            line = word;
-            ly += 28;
-          } else {
-            line = test;
-          }
-        }
-        ctx.fillText(line, x + 24, ly);
+        ctx.font = '400 18px Inter, sans-serif';
+        drawWrappedText(ctx, track.desc, x + 22, afterTitleY + 6, w - 44, 25, 4);
       });
 
       ctx.fillStyle = '#7dd3fc';
       ctx.font = '500 22px "JetBrains Mono", monospace';
-      ctx.fillText('• Nhấp / [E] để xem lộ trình chuyên môn FE, BE, AI & Data', 68, 728);
+      ctx.fillText('• Nhấp / [E] để xem chi tiết lộ trình FE, BE, AI & Data, CSLT & CSDL', 68, 732);
     }
     const tex = new THREE.CanvasTexture(canvas);
     tex.anisotropy = 16;
     return tex;
   }, []);
 
-  // Front-Left Wall: Partners & Contact Info
+  // Front-Left Wall: Partners, TechXplore Recruitment 3 Steps & Contact Info
   const partnersContactTexture = useMemo(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 1440;
@@ -356,64 +359,85 @@ export const PerimeterGallery: React.FC = () => {
       ctx.strokeRect(20, 20, 1400, 720);
 
       ctx.fillStyle = '#38bdf8';
-      ctx.font = '600 24px "JetBrains Mono", monospace';
-      ctx.fillText('ĐỐI TÁC ĐỒNG HÀNH & KẾT NỐI CHÍNH THỨC', 68, 92);
+      ctx.font = '600 22px "JetBrains Mono", monospace';
+      ctx.fillText('ĐỐI TÁC DOANH NGHIỆP • TUYỂN THÀNH VIÊN TECHXPLORE', 68, 78);
 
       ctx.fillStyle = '#f8fafc';
-      ctx.font = 'bold 44px Inter, sans-serif';
-      ctx.fillText('HỢP TÁC & THÔNG TIN LIÊN HỆ', 68, 154);
+      ctx.font = 'bold 42px Inter, sans-serif';
+      ctx.fillText('HỢP TÁC, TUYỂN DỤNG & LIÊN HỆ', 68, 136);
 
       // Partners boxes
-      CLUB_PROFILE.partners.forEach((partner, idx) => {
+      CLUB_PROFILE.partners.slice(0, 2).forEach((partner, idx) => {
         const x = 68 + idx * 665;
         ctx.fillStyle = '#131d32';
-        ctx.fillRect(x, 204, 635, 132);
+        ctx.fillRect(x, 168, 635, 118);
         ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
         ctx.lineWidth = 2;
-        ctx.strokeRect(x, 204, 635, 132);
+        ctx.strokeRect(x, 168, 635, 118);
 
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '500 20px "JetBrains Mono", monospace';
-        ctx.fillText('ĐỐI TÁC DOANH NGHIỆP', x + 26, 250);
+        ctx.font = '500 18px "JetBrains Mono", monospace';
+        ctx.fillText('ĐỐI TÁC ĐỒNG HÀNH CHÍNH THỨC', x + 26, 208);
 
         ctx.fillStyle = '#f8fafc';
-        ctx.font = 'bold 36px Inter, sans-serif';
-        ctx.fillText(partner, x + 26, 304);
+        ctx.font = 'bold 34px Inter, sans-serif';
+        ctx.fillText(partner.name, x + 26, 258);
       });
 
-      // Contact box
+      // Left lower card: Contact info
       ctx.fillStyle = '#111a2d';
-      ctx.fillRect(68, 372, 1300, 270);
+      ctx.fillRect(68, 312, 635, 344);
       ctx.strokeStyle = 'rgba(148, 163, 184, 0.28)';
       ctx.lineWidth = 2;
-      ctx.strokeRect(68, 372, 1300, 270);
+      ctx.strokeRect(68, 312, 635, 344);
 
       ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 26px Inter, sans-serif';
-      ctx.fillText('Văn phòng & Kênh Truyền Thông TechTonic Club', 98, 424);
+      ctx.font = 'bold 24px Inter, sans-serif';
+      ctx.fillText('Văn Phòng & Kênh Chính Thức', 94, 356);
 
       ctx.fillStyle = '#e2e8f0';
-      ctx.font = '400 23px Inter, sans-serif';
-      ctx.fillText(`• Địa chỉ: ${CLUB_PROFILE.contact.address}`, 98, 476);
-      ctx.fillText(
-        `• Email: ${CLUB_PROFILE.contact.email}   •   Hotline: ${CLUB_PROFILE.contact.hotline}`,
-        98,
-        522
+      ctx.font = '400 19px Inter, sans-serif';
+      let cy = drawWrappedText(ctx, `• Địa chỉ: ${CLUB_PROFILE.contact.address}`, 94, 400, 583, 27, 2);
+      cy = drawWrappedText(ctx, `• Email: ${CLUB_PROFILE.contact.email}`, 94, cy + 8, 583, 27, 1);
+      cy = drawWrappedText(ctx, `• Hotline: ${CLUB_PROFILE.contact.hotline}`, 94, cy + 8, 583, 27, 1);
+      cy = drawWrappedText(
+        ctx,
+        '• Website: techtonic-club.id.vn • Facebook • YouTube • Instagram • Threads',
+        94,
+        cy + 8,
+        583,
+        27,
+        2
       );
-      ctx.fillText(
-        '• Kênh chính thức: Website techtonic-club.id.vn • Facebook • YouTube • Instagram • Threads',
-        98,
-        568
-      );
-      ctx.fillText(
-        '• Tuyển thành viên TechXplore: Không thu phí thành viên • Dành cho SV năm 1–2 DUE',
-        98,
-        614
-      );
+
+      // Right lower card: Recruitment 3 Steps & FAQ
+      ctx.fillStyle = '#111a2d';
+      ctx.fillRect(733, 312, 635, 344);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.28)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(733, 312, 635, 344);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 24px Inter, sans-serif';
+      ctx.fillText('Quy Trình TechXplore & FAQ', 759, 356);
+
+      ctx.fillStyle = '#7dd3fc';
+      ctx.font = '600 18px Inter, sans-serif';
+      let ry = 398;
+      CLUB_PROFILE.recruitmentSummary.steps.forEach((step) => {
+        ry = drawWrappedText(ctx, `→ ${step}`, 759, ry, 583, 25, 2);
+      });
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '400 18px Inter, sans-serif';
+      ry += 6;
+      CLUB_PROFILE.recruitmentSummary.faqHighlights.forEach((faq) => {
+        ry = drawWrappedText(ctx, `• ${faq}`, 759, ry, 583, 25, 2);
+      });
 
       ctx.fillStyle = '#7dd3fc';
       ctx.font = '500 22px "JetBrains Mono", monospace';
-      ctx.fillText('• Nhấp hoặc nhấn [E] để mở liên kết các kênh chính thức', 68, 698);
+      ctx.fillText('• Nhấp hoặc nhấn [E] để mở liên kết chính thức & thông tin tuyển thành viên', 68, 706);
     }
     const tex = new THREE.CanvasTexture(canvas);
     tex.anisotropy = 16;
@@ -435,20 +459,20 @@ export const PerimeterGallery: React.FC = () => {
       ctx.strokeRect(20, 20, 1400, 720);
 
       ctx.fillStyle = '#38bdf8';
-      ctx.font = '600 24px "JetBrains Mono", monospace';
-      ctx.fillText('TIẾNG NÓI THÀNH VIÊN & MENTOR', 68, 92);
+      ctx.font = '600 22px "JetBrains Mono", monospace';
+      ctx.fillText('TIẾNG NÓI THÀNH VIÊN & MENTOR', 68, 80);
 
       ctx.fillStyle = '#f8fafc';
-      ctx.font = 'bold 44px Inter, sans-serif';
-      ctx.fillText('THÀNH VIÊN NÓI GÌ VỀ TECHTONIC', 68, 154);
+      ctx.font = 'bold 42px Inter, sans-serif';
+      ctx.fillText('THÀNH VIÊN NÓI GÌ VỀ TECHTONIC', 68, 138);
 
-      CLUB_PROFILE.testimonials.forEach((t, idx) => {
+      CLUB_PROFILE.testimonials.slice(0, 4).forEach((t, idx) => {
         const col = idx % 2;
         const row = Math.floor(idx / 2);
         const x = 68 + col * 665;
-        const y = 204 + row * 224;
+        const y = 178 + row * 242;
         const w = 635;
-        const h = 196;
+        const h = 218;
 
         ctx.fillStyle = '#131d32';
         ctx.fillRect(x, y, w, h);
@@ -457,30 +481,17 @@ export const PerimeterGallery: React.FC = () => {
         ctx.strokeRect(x, y, w, h);
 
         ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 28px Inter, sans-serif';
-        ctx.fillText(t.name, x + 26, y + 54);
+        ctx.font = 'bold 26px Inter, sans-serif';
+        ctx.fillText(t.name, x + 26, y + 48);
 
         ctx.fillStyle = '#cbd5e1';
-        ctx.font = '400 21px Inter, sans-serif';
-        const words = t.role.split(' ');
-        let line = '';
-        let ly = y + 102;
-        for (const word of words) {
-          const test = line ? `${line} ${word}` : word;
-          if (ctx.measureText(test).width > w - 52) {
-            ctx.fillText(line, x + 26, ly);
-            line = word;
-            ly += 30;
-          } else {
-            line = test;
-          }
-        }
-        ctx.fillText(line, x + 26, ly);
+        ctx.font = '400 20px Inter, sans-serif';
+        drawWrappedText(ctx, t.role, x + 26, y + 92, w - 52, 28, 4);
       });
 
       ctx.fillStyle = '#7dd3fc';
       ctx.font = '500 22px "JetBrains Mono", monospace';
-      ctx.fillText('• Nhấp / [E] để xem danh sách Ban Chủ Nhiệm & Mentor các nhiệm kỳ', 68, 698);
+      ctx.fillText('• Nhấp / [E] để xem danh sách Ban Chủ Nhiệm & Mentor các nhiệm kỳ', 68, 706);
     }
     const tex = new THREE.CanvasTexture(canvas);
     tex.anisotropy = 16;
@@ -528,7 +539,12 @@ export const PerimeterGallery: React.FC = () => {
       highlight: '6 Hoạt Động Cố Định • Không Thu Phí Thành Viên',
       description:
         'Các chương trình kết nối tân sinh viên, tuyển thành viên qua Vòng đơn → Phỏng vấn → Thực tập (đối với BCN) và chuỗi hoạt động gắn kết nội bộ.',
-      bullets: activityHighlights.map((a) => `${a.title} (${a.tag}): ${a.summary}`),
+      bullets: activityHighlights.map(
+        (a) =>
+          `${a.title} (${a.tag}): ${a.summary}${a.goal ? ` — Mục tiêu: ${a.goal}.` : ''}${
+            a.audience ? ` Đối tượng: ${a.audience}.` : ''
+          }`
+      ),
     }),
     [activityHighlights]
   );
@@ -539,7 +555,7 @@ export const PerimeterGallery: React.FC = () => {
       title: 'Sinh Hoạt Chuyên Môn Hằng Tuần & Product Team',
       category: 'activity',
       year: 'Hằng tuần & Tháng',
-      highlight: 'FE • BE • AI & Data • CSLT & CSDL',
+      highlight: '5 Đội Chuyên Môn: FE • BE • AI & Data • CSLT & CSDL • Product Team',
       description:
         'Hoạt động học thuật cốt lõi giúp thành viên thực hành dự án thực tế, rèn kỹ năng thuyết trình và chuẩn bị thi đấu ICPC-OLP, NCKH.',
       bullets: CLUB_PROFILE.weeklyTracks.map((w) => `${w.title} (${w.schedule}): ${w.desc}`),
@@ -550,15 +566,15 @@ export const PerimeterGallery: React.FC = () => {
   const partnersContactExhibit: ExhibitItem = useMemo(
     () => ({
       id: 'partners-contact',
-      title: 'Đối Tác Doanh Nghiệp & Kênh Kết Nối TechTonic Club',
+      title: 'Đối Tác Doanh Nghiệp, Tuyển Thành Viên & Kênh Kết Nối',
       category: 'history',
       year: 'Đà Nẵng • DUE',
-      highlight: 'VTC Academy • MGM Technology',
+      highlight: CLUB_PROFILE.partners.map((p) => p.name).join(' • '),
       description: `Địa chỉ: ${CLUB_PROFILE.contact.address}. Email: ${CLUB_PROFILE.contact.email}. Hotline: ${CLUB_PROFILE.contact.hotline}.`,
       bullets: [
-        'Đối tác đồng hành: VTC Academy, MGM Technology',
-        'Đối tượng tham gia: Sinh viên năm 1–2 DUE (không yêu cầu biết code trước)',
-        'Không thu phí thành viên — học tập và rèn luyện thực chiến',
+        `Đối tác đồng hành: ${CLUB_PROFILE.partners.map((p) => p.name).join(', ')}`,
+        ...CLUB_PROFILE.recruitmentSummary.steps.map((s) => `Quy trình TechXplore — ${s}`),
+        ...CLUB_PROFILE.recruitmentSummary.faqHighlights,
       ],
       links: [
         { label: 'Website chính thức', url: CLUB_PROFILE.contact.website },
@@ -567,6 +583,83 @@ export const PerimeterGallery: React.FC = () => {
         { label: 'Instagram @techtonic.club', url: CLUB_PROFILE.contact.instagram },
         { label: 'Threads @techtonic.club', url: CLUB_PROFILE.contact.threads },
       ],
+    }),
+    []
+  );
+
+  const timelinePreview: HoverPreview = useMemo(
+    () => ({
+      title: 'Hành Trình Phát Triển (2024 – 2025)',
+      badge: 'LỊCH SỬ CLB',
+      summary: '5 cột mốc chính thức từ ấp ủ ý tưởng tại DUE đến giải thưởng sinh viên và các nhiệm kỳ tiếp nối.',
+      bullets: timelineMilestones.slice(0, 3).map((m) => `${m.year}: ${m.title}`),
+      actionLabel: 'Xem full Timeline lịch sử',
+    }),
+    [timelineMilestones]
+  );
+
+  const activityPreview: HoverPreview = useMemo(
+    () => ({
+      title: 'Chuỗi 6 Hoạt Động Trọng Tâm',
+      badge: 'HOẠT ĐỘNG • TECHXPLORE',
+      summary: '6 chương trình cố định mỗi nhiệm kỳ từ TechXplore tuyển thành viên đến Mentor-Mentee và Du lịch nội bộ.',
+      bullets: activityHighlights.slice(0, 3).map((a) => `${a.title} (${a.tag})`),
+      actionLabel: 'Xem mục tiêu & đối tượng 6 sự kiện',
+    }),
+    [activityHighlights]
+  );
+
+  const shirtPreview: HoverPreview = useMemo(
+    () => ({
+      title: 'Áo Câu Lạc Bộ & Ban Chủ Nhiệm',
+      badge: 'ĐỒNG PHỤC • 3 NHIỆM KỲ',
+      summary: 'Biểu tượng đồng phục TechTonic gắn liền với 8 Co-Founders, Cố vấn và 26+ thành viên BCN qua 3 nhiệm kỳ.',
+      metrics: [
+        { label: 'Co-Founders', value: '8' },
+        { label: 'Ban chuyên trách', value: '4 ban' },
+      ],
+      bullets: [
+        'NK 2024–2025: CN Nguyễn Văn Quang',
+        'NK 2025–2026: CN Phan Nhật Minh Anh',
+        'NK 2026–2027: CN Đặng Nguyên Quốc Bảo',
+      ],
+      actionLabel: 'Mở danh sách 26+ hồ sơ BCN',
+    }),
+    []
+  );
+
+  const academicPreview: HoverPreview = useMemo(
+    () => ({
+      title: 'Sinh Hoạt Học Thuật Hằng Tuần',
+      badge: '5 ĐỘI CHUYÊN MÔN',
+      summary: 'Đào tạo thực chiến từ CSLT/CSDL đến Front-End, Back-End, AI & Data và đội Product Team phát triển sản phẩm.',
+      bullets: CLUB_PROFILE.weeklyTracks.slice(0, 4).map((t) => `${t.title} (${t.schedule})`),
+      actionLabel: 'Xem chi tiết 5 lộ trình học thuật',
+    }),
+    []
+  );
+
+  const partnersPreview: HoverPreview = useMemo(
+    () => ({
+      title: 'Đối Tác, Tuyển Dụng & Kênh Liên Hệ',
+      badge: 'VTC ACADEMY • MGM',
+      summary: 'Đồng hành cùng doanh nghiệp công nghệ tại Đà Nẵng; tuyển thành viên TechXplore không thu phí cho SV DUE.',
+      bullets: [
+        ...CLUB_PROFILE.recruitmentSummary.steps,
+        `Email: ${CLUB_PROFILE.contact.email}`,
+      ],
+      actionLabel: 'Mở liên kết kênh & thông tin tuyển sinh',
+    }),
+    []
+  );
+
+  const testimonialsPreview: HoverPreview = useMemo(
+    () => ({
+      title: 'Tiếng Nói Thành Viên & Mentor',
+      badge: 'CỘNG ĐỒNG TECHTONIC',
+      summary: 'Chia sẻ thực tế từ cố vấn học thuật, ban chủ nhiệm và thành viên đang phát triển sản phẩm tại TechTonic.',
+      bullets: CLUB_PROFILE.testimonials.slice(0, 3).map((t) => t.name),
+      actionLabel: 'Xem hồ sơ BCN & Mentor',
     }),
     []
   );
@@ -592,7 +685,7 @@ export const PerimeterGallery: React.FC = () => {
           }}
           onPointerOver={(e) => {
             e.stopPropagation();
-            setHoveringInteractive(true, 'Xem Hành trình phát triển CLB', openTimelineModal);
+            setHoveringInteractive(true, 'Xem Hành trình phát triển CLB', openTimelineModal, timelinePreview);
           }}
           onPointerOut={() => setHoveringInteractive(false)}
         >
@@ -613,7 +706,7 @@ export const PerimeterGallery: React.FC = () => {
           }}
           onPointerOver={(e) => {
             e.stopPropagation();
-            setHoveringInteractive(true, 'Xem Chuỗi hoạt động trọng tâm', openActivityModal);
+            setHoveringInteractive(true, 'Xem Chuỗi hoạt động trọng tâm', openActivityModal, activityPreview);
           }}
           onPointerOut={() => setHoveringInteractive(false)}
         >
@@ -626,7 +719,7 @@ export const PerimeterGallery: React.FC = () => {
       <ClubShirtExhibit
         onInteract={openShirtModal}
         onHoverChange={(hovering) =>
-          setHoveringInteractive(hovering, 'Xem Danh Sách Ban Chủ Nhiệm', openShirtModal)
+          setHoveringInteractive(hovering, 'Xem Danh Sách Ban Chủ Nhiệm', openShirtModal, shirtPreview)
         }
       />
 
@@ -642,7 +735,7 @@ export const PerimeterGallery: React.FC = () => {
           }}
           onPointerOver={(e) => {
             e.stopPropagation();
-            setHoveringInteractive(true, 'Xem Cơ cấu & Ban Chủ Nhiệm', openShirtModal);
+            setHoveringInteractive(true, 'Xem Cơ cấu & Ban Chủ Nhiệm', openShirtModal, shirtPreview);
           }}
           onPointerOut={() => setHoveringInteractive(false)}
         >
@@ -663,7 +756,7 @@ export const PerimeterGallery: React.FC = () => {
           }}
           onPointerOver={(e) => {
             e.stopPropagation();
-            setHoveringInteractive(true, 'Xem Chuyên môn hằng tuần', openAcademicModal);
+            setHoveringInteractive(true, 'Xem Chuyên môn hằng tuần', openAcademicModal, academicPreview);
           }}
           onPointerOut={() => setHoveringInteractive(false)}
         >
@@ -685,7 +778,7 @@ export const PerimeterGallery: React.FC = () => {
           }}
           onPointerOver={(e) => {
             e.stopPropagation();
-            setHoveringInteractive(true, 'Xem Đối tác & Kênh kết nối', openPartnersModal);
+            setHoveringInteractive(true, 'Xem Đối tác & Kênh kết nối', openPartnersModal, partnersPreview);
           }}
           onPointerOut={() => setHoveringInteractive(false)}
         >
@@ -706,7 +799,7 @@ export const PerimeterGallery: React.FC = () => {
           }}
           onPointerOver={(e) => {
             e.stopPropagation();
-            setHoveringInteractive(true, 'Xem Ban Chủ Nhiệm & Mentor', openShirtModal);
+            setHoveringInteractive(true, 'Xem Ban Chủ Nhiệm & Mentor', openShirtModal, testimonialsPreview);
           }}
           onPointerOut={() => setHoveringInteractive(false)}
         >
