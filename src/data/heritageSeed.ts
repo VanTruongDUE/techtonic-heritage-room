@@ -232,7 +232,7 @@ export const TELEPORT_ZONES: TeleportZone[] = [
     label: 'Góc Truyền Thông & Lưu Bút',
     shortLabel: 'Lưu bút',
     description: 'Màn hình trình chiếu TechTonic và Sổ lưu bút điện tử tương tác.',
-    position: [6.5, 1.4, -11.5],
-    lookAt: [7.5, 2.0, -16],
+    position: [4.2, 1.4, -11.8],
+    lookAt: [6.2, 1.45, -14.8],
   },
 ];

@@ -27,11 +27,7 @@ export const HUD: React.FC = () => {
   const handleResumeLock = () => {
     const canvas = document.querySelector('canvas');
     if (canvas) {
-      try {
-        canvas.requestPointerLock?.();
-      } catch {
-        // Fallback handled by PointerLockControls click
-      }
+      Promise.resolve(canvas.requestPointerLock?.()).catch(() => {});
     }
   };
 

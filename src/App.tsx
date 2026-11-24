@@ -34,11 +34,7 @@ export const App: React.FC = () => {
     playChime(523.25);
     const canvas = document.querySelector('canvas');
     if (canvas) {
-      try {
-        canvas.requestPointerLock?.();
-      } catch {
-        // User can also click canvas to lock if browser rejects automatic lock
-      }
+      Promise.resolve(canvas.requestPointerLock?.()).catch(() => {});
     }
     setLocked(true);
   };

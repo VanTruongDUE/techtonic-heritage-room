@@ -5,9 +5,9 @@ import { Scene } from './Scene';
 
 export const CanvasContainer: React.FC = () => {
   return (
-    <div className="absolute inset-0 w-full h-full bg-[#05070a]">
+    <div className="absolute inset-0 w-full h-full bg-[#080d17]">
       <Canvas
-        shadows
+        shadows="soft"
         camera={{
           fov: 65,
           near: 0.1,

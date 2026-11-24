@@ -8,9 +8,11 @@ import { useKeyboardControls } from '../../hooks/useKeyboardControls';
 import { useHeritageStore } from '../../store/useHeritageStore';
 import type { ModalType } from '../../types/heritage';
 
-const SPEED_WALK = 4.5;
-const SPEED_RUN = 7.5;
+const SPEED_WALK = 4.6;
+const SPEED_RUN = 7.4;
 const JUMP_FORCE = 4.5;
+const BASE_FOV = 65;
+const SPRINT_FOV = 67.5;
 
 function detectZone(x: number, z: number): string {
   if (z > 8.2) return 'Hành Lang Lối Vào';
@@ -47,6 +49,9 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
   const sideVector = useRef(new THREE.Vector3());
   const direction = useRef(new THREE.Vector3());
   const cameraEuler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'));
+  const smoothVel = useRef({ x: 0, z: 0 });
+  const bobPhase = useRef(0);
+  const bobAmount = useRef(0);
   const prevModalRef = useRef<ModalType>(null);
 
   const handleLock = () => setLocked(true);
@@ -82,7 +87,7 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
           try {
             controlsRef.current.lock();
           } catch {
-            document.querySelector('canvas')?.requestPointerLock?.();
+            Promise.resolve(document.querySelector('canvas')?.requestPointerLock?.()).catch(() => {});
           }
         }
       }, 200);
@@ -92,15 +97,18 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
     prevModalRef.current = activeModal;
   }, [activeModal]);
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     if (!rigidBodyRef.current) return;
 
-    // Handle quick teleport requests from HUD / Instructions Modal
+    const dt = Math.min(delta, 0.05);
+
+    // Handle quick teleport requests
     if (teleportTarget) {
       const [tx, ty, tz] = teleportTarget.position;
       const [lx, ly, lz] = teleportTarget.lookAt;
       rigidBodyRef.current.setTranslation({ x: tx, y: ty, z: tz }, true);
       rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      smoothVel.current = { x: 0, z: 0 };
       state.camera.position.set(tx, ty + 0.6, tz);
       state.camera.lookAt(lx, ly, lz);
       clearTeleportTarget();
@@ -110,18 +118,21 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
     const currentVelocity = rigidBodyRef.current.linvel();
     const pos = rigidBodyRef.current.translation();
 
-    // Attach camera to player head position
-    state.camera.position.set(pos.x, pos.y + 0.6, pos.z);
-
-    // Update active museum zone indicator (store deduplicates unchanged values)
+    // Update active museum zone indicator
     setCurrentZone(detectZone(pos.x, pos.z));
 
-    // If pointer is unlocked or modal is open, decelerate smoothly
+    const damping = 1 - Math.exp(-14 * dt);
+
     if (!isLocked || activeModal) {
+      smoothVel.current.x = THREE.MathUtils.lerp(smoothVel.current.x, 0, damping);
+      smoothVel.current.z = THREE.MathUtils.lerp(smoothVel.current.z, 0, damping);
+      bobAmount.current = THREE.MathUtils.lerp(bobAmount.current, 0, damping);
+
       rigidBodyRef.current.setLinvel(
-        { x: currentVelocity.x * 0.8, y: currentVelocity.y, z: currentVelocity.z * 0.8 },
+        { x: smoothVel.current.x, y: currentVelocity.y, z: smoothVel.current.z },
         true
       );
+      state.camera.position.set(pos.x, pos.y + 0.6, pos.z);
       return;
     }
 
@@ -130,25 +141,52 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
     frontVector.current.set(0, 0, (backward ? 1 : 0) - (forward ? 1 : 0));
     sideVector.current.set((right ? 1 : 0) - (left ? 1 : 0), 0, 0);
 
-    direction.current
-      .addVectors(frontVector.current, sideVector.current)
-      .normalize()
-      .multiplyScalar(speed);
+    const hasInput = frontVector.current.z !== 0 || sideVector.current.x !== 0;
+
+    direction.current.addVectors(frontVector.current, sideVector.current);
+    if (direction.current.lengthSq() > 0) {
+      direction.current.normalize().multiplyScalar(speed);
+    }
 
     cameraEuler.current.setFromQuaternion(state.camera.quaternion);
     cameraEuler.current.x = 0;
     cameraEuler.current.z = 0;
     direction.current.applyEuler(cameraEuler.current);
 
+    // Smooth exponential acceleration & deceleration
+    smoothVel.current.x = THREE.MathUtils.lerp(smoothVel.current.x, direction.current.x, damping);
+    smoothVel.current.z = THREE.MathUtils.lerp(smoothVel.current.z, direction.current.z, damping);
+
     let vy = currentVelocity.y;
-    if (jump && Math.abs(currentVelocity.y) < 0.1) {
+    const isGrounded = Math.abs(currentVelocity.y) < 0.12;
+    if (jump && isGrounded) {
       vy = JUMP_FORCE;
     }
 
     rigidBodyRef.current.setLinvel(
-      { x: direction.current.x, y: vy, z: direction.current.z },
+      { x: smoothVel.current.x, y: vy, z: smoothVel.current.z },
       true
     );
+
+    // Subtle natural walk head-bob scaled by actual ground velocity
+    const horizSpeed = Math.hypot(smoothVel.current.x, smoothVel.current.z);
+    if (isGrounded && horizSpeed > 0.4) {
+      bobPhase.current += dt * (shift ? 11.5 : 8.2);
+      bobAmount.current = THREE.MathUtils.lerp(bobAmount.current, 0.018, damping);
+    } else {
+      bobAmount.current = THREE.MathUtils.lerp(bobAmount.current, 0, damping);
+    }
+    const headBobY = Math.sin(bobPhase.current) * bobAmount.current;
+    state.camera.position.set(pos.x, pos.y + 0.6 + headBobY, pos.z);
+
+    // Subtle smooth sprint FOV transition
+    if (state.camera instanceof THREE.PerspectiveCamera) {
+      const targetFov = hasInput && shift ? SPRINT_FOV : BASE_FOV;
+      if (Math.abs(state.camera.fov - targetFov) > 0.02) {
+        state.camera.fov = THREE.MathUtils.lerp(state.camera.fov, targetFov, 1 - Math.exp(-8 * dt));
+        state.camera.updateProjectionMatrix();
+      }
+    }
 
     // Respawn if fallen below floor
     if (pos.y < -5) {
@@ -157,6 +195,7 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
         true
       );
       rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      smoothVel.current = { x: 0, z: 0 };
     }
   });
 
