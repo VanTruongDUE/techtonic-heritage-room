@@ -11,8 +11,8 @@ import { PlayerController } from './PlayerController';
 export const Scene: React.FC = () => {
   return (
     <Suspense fallback={null}>
-      <color attach="background" args={['#05070a']} />
-      <fog attach="fog" args={['#05070a', 26, 62]} />
+      <color attach="background" args={['#080d17']} />
+      <fog attach="fog" args={['#080d17', 38, 85]} />
 
       {/* Lighting System outside Physics */}
       <StudioLights />

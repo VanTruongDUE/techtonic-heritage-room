@@ -66,7 +66,7 @@ export const CentralIsland: React.FC = () => {
             <RigidBody type="fixed" position={[ex.position[0], 0.7, ex.position[2]]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[1.2, 0.8, 1.2]} />
-                <meshStandardMaterial color="#0a0d15" metalness={0.9} roughness={0.2} />
+                <meshStandardMaterial color="#182338" roughness={0.4} metalness={0.45} />
               </mesh>
               <mesh position={[0, 0.41, 0]}>
                 <boxGeometry args={[1.22, 0.04, 1.22]} />

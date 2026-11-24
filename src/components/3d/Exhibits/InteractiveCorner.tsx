@@ -145,11 +145,11 @@ export const InteractiveCorner: React.FC = () => {
       <RigidBody type="fixed" position={[-4, 0.55, 1.5]}>
         <mesh castShadow receiveShadow>
           <boxGeometry args={[1.2, 1.1, 0.9]} />
-          <meshStandardMaterial color="#0e1320" metalness={0.8} roughness={0.2} />
+          <meshStandardMaterial color="#1a253b" roughness={0.45} metalness={0.4} />
         </mesh>
         <mesh position={[0, 0.55, 0]} rotation={[-Math.PI / 6, 0, 0]}>
           <boxGeometry args={[1.3, 0.05, 1.0]} />
-          <meshStandardMaterial color="#141a29" metalness={0.9} roughness={0.1} />
+          <meshStandardMaterial color="#23314d" roughness={0.35} metalness={0.5} />
         </mesh>
       </RigidBody>
 

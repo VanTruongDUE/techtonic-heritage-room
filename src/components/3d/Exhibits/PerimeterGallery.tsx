@@ -312,7 +312,7 @@ export const PerimeterGallery: React.FC = () => {
       <RigidBody type="fixed" position={[14.5, 0.45, -4]}>
         <mesh castShadow receiveShadow>
           <cylinderGeometry args={[1.5, 1.7, 0.9, 32]} />
-          <meshStandardMaterial color="#0d111a" roughness={0.2} metalness={0.8} />
+          <meshStandardMaterial color="#182338" roughness={0.4} metalness={0.45} />
         </mesh>
         <mesh position={[0, 0.46, 0]}>
           <cylinderGeometry args={[1.52, 1.52, 0.05, 32]} />
@@ -355,22 +355,34 @@ export const PerimeterGallery: React.FC = () => {
         <mesh position={[0, 0, 0]} castShadow>
           <boxGeometry args={[1.2, 1.4, 0.35]} />
           <meshStandardMaterial
-            color="#081020"
-            roughness={0.4}
-            metalness={0.6}
-            emissive="#002244"
-            emissiveIntensity={isShirtHovered ? 0.85 : 0.3}
+            color="#152542"
+            roughness={0.45}
+            metalness={0.35}
+            emissive="#0c2852"
+            emissiveIntensity={isShirtHovered ? 0.9 : 0.45}
           />
         </mesh>
 
         <mesh position={[-0.8, 0.35, 0]} rotation={[0, 0, -Math.PI / 6]} castShadow>
           <boxGeometry args={[0.5, 0.7, 0.34]} />
-          <meshStandardMaterial color="#081020" roughness={0.4} metalness={0.6} />
+          <meshStandardMaterial
+            color="#152542"
+            roughness={0.45}
+            metalness={0.35}
+            emissive="#0c2852"
+            emissiveIntensity={0.35}
+          />
         </mesh>
 
         <mesh position={[0.8, 0.35, 0]} rotation={[0, 0, Math.PI / 6]} castShadow>
           <boxGeometry args={[0.5, 0.7, 0.34]} />
-          <meshStandardMaterial color="#081020" roughness={0.4} metalness={0.6} />
+          <meshStandardMaterial
+            color="#152542"
+            roughness={0.45}
+            metalness={0.35}
+            emissive="#0c2852"
+            emissiveIntensity={0.35}
+          />
         </mesh>
 
         <mesh position={[0, 0.7, 0]}>
