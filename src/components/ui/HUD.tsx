@@ -1,125 +1,225 @@
 import React, { useState } from 'react';
 import { useHeritageStore } from '../../store/useHeritageStore';
-import { ExternalLink, Volume2, VolumeX, HelpCircle, Navigation, Eye, Compass } from 'lucide-react';
+import { TELEPORT_ZONES } from '../../data/heritageSeed';
+import {
+  ExternalLink,
+  Volume2,
+  VolumeX,
+  HelpCircle,
+  Compass,
+  SlidersHorizontal,
+  MapPin,
+  MousePointerClick,
+} from 'lucide-react';
 
 export const HUD: React.FC = () => {
-  const { isLocked, isMuted, toggleMute, openModal } = useHeritageStore();
+  const {
+    isLocked,
+    isMuted,
+    toggleMute,
+    openModal,
+    activeModal,
+    currentZone,
+    requestTeleport,
+  } = useHeritageStore();
   const [showControlsHint, setShowControlsHint] = useState(true);
+
+  const handleResumeLock = () => {
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      try {
+        canvas.requestPointerLock?.();
+      } catch {
+        // Fallback handled by PointerLockControls click
+      }
+    }
+  };
 
   return (
     <div className="fixed inset-0 pointer-events-none z-20 flex flex-col justify-between p-6 select-none">
       {/* Top Bar */}
-      <div className="flex items-center justify-between w-full pointer-events-auto">
-        {/* Top Left: Exit to Main Website Button */}
+      <div className="flex items-center justify-between w-full pointer-events-auto gap-4">
+        {/* Top Left: Exit to Main Website Button (Mandatory Requirement) */}
         <a
           href="https://www.techtonic-club.id.vn/"
           target="_blank"
           rel="noopener noreferrer"
-          className="group flex items-center space-x-2.5 px-4 py-2.5 rounded-xl glass-panel text-slate-200 hover:text-tech-cyan hover:border-tech-cyan/60 transition-all duration-300 shadow-lg hover:shadow-[0_0_20px_rgba(0,240,255,0.25)]"
+          className="group flex items-center space-x-2.5 px-4 py-2.5 rounded-xl glass-panel text-slate-100 hover:text-tech-cyan hover:border-tech-cyan/60 transition-all duration-200"
           title="Trở về website chính thức của TechTonic Club"
         >
-          <ExternalLink className="w-4 h-4 text-tech-cyan group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+          <ExternalLink
+            className="w-4 h-4 text-tech-cyan group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
+            aria-hidden="true"
+          />
           <span className="text-xs md:text-sm font-semibold tracking-wide">
             VỀ WEBSITE CHÍNH (TECHTONIC-CLUB.ID.VN)
           </span>
         </a>
 
-        {/* Top Right: Utility Controls (Audio & Help) */}
-        <div className="flex items-center space-x-3">
+        {/* Top Right: Utility Controls */}
+        <div className="flex items-center space-x-2.5">
           <button
-            onClick={toggleMute}
-            className="p-2.5 rounded-xl glass-panel text-slate-300 hover:text-white hover:border-tech-cyan/40 transition-all shadow-md"
-            title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
+            type="button"
+            onClick={() => openModal('instructions')}
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl glass-panel text-slate-200 hover:text-tech-cyan hover:border-tech-cyan/50 transition-all text-xs font-medium"
+            aria-label="Mở bản đồ di chuyển nhanh và cài đặt"
+            title="Di chuyển nhanh & Cài đặt (H)"
           >
-            {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-tech-cyan" />}
+            <SlidersHorizontal className="w-4 h-4 text-tech-cyan" aria-hidden="true" />
+            <span className="hidden md:inline">Bản đồ & Cài đặt</span>
+            <kbd className="px-1.5 py-0.5 rounded bg-black/50 border border-white/15 font-mono text-[10px] text-slate-300">
+              H
+            </kbd>
           </button>
 
           <button
-            onClick={() => setShowControlsHint(!showControlsHint)}
-            className="p-2.5 rounded-xl glass-panel text-slate-300 hover:text-white hover:border-tech-cyan/40 transition-all shadow-md"
-            title="Hướng dẫn điều khiển"
+            type="button"
+            onClick={toggleMute}
+            className="p-2.5 rounded-xl glass-panel text-slate-200 hover:text-white hover:border-tech-cyan/50 transition-all"
+            aria-label={isMuted ? 'Bật âm thanh nền' : 'Tắt âm thanh nền'}
+            title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
           >
-            <HelpCircle className="w-4 h-4 text-tech-cyan" />
+            {isMuted ? (
+              <VolumeX className="w-4 h-4 text-rose-400" aria-hidden="true" />
+            ) : (
+              <Volume2 className="w-4 h-4 text-tech-cyan" aria-hidden="true" />
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowControlsHint((prev) => !prev)}
+            className={`p-2.5 rounded-xl glass-panel transition-all ${
+              showControlsHint
+                ? 'text-tech-cyan border-tech-cyan/45'
+                : 'text-slate-200 hover:text-white hover:border-tech-cyan/50'
+            }`}
+            aria-label={showControlsHint ? 'Ẩn bảng phím điều khiển' : 'Hiện bảng phím điều khiển'}
+            title="Ẩn/Hiện hướng dẫn phím"
+          >
+            <HelpCircle className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       </div>
 
-      {/* Middle/Side: Controls Guide (Minimizable) */}
-      {showControlsHint && isLocked && (
-        <div className="self-start glass-panel p-3.5 rounded-xl max-w-xs mt-4 pointer-events-auto animate-fade-in text-xs border border-tech-border/30">
-          <div className="flex items-center justify-between mb-2">
+      {/* Middle/Left: Controls Guide when locked */}
+      {showControlsHint && isLocked && !activeModal && (
+        <aside
+          aria-label="Hướng dẫn điều khiển 3D"
+          className="self-start glass-panel p-3.5 rounded-xl w-64 mt-4 pointer-events-auto animate-fade-in text-xs border border-tech-cyan/25"
+        >
+          <div className="flex items-center justify-between mb-2.5">
             <span className="font-mono font-bold text-tech-cyan uppercase tracking-wider flex items-center gap-1.5">
-              <Compass className="w-3.5 h-3.5" /> Điều khiển 3D
+              <Compass className="w-3.5 h-3.5" aria-hidden="true" /> Điều khiển 3D
             </span>
             <button
+              type="button"
               onClick={() => setShowControlsHint(false)}
-              className="text-slate-400 hover:text-white text-[10px]"
+              className="text-slate-300 hover:text-white text-[11px] px-1.5 py-0.5 rounded hover:bg-white/10 transition"
+              aria-label="Ẩn hướng dẫn điều khiển"
             >
-              Ẩn [x]
+              Ẩn
             </button>
           </div>
-          <div className="space-y-1.5 text-slate-300 font-sans">
+          <div className="space-y-1.5 text-slate-200 font-sans">
             <div className="flex justify-between items-center">
               <span>Di chuyển:</span>
-              <kbd className="px-1.5 py-0.5 bg-black/50 border border-white/20 rounded font-mono text-[10px] text-tech-cyan">
+              <kbd className="px-1.5 py-0.5 bg-black/60 border border-white/20 rounded font-mono text-[10px] text-tech-cyan">
                 W A S D
               </kbd>
             </div>
             <div className="flex justify-between items-center">
               <span>Chạy nhanh:</span>
-              <kbd className="px-1.5 py-0.5 bg-black/50 border border-white/20 rounded font-mono text-[10px] text-tech-cyan">
+              <kbd className="px-1.5 py-0.5 bg-black/60 border border-white/20 rounded font-mono text-[10px] text-tech-cyan">
                 Shift
               </kbd>
             </div>
             <div className="flex justify-between items-center">
-              <span>Xoay góc nhìn:</span>
-              <span className="text-[11px] text-slate-400">Rê chuột 360°</span>
+              <span>Tương tác:</span>
+              <span className="text-[11px] font-mono text-tech-cyan">Chuột trái / E</span>
             </div>
             <div className="flex justify-between items-center">
-              <span>Tương tác vật phẩm:</span>
-              <span className="text-[11px] text-tech-cyan">Chuột trái</span>
+              <span>Bản đồ nhanh:</span>
+              <kbd className="px-1.5 py-0.5 bg-black/60 border border-white/20 rounded font-mono text-[10px] text-tech-cyan">
+                H
+              </kbd>
             </div>
             <div className="flex justify-between items-center">
               <span>Mở con trỏ chuột:</span>
-              <kbd className="px-1.5 py-0.5 bg-black/50 border border-white/20 rounded font-mono text-[10px] text-tech-cyan">
+              <kbd className="px-1.5 py-0.5 bg-black/60 border border-white/20 rounded font-mono text-[10px] text-tech-cyan">
                 ESC
               </kbd>
             </div>
           </div>
-        </div>
+        </aside>
       )}
 
-      {/* Re-lock Banner when user presses ESC to use mouse */}
-      {!isLocked && (
-        <div className="self-center glass-panel px-6 py-3 rounded-2xl border border-tech-cyan/50 pointer-events-auto shadow-[0_0_30px_rgba(0,240,255,0.2)] animate-bounce flex items-center gap-3">
-          <Eye className="w-5 h-5 text-tech-cyan animate-pulse" />
-          <span className="text-sm font-semibold text-white">
-            Nhấp chuột vào màn hình để tiếp tục di chuyển góc nhìn 360°
-          </span>
+      {/* Unlocked Pause & Quick-Teleport Bar when user is not in a modal */}
+      {!isLocked && !activeModal && (
+        <div className="self-center glass-panel px-5 py-4 rounded-2xl border border-tech-cyan/30 pointer-events-auto max-w-2xl w-full animate-panel-in">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2.5">
+              <MousePointerClick className="w-5 h-5 text-tech-cyan shrink-0" aria-hidden="true" />
+              <span className="text-sm font-semibold text-white">
+                Con trỏ chuột đang mở — chọn khu vực để dịch chuyển hoặc quay lại góc nhìn 360°
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleResumeLock}
+              className="px-4 py-2 rounded-xl bg-tech-cyan text-slate-950 font-semibold text-xs hover:bg-[#33f3ff] transition cursor-pointer shrink-0"
+            >
+              Tiếp tục tham quan 3D
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {TELEPORT_ZONES.map((zone) => {
+              const isActive = currentZone === zone.label;
+              return (
+                <button
+                  key={zone.id}
+                  type="button"
+                  onClick={() => requestTeleport(zone.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
+                    isActive
+                      ? 'bg-tech-cyan/20 text-tech-cyan border border-tech-cyan/60'
+                      : 'bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 hover:border-tech-cyan/40'
+                  }`}
+                >
+                  <MapPin className="w-3 h-3 text-tech-cyan" aria-hidden="true" />
+                  <span>{zone.shortLabel}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
       {/* Bottom Bar */}
-      <div className="flex items-end justify-between w-full pointer-events-auto">
-        {/* Bottom Left: Location / Zone Indicator */}
-        <div className="glass-panel px-4 py-2.5 rounded-xl border border-tech-border/30 flex items-center space-x-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-tech-cyan animate-ping" />
+      <div className="flex items-end justify-between w-full pointer-events-auto gap-4">
+        {/* Bottom Left: Dynamic Location / Zone Indicator */}
+        <div
+          aria-live="polite"
+          className="glass-panel px-4 py-2.5 rounded-xl flex items-center space-x-3"
+        >
+          <span className="w-2.5 h-2.5 rounded-full bg-tech-cyan shrink-0" aria-hidden="true" />
           <div>
-            <div className="text-[10px] uppercase font-mono text-slate-400">Vị trí hiện tại</div>
-            <div className="text-xs font-bold text-white tracking-wide">Đại Sảnh Danh Dự TechTonic (Main Hall)</div>
+            <div className="text-xs text-slate-300">Vị trí hiện tại</div>
+            <div className="text-xs md:text-sm font-bold text-white">{currentZone}</div>
           </div>
         </div>
 
         {/* Bottom Right: TechTonic Logo statically positioned (Mandatory Requirement) */}
-        <div className="group relative pointer-events-auto">
+        <div className="relative pointer-events-auto">
           <a
             href="https://www.techtonic-club.id.vn/"
             target="_blank"
             rel="noopener noreferrer"
-            className="block transition-transform duration-300 hover:scale-105"
+            className="block transition-transform duration-200 hover:scale-[1.03]"
             title="TechTonic Club Official"
           >
-            <div className="glass-panel px-4 py-2 rounded-2xl border border-tech-cyan/30 flex items-center space-x-3 shadow-xl hover:border-tech-cyan/70 hover:shadow-[0_0_25px_rgba(0,240,255,0.3)]">
+            <div className="glass-panel px-4 py-2 rounded-2xl border border-tech-cyan/30 flex items-center space-x-3 hover:border-tech-cyan/65 transition-colors">
               <img
                 src="/assets/techtonic-logo.svg"
                 alt="TechTonic Logo"

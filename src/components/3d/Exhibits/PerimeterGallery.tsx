@@ -1,26 +1,38 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { useHeritageStore } from '../../../store/useHeritageStore';
+import type { ExhibitItem } from '../../../types/heritage';
 
 export const PerimeterGallery: React.FC = () => {
-  const { setHoveringInteractive, openModal } = useHeritageStore();
+  const {
+    setHoveringInteractive,
+    openModal,
+    timelineMilestones,
+    activityHighlights,
+  } = useHeritageStore();
+
   const shirtGroupRef = useRef<THREE.Group>(null);
   const hologramRingRef = useRef<THREE.Mesh>(null);
+  const [isShirtHovered, setIsShirtHovered] = useState(false);
 
-  // Subtle floating and rotation animation for the Club Shirt
   useFrame((state) => {
     if (shirtGroupRef.current) {
       shirtGroupRef.current.position.y = 1.6 + Math.sin(state.clock.elapsedTime * 1.5) * 0.04;
       shirtGroupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.8) * 0.15;
+      const targetScale = isShirtHovered ? 1.06 : 1;
+      shirtGroupRef.current.scale.lerp(
+        new THREE.Vector3(targetScale, targetScale, targetScale),
+        0.12
+      );
     }
     if (hologramRingRef.current) {
-      hologramRingRef.current.rotation.z += 0.015;
+      hologramRingRef.current.rotation.z += isShirtHovered ? 0.035 : 0.015;
     }
   });
 
-  // Timeline canvas texture for Left Wall
+  // Timeline canvas texture for Left Wall driven by store milestones
   const timelineTexture = useMemo(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 2048;
@@ -30,17 +42,14 @@ export const PerimeterGallery: React.FC = () => {
       ctx.fillStyle = '#0a0e17';
       ctx.fillRect(0, 0, 2048, 1024);
 
-      // Border and grid
-      ctx.strokeStyle = 'rgba(0, 240, 255, 0.2)';
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
       ctx.lineWidth = 4;
       ctx.strokeRect(20, 20, 2008, 984);
 
-      // Section Title
       ctx.fillStyle = '#00F0FF';
       ctx.font = 'bold 50px Outfit, sans-serif';
       ctx.fillText('DÒNG THỜI GIAN PHÁT TRIỂN • CLUB HISTORY TIMELINE', 80, 100);
 
-      // Timeline axis line
       ctx.strokeStyle = '#0066FF';
       ctx.lineWidth = 6;
       ctx.beginPath();
@@ -48,74 +57,57 @@ export const PerimeterGallery: React.FC = () => {
       ctx.lineTo(1948, 520);
       ctx.stroke();
 
-      const milestones = [
-        {
-          year: '2022',
-          title: 'Khởi Nguyên & Thành Lập',
-          desc: 'Thành lập TechTonic Club với 30 thành viên sáng lập đam mê lập trình, thuật toán và công nghệ số.',
-          x: 250,
-        },
-        {
-          year: '2023',
-          title: 'Bứt Phá & Mở Rộng',
-          desc: 'Tổ chức chuỗi DevFest quy mô 1,500 sinh viên; thành lập 4 ban chuyên môn vững mạnh và nhóm R&D AI/IoT.',
-          x: 950,
-        },
-        {
-          year: '2024',
-          title: 'Tiên Phong & Đỉnh Cao',
-          desc: 'Quán quân Tech Challenge toàn quốc, giải pháp số đô thị thông minh; hợp tác 15+ doanh nghiệp công nghệ.',
-          x: 1650,
-        },
-      ];
+      const xPositions = [250, 950, 1650];
+      timelineMilestones.slice(0, 3).forEach((m, idx) => {
+        const x = xPositions[idx] ?? 250 + idx * 650;
 
-      milestones.forEach((m) => {
-        // Timeline node
         ctx.fillStyle = '#00F0FF';
         ctx.beginPath();
-        ctx.arc(m.x, 520, 18, 0, Math.PI * 2);
+        ctx.arc(x, 520, 18, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 4;
         ctx.beginPath();
-        ctx.arc(m.x, 520, 26, 0, Math.PI * 2);
+        ctx.arc(x, 520, 26, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Year badge
         ctx.fillStyle = '#00F0FF';
         ctx.font = '900 60px Outfit, sans-serif';
-        ctx.fillText(m.year, m.x - 70, 440);
+        ctx.fillText(m.year, x - 70, 440);
 
-        // Title
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 36px Outfit, sans-serif';
-        ctx.fillText(m.title, m.x - 120, 600);
+        ctx.fillText(m.title, x - 120, 600);
 
-        // Description
-        ctx.fillStyle = '#94a3b8';
+        ctx.fillStyle = '#cbd5e1';
         ctx.font = '300 24px Inter, sans-serif';
-        const words = m.desc.split(' ');
+        const words = m.description.split(' ');
         let line = '';
         let y = 650;
         for (let n = 0; n < words.length; n++) {
           const testLine = line + words[n] + ' ';
           if (testLine.length > 32) {
-            ctx.fillText(line, m.x - 120, y);
+            ctx.fillText(line, x - 120, y);
             line = words[n] + ' ';
             y += 35;
           } else {
             line = testLine;
           }
         }
-        ctx.fillText(line, m.x - 120, y);
+        ctx.fillText(line, x - 120, y);
       });
+
+      ctx.fillStyle = '#00F0FF';
+      ctx.font = '500 22px JetBrains Mono, monospace';
+      ctx.fillText('• Nhấp hoặc nhấn [E] để xem chi tiết cột mốc lịch sử', 80, 955);
     }
     const texture = new THREE.CanvasTexture(canvas);
+    texture.anisotropy = 16;
     return texture;
-  }, []);
+  }, [timelineMilestones]);
 
-  // Activity Gallery Canvas Texture
+  // Activity Gallery Canvas Texture driven by store activity highlights
   const activityTexture = useMemo(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 1536;
@@ -133,15 +125,7 @@ export const PerimeterGallery: React.FC = () => {
       ctx.font = 'bold 44px Outfit, sans-serif';
       ctx.fillText('KHOẢNH KHẮC HOẠT ĐỘNG TIÊU BIỂU', 60, 90);
 
-      // Activity cards mockup
-      const cards = [
-        { title: 'TechTonic DevFest 2023', tag: 'WORKSHOP & SHOWCASE', color: '#0066FF' },
-        { title: 'Hackathon 48h Non-stop', tag: 'CÔNG NGHỆ ĐỈNH CAO', color: '#00F0FF' },
-        { title: 'Teambuilding & Gala Dinner', tag: 'GẮN KẾT VĂN HÓA', color: '#FF0055' },
-        { title: 'Lễ Trao Giải Tech Challenge', tag: 'VINH DANH TÀI NĂNG', color: '#FFD700' },
-      ];
-
-      cards.forEach((c, idx) => {
+      activityHighlights.slice(0, 4).forEach((c, idx) => {
         const col = idx % 2;
         const row = Math.floor(idx / 2);
         const x = 60 + col * 710;
@@ -154,83 +138,211 @@ export const PerimeterGallery: React.FC = () => {
         ctx.lineWidth = 2;
         ctx.strokeRect(x, y, 660, 360);
 
-        // Tech badge
         ctx.fillStyle = c.color;
         ctx.font = '600 20px JetBrains Mono, monospace';
         ctx.fillText(`[ ${c.tag} ]`, x + 30, y + 60);
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 36px Outfit, sans-serif';
+        ctx.font = 'bold 34px Outfit, sans-serif';
         ctx.fillText(c.title, x + 30, y + 120);
 
-        ctx.fillStyle = '#94a3b8';
+        ctx.fillStyle = '#cbd5e1';
         ctx.font = '300 22px Inter, sans-serif';
-        ctx.fillText('Ghi lại tinh thần nhiệt huyết, sáng tạo và gắn kết', x + 30, y + 180);
-        ctx.fillText('không ngừng nghỉ của các thế hệ thành viên.', x + 30, y + 215);
+        const words = c.summary.split(' ');
+        let line = '';
+        let lineY = y + 175;
+        for (const word of words) {
+          const test = line + word + ' ';
+          if (test.length > 44) {
+            ctx.fillText(line, x + 30, lineY);
+            line = word + ' ';
+            lineY += 32;
+          } else {
+            line = test;
+          }
+        }
+        ctx.fillText(line, x + 30, lineY);
 
         ctx.fillStyle = '#00F0FF';
         ctx.font = '500 20px Inter, sans-serif';
-        ctx.fillText('• Xem chi tiết kỷ yếu câu lạc bộ', x + 30, y + 290);
+        ctx.fillText('• Nhấp / [E] để xem chi tiết kỷ yếu câu lạc bộ', x + 30, y + 310);
       });
     }
     const texture = new THREE.CanvasTexture(canvas);
+    texture.anisotropy = 16;
+    return texture;
+  }, [activityHighlights]);
+
+  // Right Wall Plaque behind Club Shirt
+  const shirtPlaqueTexture = useMemo(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1400;
+    canvas.height = 700;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#090d16';
+      ctx.fillRect(0, 0, 1400, 700);
+
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(20, 20, 1360, 660);
+
+      ctx.fillStyle = '#00F0FF';
+      ctx.font = '600 26px JetBrains Mono, monospace';
+      ctx.fillText('BIỂU TƯỢNG TINH THẦN TECHTONIC', 70, 100);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 52px Outfit, sans-serif';
+      ctx.fillText('ÁO CÂU LẠC BỘ & BAN CHỦ NHIỆM', 70, 170);
+
+      ctx.fillStyle = '#CBD5E1';
+      ctx.font = '300 28px Inter, sans-serif';
+      ctx.fillText(
+        'Màu áo đen công nghệ kết hợp đường viền xanh cyan đại diện cho kỷ luật kỹ thuật,',
+        70,
+        265
+      );
+      ctx.fillText(
+        'tư duy tiên phong và tinh thần đồng đội của các thế hệ thành viên TechTonic Club.',
+        70,
+        310
+      );
+
+      ctx.fillStyle = '#94A3B8';
+      ctx.font = '400 24px Inter, sans-serif';
+      ctx.fillText('• Cơ cấu: Ban Chủ Nhiệm • Ban Chuyên Môn • Ban Truyền Thông • Ban Đối Ngoại • Ban Sự Kiện', 70, 410);
+
+      ctx.fillStyle = '#00F0FF';
+      ctx.font = '600 26px JetBrains Mono, monospace';
+      ctx.fillText('→ Nhấp vào Áo CLB 3D hoặc nhấn [E] để xem danh sách Ban Chủ Nhiệm', 70, 560);
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.anisotropy = 16;
     return texture;
   }, []);
+
+  useEffect(() => {
+    return () => {
+      timelineTexture.dispose();
+    };
+  }, [timelineTexture]);
+
+  useEffect(() => {
+    return () => {
+      activityTexture.dispose();
+    };
+  }, [activityTexture]);
+
+  useEffect(() => {
+    return () => {
+      shirtPlaqueTexture.dispose();
+    };
+  }, [shirtPlaqueTexture]);
+
+  const timelineExhibit: ExhibitItem = useMemo(
+    () => ({
+      id: 'history-timeline',
+      title: 'Dòng Thời Gian Phát Triển TechTonic Club (2022–2024)',
+      category: 'history',
+      year: '2022 - 2024',
+      highlight: 'Hành Trình 3 Năm Đổi Mới',
+      description: timelineMilestones
+        .map((m) => `• ${m.year} — ${m.title}: ${m.description}`)
+        .join(' '),
+    }),
+    [timelineMilestones]
+  );
+
+  const activityExhibit: ExhibitItem = useMemo(
+    () => ({
+      id: 'activity-highlights',
+      title: 'Kỷ Yếu Khoảnh Khắc Hoạt Động Tiêu Biểu',
+      category: 'activity',
+      year: '2023 - 2024',
+      highlight: '4 Sự Kiện & Dấu Ấn Lớn',
+      description: activityHighlights
+        .map((a) => `• ${a.title} (${a.year}): ${a.summary}`)
+        .join(' '),
+    }),
+    [activityHighlights]
+  );
+
+  const openShirtModal = () => openModal('shirt');
+  const openTimelineModal = () => openModal('exhibit', timelineExhibit);
+  const openActivityModal = () => openModal('exhibit', activityExhibit);
 
   return (
     <group>
       {/* ================= LEFT WALL: HISTORY TIMELINE & ACTIVITIES ================= */}
-      {/* 1. History Timeline Board */}
-      <mesh position={[-16.5, 3.2, -6]} rotation={[0, Math.PI / 2, 0]}>
+      <mesh
+        position={[-16.5, 3.2, -6]}
+        rotation={[0, Math.PI / 2, 0]}
+        onClick={(e) => {
+          e.stopPropagation();
+          openTimelineModal();
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setHoveringInteractive(true, 'Xem chi tiết Dòng Thời Gian CLB', openTimelineModal);
+        }}
+        onPointerOut={() => setHoveringInteractive(false)}
+      >
         <planeGeometry args={[11, 4.2]} />
         <meshBasicMaterial map={timelineTexture} />
       </mesh>
 
-      {/* 2. Activity Highlights Board */}
-      <mesh position={[-16.5, 3.2, 4]} rotation={[0, Math.PI / 2, 0]}>
+      <mesh
+        position={[-16.5, 3.2, 4]}
+        rotation={[0, Math.PI / 2, 0]}
+        onClick={(e) => {
+          e.stopPropagation();
+          openActivityModal();
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setHoveringInteractive(true, 'Xem chi tiết Kỷ yếu hoạt động', openActivityModal);
+        }}
+        onPointerOut={() => setHoveringInteractive(false)}
+      >
         <planeGeometry args={[6.5, 4.2]} />
         <meshBasicMaterial map={activityTexture} />
       </mesh>
 
       {/* ================= RIGHT WALL: THE CLUB SHIRT DISPLAY & BCN ================= */}
-      {/* Pedestal with Rapier Collision so player cannot walk through */}
       <RigidBody type="fixed" position={[14.5, 0.45, -4]}>
-        {/* Stone Pedestal Base */}
         <mesh castShadow receiveShadow>
           <cylinderGeometry args={[1.5, 1.7, 0.9, 32]} />
-          <meshStandardMaterial
-            color="#0d111a"
-            roughness={0.2}
-            metalness={0.8}
-          />
+          <meshStandardMaterial color="#0d111a" roughness={0.2} metalness={0.8} />
         </mesh>
-        {/* Glowing glass top rim */}
         <mesh position={[0, 0.46, 0]}>
           <cylinderGeometry args={[1.52, 1.52, 0.05, 32]} />
           <meshBasicMaterial color="#00F0FF" />
         </mesh>
       </RigidBody>
 
-      {/* Hologram Floating Ring around pedestal */}
-      <mesh
-        ref={hologramRingRef}
-        position={[14.5, 1.1, -4]}
-        rotation={[-Math.PI / 2, 0, 0]}
-      >
+      <mesh ref={hologramRingRef} position={[14.5, 1.1, -4]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[1.6, 1.7, 32]} />
         <meshBasicMaterial color="#00F0FF" transparent opacity={0.6} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* 3D Club Shirt Object (Interactive Click Target) */}
       <group
         ref={shirtGroupRef}
         position={[14.5, 1.6, -4]}
         rotation={[0, -Math.PI / 2, 0]}
-        onClick={() => openModal('shirt')}
-        onPointerOver={() => setHoveringInteractive(true, 'Xem Danh Sách Ban Chủ Nhiệm')}
-        onPointerOut={() => setHoveringInteractive(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          openShirtModal();
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setIsShirtHovered(true);
+          setHoveringInteractive(true, 'Xem Danh Sách Ban Chủ Nhiệm', openShirtModal);
+        }}
+        onPointerOut={() => {
+          setIsShirtHovered(false);
+          setHoveringInteractive(false);
+        }}
       >
-        {/* Floating Hologram Label above shirt */}
         <mesh position={[0, 1.25, 0]}>
           <planeGeometry args={[1.8, 0.45]} />
           <meshBasicMaterial color="#0c1220" transparent opacity={0.9} side={THREE.DoubleSide} />
@@ -240,7 +352,6 @@ export const PerimeterGallery: React.FC = () => {
           <meshBasicMaterial color="#00F0FF" side={THREE.DoubleSide} />
         </mesh>
 
-        {/* Shirt Body (Torso) */}
         <mesh position={[0, 0, 0]} castShadow>
           <boxGeometry args={[1.2, 1.4, 0.35]} />
           <meshStandardMaterial
@@ -248,41 +359,35 @@ export const PerimeterGallery: React.FC = () => {
             roughness={0.4}
             metalness={0.6}
             emissive="#002244"
-            emissiveIntensity={0.3}
+            emissiveIntensity={isShirtHovered ? 0.85 : 0.3}
           />
         </mesh>
 
-        {/* Left Sleeve */}
         <mesh position={[-0.8, 0.35, 0]} rotation={[0, 0, -Math.PI / 6]} castShadow>
           <boxGeometry args={[0.5, 0.7, 0.34]} />
           <meshStandardMaterial color="#081020" roughness={0.4} metalness={0.6} />
         </mesh>
 
-        {/* Right Sleeve */}
         <mesh position={[0.8, 0.35, 0]} rotation={[0, 0, Math.PI / 6]} castShadow>
           <boxGeometry args={[0.5, 0.7, 0.34]} />
           <meshStandardMaterial color="#081020" roughness={0.4} metalness={0.6} />
         </mesh>
 
-        {/* Collar Cyan Stripe */}
         <mesh position={[0, 0.7, 0]}>
           <cylinderGeometry args={[0.3, 0.35, 0.1, 16]} />
           <meshBasicMaterial color="#00F0FF" />
         </mesh>
 
-        {/* Shirt Front Accent (Vertical Tech Seam) */}
         <mesh position={[0, -0.05, 0.18]}>
           <planeGeometry args={[0.06, 1.2]} />
           <meshBasicMaterial color="#00F0FF" />
         </mesh>
 
-        {/* Club Chest Emblem / Badge */}
         <mesh position={[0.3, 0.3, 0.19]}>
           <circleGeometry args={[0.12, 16]} />
           <meshBasicMaterial color="#00F0FF" />
         </mesh>
 
-        {/* Back Text: "TECHTONIC" */}
         <mesh position={[0, 0.35, -0.19]} rotation={[0, Math.PI, 0]}>
           <planeGeometry args={[0.8, 0.2]} />
           <meshBasicMaterial color="#00F0FF" />
@@ -290,22 +395,22 @@ export const PerimeterGallery: React.FC = () => {
       </group>
 
       {/* Info Plaque on Wall behind Club Shirt */}
-      <mesh position={[16.5, 3.2, -4]} rotation={[0, -Math.PI / 2, 0]}>
+      <mesh
+        position={[16.5, 3.2, -4]}
+        rotation={[0, -Math.PI / 2, 0]}
+        onClick={(e) => {
+          e.stopPropagation();
+          openShirtModal();
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setHoveringInteractive(true, 'Xem Danh Sách Ban Chủ Nhiệm', openShirtModal);
+        }}
+        onPointerOut={() => setHoveringInteractive(false)}
+      >
         <planeGeometry args={[7, 3.5]} />
-        <meshStandardMaterial color="#090d16" roughness={0.3} metalness={0.8} />
+        <meshBasicMaterial map={shirtPlaqueTexture} />
       </mesh>
-
-      {/* Glowing text board description */}
-      <group position={[16.45, 3.2, -4]} rotation={[0, -Math.PI / 2, 0]}>
-        <mesh position={[0, 0.9, 0]}>
-          <planeGeometry args={[6.5, 0.04]} />
-          <meshBasicMaterial color="#00F0FF" />
-        </mesh>
-        <mesh position={[0, -1.2, 0]}>
-          <planeGeometry args={[6.5, 0.04]} />
-          <meshBasicMaterial color="#0066FF" />
-        </mesh>
-      </group>
     </group>
   );
 };

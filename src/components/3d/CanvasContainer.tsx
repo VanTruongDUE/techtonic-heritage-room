@@ -12,7 +12,7 @@ export const CanvasContainer: React.FC = () => {
           fov: 65,
           near: 0.1,
           far: 120,
-          position: [0, 2, 14],
+          position: [0, 2, 13.5],
         }}
         gl={{
           antialias: true,
@@ -21,6 +21,13 @@ export const CanvasContainer: React.FC = () => {
           toneMappingExposure: 1.15,
         }}
         dpr={[1, 2]}
+        onCreated={({ gl }) => {
+          gl.domElement.setAttribute('role', 'img');
+          gl.domElement.setAttribute(
+            'aria-label',
+            'Không gian bảo tàng 3D tương tác Phòng Truyền Thống TechTonic Club'
+          );
+        }}
       >
         <Scene />
       </Canvas>

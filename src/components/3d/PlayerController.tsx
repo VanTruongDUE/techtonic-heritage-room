@@ -1,64 +1,92 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { PointerLockControls } from '@react-three/drei';
-import { RigidBody, RapierRigidBody, CapsuleCollider } from '@react-three/rapier';
+import type { PointerLockControls as PointerLockControlsImpl } from 'three-stdlib';
+import { CapsuleCollider, RapierRigidBody, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { useKeyboardControls } from '../../hooks/useKeyboardControls';
 import { useHeritageStore } from '../../store/useHeritageStore';
+import type { ModalType } from '../../types/heritage';
 
 const SPEED_WALK = 4.5;
 const SPEED_RUN = 7.5;
 const JUMP_FORCE = 4.5;
+
+function detectZone(x: number, z: number): string {
+  if (z > 8.2) return 'Hành Lang Lối Vào';
+  if (z < -12 && Math.abs(x) < 6) return 'Vách Tâm Điểm';
+  if (x > 4 && z < -9.5) return 'Góc Truyền Thông & Lưu Bút';
+  if (x > 8.5 && z >= -9.5) return 'Khu Vực Ban Chủ Nhiệm';
+  if (x < -8.5) return 'Dòng Thời Gian & Kỷ Yếu';
+  if (Math.hypot(x, z + 5) < 6.2) return 'Đảo Vinh Danh 360°';
+  return 'Đại Sảnh Danh Dự';
+}
 
 interface PlayerControllerProps {
   initialPosition?: [number, number, number];
 }
 
 export const PlayerController: React.FC<PlayerControllerProps> = ({
-  initialPosition = [0, 1.4, 14],
+  initialPosition = [0, 1.4, 13.5],
 }) => {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
+  const controlsRef = useRef<PointerLockControlsImpl | null>(null);
   const { forward, backward, left, right, shift, jump } = useKeyboardControls();
-  const { isLocked, setLocked, activeModal } = useHeritageStore();
-  const controlsRef = useRef<any>(null);
+  const {
+    isLocked,
+    setLocked,
+    activeModal,
+    mouseSensitivity,
+    setCurrentZone,
+    teleportTarget,
+    clearTeleportTarget,
+    triggerHoveredInteraction,
+  } = useHeritageStore();
 
   const frontVector = useRef(new THREE.Vector3());
   const sideVector = useRef(new THREE.Vector3());
   const direction = useRef(new THREE.Vector3());
   const cameraEuler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'));
-
-  // Track previous modal state to detect open→close transitions
-  const prevModalRef = useRef<string | null>(null);
+  const prevModalRef = useRef<ModalType>(null);
 
   const handleLock = () => setLocked(true);
   const handleUnlock = () => setLocked(false);
 
+  // Support [E] shortcut to inspect targeted 3D exhibit while walking in FPS mode
+  useEffect(() => {
+    const handleInteractKey = (e: KeyboardEvent) => {
+      if (e.code === 'KeyE' && isLocked && !activeModal) {
+        triggerHoveredInteraction();
+      }
+    };
+    window.addEventListener('keydown', handleInteractKey);
+    return () => window.removeEventListener('keydown', handleInteractKey);
+  }, [isLocked, activeModal, triggerHoveredInteraction]);
+
   // Central logic: unlock when modal opens, re-lock when modal closes
   useEffect(() => {
     if (activeModal) {
-      // ─── MODAL OPENED ───
-      // Force-release pointer so user gets a free cursor for modal interaction.
-      // PointerLockControls is also disabled via `enabled` prop (see JSX),
-      // so no click anywhere can trigger requestPointerLock while modal is open.
       if (controlsRef.current?.isLocked) {
         controlsRef.current.unlock();
       }
       if (document.pointerLockElement) {
-        try { document.exitPointerLock(); } catch (_) {}
+        try {
+          document.exitPointerLock();
+        } catch {
+          // Ignore exitPointerLock errors when already unlocked
+        }
       }
     } else if (prevModalRef.current !== null && activeModal === null) {
-      // ─── MODAL JUST CLOSED ───
-      // Re-lock after a delay so browser has time to settle and
-      // PointerLockControls re-enables via the `enabled` prop change.
       const timer = setTimeout(() => {
         if (controlsRef.current && !controlsRef.current.isLocked) {
           try {
             controlsRef.current.lock();
-          } catch (_) {
+          } catch {
             document.querySelector('canvas')?.requestPointerLock?.();
           }
         }
       }, 200);
+      prevModalRef.current = activeModal;
       return () => clearTimeout(timer);
     }
     prevModalRef.current = activeModal;
@@ -67,11 +95,26 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
   useFrame((state) => {
     if (!rigidBodyRef.current) return;
 
+    // Handle quick teleport requests from HUD / Instructions Modal
+    if (teleportTarget) {
+      const [tx, ty, tz] = teleportTarget.position;
+      const [lx, ly, lz] = teleportTarget.lookAt;
+      rigidBodyRef.current.setTranslation({ x: tx, y: ty, z: tz }, true);
+      rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      state.camera.position.set(tx, ty + 0.6, tz);
+      state.camera.lookAt(lx, ly, lz);
+      clearTeleportTarget();
+      return;
+    }
+
     const currentVelocity = rigidBodyRef.current.linvel();
     const pos = rigidBodyRef.current.translation();
 
     // Attach camera to player head position
     state.camera.position.set(pos.x, pos.y + 0.6, pos.z);
+
+    // Update active museum zone indicator (store deduplicates unchanged values)
+    setCurrentZone(detectZone(pos.x, pos.z));
 
     // If pointer is unlocked or modal is open, decelerate smoothly
     if (!isLocked || activeModal) {
@@ -119,16 +162,10 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
 
   return (
     <>
-      {/*
-        KEY FIX: enabled={!activeModal}
-        When a modal is open, PointerLockControls is FULLY disabled —
-        its internal click-to-lock handler is removed from the DOM,
-        so NO click anywhere can trigger requestPointerLock.
-        This is why clicking tabs/buttons inside the modal no longer re-locks.
-      */}
       <PointerLockControls
         ref={controlsRef}
         enabled={!activeModal}
+        pointerSpeed={mouseSensitivity}
         onLock={handleLock}
         onUnlock={handleUnlock}
       />

@@ -1,83 +1,171 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { useHeritageStore } from '../../../store/useHeritageStore';
-import { X, Trophy, Award, Calendar, Sparkles } from 'lucide-react';
-import { ExhibitItem } from '../../../types/heritage';
+import { X, Trophy, Award, Calendar, ChevronLeft, ChevronRight, History } from 'lucide-react';
+import type { ExhibitCategory, ExhibitItem } from '../../../types/heritage';
+
+const CATEGORY_LABELS: Record<ExhibitCategory, string> = {
+  trophy: 'Cúp & Huy chương',
+  certificate: 'Bằng khen danh dự',
+  activity: 'Hoạt động tiêu biểu',
+  history: 'Dấu ấn lịch sử',
+};
 
 export const ExhibitDetailModal: React.FC = () => {
-  const { activeModal, closeModal, modalData } = useHeritageStore();
+  const { activeModal, closeModal, modalData, exhibitItems, openModal } = useHeritageStore();
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
 
-  if (activeModal !== 'exhibit' || !modalData) return null;
+  const item: ExhibitItem | null = activeModal === 'exhibit' ? modalData : null;
+  const currentIndex = item ? exhibitItems.findIndex((ex) => ex.id === item.id) : -1;
+  const canNavigate = currentIndex !== -1 && exhibitItems.length > 1;
 
-  const item: ExhibitItem = modalData;
+  const goToRelative = useCallback(
+    (offset: number) => {
+      if (!canNavigate) return;
+      const nextIdx = (currentIndex + offset + exhibitItems.length) % exhibitItems.length;
+      openModal('exhibit', exhibitItems[nextIdx]);
+    },
+    [canNavigate, currentIndex, exhibitItems, openModal]
+  );
+
+  useEffect(() => {
+    if (activeModal !== 'exhibit') return;
+    const timer = window.setTimeout(() => closeBtnRef.current?.focus(), 40);
+
+    const handleArrows = (e: KeyboardEvent) => {
+      if (!canNavigate) return;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        goToRelative(-1);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        goToRelative(1);
+      }
+    };
+    window.addEventListener('keydown', handleArrows);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('keydown', handleArrows);
+    };
+  }, [activeModal, canNavigate, goToRelative]);
+
+  if (activeModal !== 'exhibit' || !item) return null;
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="exhibit-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md animate-fade-in select-none cursor-default"
+      onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => {
+        e.stopPropagation();
         if (e.target === e.currentTarget) {
           closeModal();
         }
       }}
     >
       <div
-        className="relative w-full max-w-xl flex flex-col rounded-2xl glass-panel-glow overflow-hidden border border-tech-cyan/40"
+        className="relative w-full max-w-xl flex flex-col rounded-2xl glass-panel-glow overflow-hidden border border-tech-cyan/40 animate-panel-in"
+        onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative px-6 py-5 border-b border-tech-border/40 flex items-center justify-between bg-[#0c101c]/90">
+        <div className="relative px-6 py-5 border-b border-tech-cyan/20 flex items-center justify-between bg-[#0c101c]/95">
           <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-xl bg-tech-cyan/10 border border-tech-cyan/30 text-tech-cyan">
-              {item.category === 'trophy' ? <Trophy className="w-6 h-6 text-amber-400" /> : <Award className="w-6 h-6 text-tech-cyan" />}
-            </div>
+            {item.category === 'trophy' ? (
+              <Trophy className="w-6 h-6 text-amber-400 shrink-0" aria-hidden="true" />
+            ) : item.category === 'history' ? (
+              <History className="w-6 h-6 text-tech-cyan shrink-0" aria-hidden="true" />
+            ) : (
+              <Award className="w-6 h-6 text-tech-cyan shrink-0" aria-hidden="true" />
+            )}
             <div>
-              <span className="text-[11px] font-mono uppercase tracking-widest text-tech-cyan font-semibold flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-tech-cyan" /> Hiện vật bảo tàng
-              </span>
-              <h2 className="text-lg md:text-xl font-bold text-white font-['Outfit']">
+              <h2
+                id="exhibit-modal-title"
+                className="text-lg md:text-xl font-bold text-white tracking-tight"
+              >
                 CHI TIẾT HIỆN VẬT VINH DANH
               </h2>
+              <p className="text-xs text-slate-300 mt-0.5">
+                {CATEGORY_LABELS[item.category]}
+                {canNavigate && (
+                  <span className="font-mono text-tech-cyan ml-2 tabular-nums">
+                    ({currentIndex + 1}/{exhibitItems.length})
+                  </span>
+                )}
+              </p>
             </div>
           </div>
 
           <button
+            ref={closeBtnRef}
+            type="button"
             onClick={closeModal}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label="Đóng chi tiết hiện vật"
             title="Đóng (ESC)"
           >
-            <X className="w-6 h-6" />
+            <X className="w-6 h-6" aria-hidden="true" />
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="p-6 space-y-4 bg-[#0a0d14]/80">
+        <div className="p-6 space-y-4 bg-[#0a0d14]/85">
           {item.highlight && (
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-tech-cyan/10 border border-tech-cyan/30 text-tech-cyan">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-tech-cyan/15 border border-tech-cyan/35 text-tech-cyan">
               {item.highlight}
             </div>
           )}
 
-          <h3 className="text-xl font-bold text-white font-['Outfit']">
+          <h3 className="text-xl font-bold text-white tracking-tight leading-snug">
             {item.title}
           </h3>
 
-          <div className="flex items-center space-x-4 text-xs font-mono text-slate-400">
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 text-tech-cyan" /> Năm đạt giải: {item.year}
+          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300">
+            <span className="flex items-center gap-1.5 font-mono tabular-nums">
+              <Calendar className="w-3.5 h-3.5 text-tech-cyan" aria-hidden="true" />
+              Mốc thời gian: {item.year}
             </span>
-            <span>•</span>
-            <span className="capitalize">Phân loại: {item.category}</span>
+            <span aria-hidden="true">•</span>
+            <span>Phân loại: {CATEGORY_LABELS[item.category]}</span>
           </div>
 
-          <p className="text-sm text-slate-300 leading-relaxed font-light bg-[#121824]/50 p-4 rounded-xl border border-white/5">
+          <p className="text-sm text-slate-200 leading-relaxed bg-[#121824]/75 p-4 rounded-xl border border-white/10">
             {item.description}
           </p>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3.5 bg-[#0a0d14] border-t border-white/10 flex justify-end">
+        <div className="px-6 py-3.5 bg-[#0a0d14] border-t border-white/10 flex items-center justify-between gap-3">
+          {canNavigate ? (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => goToRelative(-1)}
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-medium transition cursor-pointer"
+                aria-label="Hiện vật trước"
+              >
+                <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+                Trước
+              </button>
+              <button
+                type="button"
+                onClick={() => goToRelative(1)}
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-medium transition cursor-pointer"
+                aria-label="Hiện vật tiếp theo"
+              >
+                Sau
+                <ChevronRight className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </div>
+          ) : (
+            <span className="text-xs text-slate-400">Nhấn ESC để quay lại tham quan 3D</span>
+          )}
+
           <button
+            type="button"
             onClick={closeModal}
-            className="px-5 py-2 rounded-xl bg-gradient-to-r from-tech-cyan to-tech-blue text-black font-semibold text-xs transition hover:shadow-[0_0_15px_rgba(0,240,255,0.4)]"
+            className="px-5 py-2 rounded-xl bg-tech-cyan text-slate-950 font-semibold text-xs hover:bg-[#33f3ff] transition cursor-pointer"
           >
             Tiếp tục tham quan
           </button>

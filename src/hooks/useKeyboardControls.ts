@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useHeritageStore } from '../store/useHeritageStore';
 
 export interface MovementKeys {
   forward: boolean;
@@ -9,22 +10,32 @@ export interface MovementKeys {
   jump: boolean;
 }
 
+const INITIAL_MOVEMENT: MovementKeys = {
+  forward: false,
+  backward: false,
+  left: false,
+  right: false,
+  shift: false,
+  jump: false,
+};
+
 export const useKeyboardControls = () => {
-  const [movement, setMovement] = useState<MovementKeys>({
-    forward: false,
-    backward: false,
-    left: false,
-    right: false,
-    shift: false,
-    jump: false,
-  });
+  const [movement, setMovement] = useState<MovementKeys>(INITIAL_MOVEMENT);
+  const { isLocked, activeModal } = useHeritageStore();
+
+  // Reset held keys whenever pointer unlocks or modal opens so movement never gets stuck
+  useEffect(() => {
+    if (!isLocked || activeModal) {
+      setMovement(INITIAL_MOVEMENT);
+    }
+  }, [isLocked, activeModal]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if typing inside input or textarea
       if (
         document.activeElement?.tagName === 'INPUT' ||
-        document.activeElement?.tagName === 'TEXTAREA'
+        document.activeElement?.tagName === 'TEXTAREA' ||
+        document.activeElement?.tagName === 'SELECT'
       ) {
         return;
       }
@@ -32,26 +43,26 @@ export const useKeyboardControls = () => {
       switch (e.code) {
         case 'KeyW':
         case 'ArrowUp':
-          setMovement((m) => ({ ...m, forward: true }));
+          setMovement((m) => (m.forward ? m : { ...m, forward: true }));
           break;
         case 'KeyS':
         case 'ArrowDown':
-          setMovement((m) => ({ ...m, backward: true }));
+          setMovement((m) => (m.backward ? m : { ...m, backward: true }));
           break;
         case 'KeyA':
         case 'ArrowLeft':
-          setMovement((m) => ({ ...m, left: true }));
+          setMovement((m) => (m.left ? m : { ...m, left: true }));
           break;
         case 'KeyD':
         case 'ArrowRight':
-          setMovement((m) => ({ ...m, right: true }));
+          setMovement((m) => (m.right ? m : { ...m, right: true }));
           break;
         case 'ShiftLeft':
         case 'ShiftRight':
-          setMovement((m) => ({ ...m, shift: true }));
+          setMovement((m) => (m.shift ? m : { ...m, shift: true }));
           break;
         case 'Space':
-          setMovement((m) => ({ ...m, jump: true }));
+          setMovement((m) => (m.jump ? m : { ...m, jump: true }));
           break;
         default:
           break;
@@ -62,38 +73,44 @@ export const useKeyboardControls = () => {
       switch (e.code) {
         case 'KeyW':
         case 'ArrowUp':
-          setMovement((m) => ({ ...m, forward: false }));
+          setMovement((m) => (m.forward ? { ...m, forward: false } : m));
           break;
         case 'KeyS':
         case 'ArrowDown':
-          setMovement((m) => ({ ...m, backward: false }));
+          setMovement((m) => (m.backward ? { ...m, backward: false } : m));
           break;
         case 'KeyA':
         case 'ArrowLeft':
-          setMovement((m) => ({ ...m, left: false }));
+          setMovement((m) => (m.left ? { ...m, left: false } : m));
           break;
         case 'KeyD':
         case 'ArrowRight':
-          setMovement((m) => ({ ...m, right: false }));
+          setMovement((m) => (m.right ? { ...m, right: false } : m));
           break;
         case 'ShiftLeft':
         case 'ShiftRight':
-          setMovement((m) => ({ ...m, shift: false }));
+          setMovement((m) => (m.shift ? { ...m, shift: false } : m));
           break;
         case 'Space':
-          setMovement((m) => ({ ...m, jump: false }));
+          setMovement((m) => (m.jump ? { ...m, jump: false } : m));
           break;
         default:
           break;
       }
     };
 
+    const handleBlur = () => {
+      setMovement(INITIAL_MOVEMENT);
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleBlur);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleBlur);
     };
   }, []);
 

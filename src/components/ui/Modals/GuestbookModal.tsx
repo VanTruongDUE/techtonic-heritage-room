@@ -1,31 +1,69 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useHeritageStore } from '../../../store/useHeritageStore';
-import { X, BookOpen, Send, Sparkles, MessageSquare, Heart } from 'lucide-react';
+import {
+  X,
+  BookOpen,
+  Send,
+  Sparkles,
+  MessageSquare,
+  Heart,
+  AlertCircle,
+  RefreshCw,
+  Database,
+  Loader2,
+} from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+const MAX_MESSAGE_LEN = 500;
+
 export const GuestbookModal: React.FC = () => {
-  const { activeModal, closeModal, guestbookEntries, addGuestbookEntry } = useHeritageStore();
+  const {
+    activeModal,
+    closeModal,
+    guestbookEntries,
+    guestbookStatus,
+    guestbookError,
+    guestbookFieldErrors,
+    storageMode,
+    loadGuestbook,
+    submitGuestbookEntry,
+    clearGuestbookErrors,
+  } = useHeritageStore();
+
   const [author, setAuthor] = useState('');
   const [roleOrAffiliation, setRoleOrAffiliation] = useState('');
   const [message, setMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
+  const authorInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (activeModal === 'guestbook') {
+      void loadGuestbook();
+      const timer = window.setTimeout(() => authorInputRef.current?.focus(), 40);
+      return () => window.clearTimeout(timer);
+    }
+  }, [activeModal, loadGuestbook]);
 
   if (activeModal !== 'guestbook') return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!author.trim() || !message.trim()) return;
+  const isSubmitting = guestbookStatus === 'submitting';
+  const isLoadingList = guestbookStatus === 'loading';
 
-    addGuestbookEntry({
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+
+    const ok = await submitGuestbookEntry({
       author: author.trim(),
       roleOrAffiliation: roleOrAffiliation.trim() || 'Khách tham quan',
       message: message.trim(),
     });
 
-    // Trigger celebratory confetti
+    if (!ok) return;
+
     confetti({
-      particleCount: 80,
-      spread: 70,
+      particleCount: 70,
+      spread: 65,
       origin: { y: 0.6 },
       colors: ['#00F0FF', '#0066FF', '#FF0055', '#FFD700'],
     });
@@ -34,11 +72,21 @@ export const GuestbookModal: React.FC = () => {
     setAuthor('');
     setRoleOrAffiliation('');
     setMessage('');
-    setTimeout(() => setIsSuccess(false), 3000);
+    window.setTimeout(() => setIsSuccess(false), 3500);
   };
+
+  const storageLabel =
+    storageMode === 'local'
+      ? 'Lưu cục bộ trên trình duyệt'
+      : storageMode === 'kv'
+      ? 'Đồng bộ Cloud KV'
+      : 'Đồng bộ máy chủ';
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="guestbook-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md animate-fade-in select-none cursor-default"
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => {
@@ -49,136 +97,232 @@ export const GuestbookModal: React.FC = () => {
       }}
     >
       <div
-        className="relative w-full max-w-3xl max-h-[85vh] flex flex-col rounded-2xl glass-panel-glow overflow-hidden border border-tech-cyan/40"
+        className="relative w-full max-w-3xl max-h-[86vh] flex flex-col rounded-2xl glass-panel-glow overflow-hidden border border-tech-cyan/40 animate-panel-in"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative px-6 py-5 border-b border-tech-border/40 flex items-center justify-between bg-[#0c101c]/90">
+        <div className="relative px-6 py-5 border-b border-tech-cyan/20 flex items-center justify-between bg-[#0c101c]/95">
           <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-xl bg-tech-cyan/10 border border-tech-cyan/30 text-tech-cyan">
-              <BookOpen className="w-6 h-6" />
-            </div>
+            <BookOpen className="w-6 h-6 text-tech-cyan shrink-0" aria-hidden="true" />
             <div>
-              <span className="text-[11px] font-mono uppercase tracking-widest text-tech-cyan font-semibold">
-                Sổ Lưu Bút Danh Dự (Guestbook)
-              </span>
-              <h2 className="text-xl md:text-2xl font-bold text-white font-['Outfit']">
+              <h2
+                id="guestbook-modal-title"
+                className="text-xl md:text-2xl font-bold text-white tracking-tight"
+              >
                 LỜI CHÚC & DẤU ẤN KỶ NIỆM TECHTONIC
               </h2>
+              <div className="flex items-center gap-2 text-xs text-slate-300 mt-0.5">
+                <span>Sổ Lưu Bút Danh Dự</span>
+                <span aria-hidden="true">•</span>
+                <span className="inline-flex items-center gap-1 text-tech-cyan">
+                  <Database className="w-3 h-3" aria-hidden="true" />
+                  {storageLabel}
+                </span>
+              </div>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={closeModal}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label="Đóng sổ lưu bút"
             title="Đóng (ESC)"
           >
-            <X className="w-6 h-6" />
+            <X className="w-6 h-6" aria-hidden="true" />
           </button>
         </div>
 
-        {/* Content Body: Split view (Form + List) */}
+        {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Left: Input Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
-            <h3 className="text-sm font-semibold text-white uppercase tracking-wider font-mono flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-tech-cyan" /> Viết lời chúc của bạn
+          <form onSubmit={handleSubmit} className="flex flex-col space-y-4" noValidate>
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-tech-cyan" aria-hidden="true" />
+              Viết lời chúc của bạn
             </h3>
 
             {isSuccess && (
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2 animate-bounce">
-                <Sparkles className="w-4 h-4 shrink-0" />
+              <div
+                role="status"
+                className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-400/40 text-emerald-200 text-xs flex items-center gap-2 animate-fade-in"
+              >
+                <Sparkles className="w-4 h-4 shrink-0 text-emerald-300" aria-hidden="true" />
                 Cảm ơn bạn! Lời chúc đã được lưu vào sổ lưu bút TechTonic.
               </div>
             )}
 
+            {guestbookError && (
+              <div
+                role="alert"
+                className="p-3 rounded-xl bg-rose-500/15 border border-rose-400/40 text-rose-200 text-xs flex items-start justify-between gap-2"
+              >
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-300" aria-hidden="true" />
+                  <span>{guestbookError}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void loadGuestbook()}
+                  className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-white text-[11px] cursor-pointer"
+                >
+                  <RefreshCw className="w-3 h-3" aria-hidden="true" />
+                  Thử lại
+                </button>
+              </div>
+            )}
+
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label htmlFor="gb-author" className="block text-xs font-medium text-slate-200 mb-1.5">
                 Họ và tên của bạn <span className="text-tech-cyan">*</span>
               </label>
               <input
+                ref={authorInputRef}
+                id="gb-author"
                 type="text"
                 required
+                minLength={2}
+                maxLength={80}
                 value={author}
-                onChange={(e) => setAuthor(e.target.value)}
+                onChange={(e) => {
+                  setAuthor(e.target.value);
+                  if (guestbookError || guestbookFieldErrors) clearGuestbookErrors();
+                }}
                 placeholder="VD: Nguyễn Văn A"
-                className="w-full px-3.5 py-2 rounded-xl bg-[#0e1422] border border-tech-border/40 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-tech-cyan focus:ring-1 focus:ring-tech-cyan"
+                aria-invalid={Boolean(guestbookFieldErrors?.author)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#0e1422] border border-white/15 text-slate-100 placeholder-slate-400 text-sm focus:outline-none focus:border-tech-cyan"
               />
+              {guestbookFieldErrors?.author && (
+                <p className="text-xs text-rose-300 mt-1">{guestbookFieldErrors.author}</p>
+              )}
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label htmlFor="gb-role" className="block text-xs font-medium text-slate-200 mb-1.5">
                 Đơn vị / Khóa / Mối liên hệ
               </label>
               <input
+                id="gb-role"
                 type="text"
+                maxLength={100}
                 value={roleOrAffiliation}
                 onChange={(e) => setRoleOrAffiliation(e.target.value)}
                 placeholder="VD: Cựu thành viên K21 / Khách mời TechTalk"
-                className="w-full px-3.5 py-2 rounded-xl bg-[#0e1422] border border-tech-border/40 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-tech-cyan focus:ring-1 focus:ring-tech-cyan"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#0e1422] border border-white/15 text-slate-100 placeholder-slate-400 text-sm focus:outline-none focus:border-tech-cyan"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
-                Lời nhắn gửi / Cảm nhận <span className="text-tech-cyan">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="gb-message" className="block text-xs font-medium text-slate-200">
+                  Lời nhắn gửi / Cảm nhận <span className="text-tech-cyan">*</span>
+                </label>
+                <span className="text-[11px] font-mono text-slate-400 tabular-nums">
+                  {message.length}/{MAX_MESSAGE_LEN}
+                </span>
+              </div>
               <textarea
+                id="gb-message"
                 required
+                minLength={5}
+                maxLength={MAX_MESSAGE_LEN}
                 rows={4}
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={(e) => {
+                  setMessage(e.target.value);
+                  if (guestbookError || guestbookFieldErrors) clearGuestbookErrors();
+                }}
                 placeholder="Gửi gắm lời chúc, kỷ niệm hoặc cảm nhận của bạn khi tham quan phòng truyền thống..."
-                className="w-full px-3.5 py-2 rounded-xl bg-[#0e1422] border border-tech-border/40 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-tech-cyan focus:ring-1 focus:ring-tech-cyan resize-none"
+                aria-invalid={Boolean(guestbookFieldErrors?.message)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#0e1422] border border-white/15 text-slate-100 placeholder-slate-400 text-sm focus:outline-none focus:border-tech-cyan resize-none"
               />
+              {guestbookFieldErrors?.message && (
+                <p className="text-xs text-rose-300 mt-1">{guestbookFieldErrors.message}</p>
+              )}
             </div>
 
             <button
               type="submit"
-              className="mt-2 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-tech-cyan to-tech-blue text-black font-semibold text-sm flex items-center justify-center space-x-2 hover:shadow-[0_0_20px_rgba(0,240,255,0.4)] transition-all cursor-pointer"
+              disabled={isSubmitting}
+              className="mt-1 w-full py-2.5 px-4 rounded-xl bg-tech-cyan text-slate-950 font-semibold text-sm flex items-center justify-center space-x-2 hover:bg-[#33f3ff] disabled:opacity-60 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
-              <Send className="w-4 h-4" />
-              <span>GỬI LỜI CHÚC LƯU BÚT</span>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                  <span>ĐANG LƯU LỜI CHÚC...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" aria-hidden="true" />
+                  <span>GỬI LỜI CHÚC LƯU BÚT</span>
+                </>
+              )}
             </button>
           </form>
 
           {/* Right: Existing Messages List */}
-          <div className="flex flex-col space-y-3">
-            <h3 className="text-sm font-semibold text-white uppercase tracking-wider font-mono flex items-center justify-between">
+          <div className="flex flex-col space-y-3 min-h-0">
+            <h3 className="text-sm font-semibold text-white flex items-center justify-between">
               <span className="flex items-center gap-2">
-                <Heart className="w-4 h-4 text-tech-accent" /> Lưu bút gần đây
+                <Heart className="w-4 h-4 text-tech-accent" aria-hidden="true" /> Lưu bút gần đây
               </span>
-              <span className="text-xs text-tech-cyan font-normal">{guestbookEntries.length} lời nhắn</span>
+              <span className="text-xs text-tech-cyan font-mono tabular-nums">
+                {guestbookEntries.length} lời nhắn
+              </span>
             </h3>
 
             <div className="flex-1 max-h-[360px] overflow-y-auto space-y-3 pr-1">
-              {guestbookEntries.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="p-3.5 rounded-xl bg-[#0e1422]/60 border border-white/5 hover:border-tech-cyan/30 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-1.5">
-                    <div>
-                      <div className="text-sm font-bold text-white">{entry.author}</div>
-                      <div className="text-[11px] text-tech-cyan font-mono">{entry.roleOrAffiliation}</div>
+              {isLoadingList ? (
+                <div className="space-y-3" aria-label="Đang tải danh sách lưu bút">
+                  {[1, 2, 3].map((item) => (
+                    <div
+                      key={item}
+                      className="p-3.5 rounded-xl bg-[#0e1422]/70 border border-white/10 animate-pulse space-y-2"
+                    >
+                      <div className="h-3.5 w-32 bg-white/10 rounded" />
+                      <div className="h-3 w-24 bg-white/10 rounded" />
+                      <div className="h-10 w-full bg-white/5 rounded" />
                     </div>
-                    <span className="text-[10px] text-slate-500 font-mono">{entry.timestamp}</span>
-                  </div>
-                  <p className="text-xs text-slate-300 leading-relaxed italic font-light">
-                    "{entry.message}"
+                  ))}
+                </div>
+              ) : guestbookEntries.length === 0 ? (
+                <div className="p-8 rounded-xl bg-[#0e1422]/60 border border-white/10 text-center">
+                  <p className="text-xs text-slate-300">
+                    Chưa có lời chúc nào. Hãy là người đầu tiên lưu lại dấu ấn tại phòng truyền thống!
                   </p>
                 </div>
-              ))}
+              ) : (
+                guestbookEntries.map((entry) => (
+                  <article
+                    key={entry.id}
+                    className="p-3.5 rounded-xl bg-[#0e1422]/85 border border-white/10 hover:border-tech-cyan/35 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <div>
+                        <div className="text-sm font-bold text-white">{entry.author}</div>
+                        <div className="text-xs text-tech-cyan">{entry.roleOrAffiliation}</div>
+                      </div>
+                      <time className="text-[11px] text-slate-400 font-mono tabular-nums shrink-0">
+                        {entry.timestamp}
+                      </time>
+                    </div>
+                    <p className="text-xs text-slate-200 leading-relaxed italic">
+                      "{entry.message}"
+                    </p>
+                  </article>
+                ))
+              )}
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 bg-[#0a0d14] border-t border-white/10 flex justify-end">
+        <div className="px-6 py-3.5 bg-[#0a0d14] border-t border-white/10 flex justify-end">
           <button
+            type="button"
             onClick={closeModal}
-            className="px-4 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium text-xs transition"
+            className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium text-xs transition cursor-pointer"
           >
             Đóng cửa sổ
           </button>
