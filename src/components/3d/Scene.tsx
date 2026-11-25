@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { Physics } from '@react-three/rapier';
 import { StudioLights } from './Environment/StudioLights';
+import { CosmicBackdrop } from './Environment/CosmicBackdrop';
 import { MuseumRoom } from './Environment/MuseumRoom';
 import { CenterWall } from './Exhibits/CenterWall';
 import { PerimeterGallery } from './Exhibits/PerimeterGallery';
@@ -16,8 +17,11 @@ import { CodeCosmosOrbit } from './Effects/CodeCosmosOrbit';
 export const Scene: React.FC = () => {
   return (
     <Suspense fallback={null}>
-      <color attach="background" args={['#050811']} />
-      <fog attach="fog" args={['#050811', 48, 115]} />
+      <color attach="background" args={['#02040b']} />
+      <fog attach="fog" args={['#02040b', 150, 320]} />
+
+      {/* 360° Deep-Space Starfield, Nebula & Glowing 3D Moon outside the Observatory */}
+      <CosmicBackdrop />
 
       {/* Lighting System outside Physics */}
       <StudioLights />

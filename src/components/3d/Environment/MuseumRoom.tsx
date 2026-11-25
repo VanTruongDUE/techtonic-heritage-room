@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { MeshReflectorMaterial, RoundedBox } from '@react-three/drei';
-import { RigidBody } from '@react-three/rapier';
+import { CuboidCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import {
   createArchitecturalWallMaps,
@@ -177,58 +177,133 @@ export const MuseumRoom: React.FC = () => {
 
   return (
     <group>
-      {/* ================= REAL-TIME REFLECTIVE HONED TERRAZZO FLOOR ================= */}
-      <RigidBody type="fixed" friction={1} restitution={0}>
-        {/* Invisible physics floor slab for hall */}
-        <mesh position={[0, -0.055, -5]}>
-          <boxGeometry args={[34, 0.1, 28]} />
-          <meshStandardMaterial color="#0b111c" roughness={0.85} />
-        </mesh>
+      {/* ================= DEEP-SPACE COSMIC REFLECTIVE OBSERVATORY FLOOR ================= */}
+      <RigidBody type="fixed" colliders={false} friction={1} restitution={0}>
+        {/* Explicit solid physics colliders for Main Hall & Tunnel floors */}
+        <CuboidCollider args={[17, 0.05, 14]} position={[0, -0.055, -5]} />
+        <CuboidCollider args={[3, 0.05, 10.2]} position={[0, -0.05, 18.5]} />
 
-        {/* Tunnel Floor */}
+        {/* Tunnel Cosmic Obsidian Glass Walkway Floor */}
         <mesh position={[0, -0.05, 18.5]} receiveShadow>
           <boxGeometry args={[6, 0.1, 20.4]} />
-          <meshStandardMaterial
+          <meshPhysicalMaterial
             map={floorMaps.map}
             roughnessMap={floorMaps.roughnessMap}
             bumpMap={floorMaps.bumpMap}
-            bumpScale={0.008}
-            color="#b4c8e4"
-            roughness={0.44}
-            metalness={0.22}
-            envMapIntensity={0.65}
+            bumpScale={0.006}
+            color="#203252"
+            roughness={0.26}
+            metalness={0.38}
+            clearcoat={0.55}
+            clearcoatRoughness={0.22}
+            envMapIntensity={0.95}
           />
         </mesh>
       </RigidBody>
 
-      {/* Main Hall Planar Real-Time Blurred Reflector Floor (moves naturally with player camera) */}
+      {/* Main Hall Planar Real-Time Space-Mirror Reflector Floor (reflects stars, Moon, neon & golden island!) */}
       <mesh position={[0, 0.002, -5]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[34, 28]} />
+        <planeGeometry args={[31.8, 25.8]} />
         <MeshReflectorMaterial
           key={`floor-reflector-${graphicsQuality}`}
-          blur={graphicsQuality === 'high' ? [360, 100] : [220, 80]}
+          blur={graphicsQuality === 'high' ? [260, 80] : [180, 60]}
           resolution={graphicsQuality === 'high' ? 512 : 256}
-          mixBlur={0.94}
-          mixStrength={graphicsQuality === 'high' ? 0.48 : 0.4}
-          roughness={0.56}
-          depthScale={0.85}
+          mixBlur={0.86}
+          mixStrength={graphicsQuality === 'high' ? 0.62 : 0.48}
+          roughness={0.42}
+          depthScale={0.8}
           minDepthThreshold={0.4}
-          maxDepthThreshold={1.35}
-          color="#162238"
-          metalness={0.28}
-          mirror={0.45}
+          maxDepthThreshold={1.4}
+          color="#0e182c"
+          metalness={0.36}
+          mirror={0.58}
           map={floorMaps.map}
           roughnessMap={floorMaps.roughnessMap}
           bumpMap={floorMaps.bumpMap}
-          bumpScale={0.005}
+          bumpScale={0.004}
         />
       </mesh>
 
-      {/* ================= CEILING, COFFER BEAMS & NEON LIGHT CONES ================= */}
-      <mesh position={[0, 6.5, 5]}>
-        <boxGeometry args={[36, 0.2, 52]} />
-        <meshStandardMaterial color="#060a14" roughness={0.82} metalness={0.18} />
+      {/* Perimeter Translucent Cosmic-Glass Floor Viewing Borders (peek into starry void beneath the station!) */}
+      {[
+        { pos: [0, 0.001, -18.25] as [number, number, number], args: [33.4, 1.1] as [number, number] },
+        { pos: [-16.25, 0.001, -5] as [number, number, number], args: [1.1, 26.8] as [number, number] },
+        { pos: [16.25, 0.001, -5] as [number, number, number], args: [1.1, 26.8] as [number, number] },
+        { pos: [-9.75, 0.001, 7.95] as [number, number, number], args: [14.2, 1.1] as [number, number] },
+        { pos: [9.75, 0.001, 7.95] as [number, number, number], args: [14.2, 1.1] as [number, number] },
+      ].map((strip, idx) => (
+        <mesh
+          key={`cosmic-floor-trench-${idx}`}
+          position={strip.pos}
+          rotation={[-Math.PI / 2, 0, 0]}
+        >
+          <planeGeometry args={strip.args} />
+          <meshPhysicalMaterial
+            color="#071327"
+            transparent
+            opacity={0.38}
+            roughness={0.08}
+            metalness={0.25}
+            clearcoat={0.9}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+
+      {/* ================= PANORAMIC GLASS SKYLIGHT OBSERVATORY CEILING ================= */}
+      {/* Ultra-clear tinted cosmic skylight glass panes overhead (revealing stars, nebula & Moon!) */}
+      <mesh position={[0, 6.52, -5]} rotation={[Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[33.2, 27.2]} />
+        <meshPhysicalMaterial
+          color="#0a1933"
+          transparent
+          opacity={0.12}
+          roughness={0.06}
+          metalness={0.18}
+          clearcoat={0.85}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
       </mesh>
+      <mesh position={[0, 6.52, 18.5]} rotation={[Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[5.2, 20.4]} />
+        <meshPhysicalMaterial
+          color="#0a1933"
+          transparent
+          opacity={0.14}
+          roughness={0.06}
+          metalness={0.18}
+          clearcoat={0.85}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Architectural Titanium Roof Perimeter Fascia & Longitudinal Skylight Girders */}
+      {[
+        { pos: [0, 6.48, -18.5] as [number, number, number], args: [34.4, 0.24, 1.1] as [number, number, number] },
+        { pos: [-16.6, 6.48, -5] as [number, number, number], args: [1.1, 0.24, 28.0] as [number, number, number] },
+        { pos: [16.6, 6.48, -5] as [number, number, number], args: [1.1, 0.24, 28.0] as [number, number, number] },
+        { pos: [-9.8, 6.48, 8.3] as [number, number, number], args: [14.6, 0.24, 1.1] as [number, number, number] },
+        { pos: [9.8, 6.48, 8.3] as [number, number, number], args: [14.6, 0.24, 1.1] as [number, number, number] },
+        // 3 Longitudinal skylight structural ribs spanning front-to-back across the glass roof
+        { pos: [-10, 6.46, -5] as [number, number, number], args: [0.22, 0.18, 26.8] as [number, number, number] },
+        { pos: [0, 6.46, -5] as [number, number, number], args: [0.24, 0.18, 26.8] as [number, number, number] },
+        { pos: [10, 6.46, -5] as [number, number, number], args: [0.22, 0.18, 26.8] as [number, number, number] },
+        // Tunnel skylight edge rails
+        { pos: [-2.45, 6.48, 18.5] as [number, number, number], args: [0.28, 0.2, 20.4] as [number, number, number] },
+        { pos: [2.45, 6.48, 18.5] as [number, number, number], args: [0.28, 0.2, 20.4] as [number, number, number] },
+      ].map((g, idx) => (
+        <mesh key={`skylight-girder-${idx}`} position={g.pos}>
+          <boxGeometry args={g.args} />
+          <meshStandardMaterial
+            color="#101a2e"
+            roughnessMap={metalMaps.roughnessMap}
+            metalness={0.76}
+            roughness={0.32}
+          />
+        </mesh>
+      ))}
 
       {HALL_BEAM_CONFIG.map((beam) => (
         <group key={`beam-${beam.z}`} position={[0, 6.32, beam.z]}>
@@ -428,109 +503,94 @@ export const MuseumRoom: React.FC = () => {
         </group>
       ))}
 
-      {/* ================= ARCHITECTURAL WALLS WITH PLASTER TEXTURE & PHYSICS ================= */}
-      <RigidBody type="fixed">
-        <mesh position={[0, 3.25, -19]} receiveShadow>
-          <boxGeometry args={[34, 6.5, 0.8]} />
-          <meshStandardMaterial
-            map={wallMaps.map}
-            roughnessMap={wallMaps.roughnessMap}
-            bumpMap={wallMaps.bumpMap}
-            bumpScale={0.012}
-            color="#a6b9d8"
-            roughness={0.76}
-            metalness={0.14}
-          />
-        </mesh>
-
-        <mesh position={[-17, 3.25, -5]} receiveShadow>
-          <boxGeometry args={[0.8, 6.5, 28]} />
-          <meshStandardMaterial
-            map={wallMaps.map}
-            roughnessMap={wallMaps.roughnessMap}
-            bumpMap={wallMaps.bumpMap}
-            bumpScale={0.012}
-            color="#a6b9d8"
-            roughness={0.76}
-            metalness={0.14}
-          />
-        </mesh>
-
-        <mesh position={[17, 3.25, -5]} receiveShadow>
-          <boxGeometry args={[0.8, 6.5, 28]} />
-          <meshStandardMaterial
-            map={wallMaps.map}
-            roughnessMap={wallMaps.roughnessMap}
-            bumpMap={wallMaps.bumpMap}
-            bumpScale={0.012}
-            color="#a6b9d8"
-            roughness={0.76}
-            metalness={0.14}
-          />
-        </mesh>
-
-        <mesh position={[-9.75, 3.25, 8.5]} receiveShadow>
-          <boxGeometry args={[14.5, 6.5, 0.8]} />
-          <meshStandardMaterial
-            map={wallMaps.map}
-            roughnessMap={wallMaps.roughnessMap}
-            bumpMap={wallMaps.bumpMap}
-            bumpScale={0.012}
-            color="#a6b9d8"
-            roughness={0.76}
-            metalness={0.14}
-          />
-        </mesh>
-
-        <mesh position={[9.75, 3.25, 8.5]} receiveShadow>
-          <boxGeometry args={[14.5, 6.5, 0.8]} />
-          <meshStandardMaterial
-            map={wallMaps.map}
-            roughnessMap={wallMaps.roughnessMap}
-            bumpMap={wallMaps.bumpMap}
-            bumpScale={0.012}
-            color="#a6b9d8"
-            roughness={0.76}
-            metalness={0.14}
-          />
-        </mesh>
-
-        <mesh position={[-2.6, 3.25, 18.5]} receiveShadow>
-          <boxGeometry args={[0.4, 6.5, 20.4]} />
-          <meshStandardMaterial
-            map={wallMaps.map}
-            bumpMap={wallMaps.bumpMap}
-            bumpScale={0.01}
-            color="#cfdcf0"
-            roughness={0.68}
-            metalness={0.14}
-          />
-        </mesh>
-
-        <mesh position={[2.6, 3.25, 18.5]} receiveShadow>
-          <boxGeometry args={[0.4, 6.5, 20.4]} />
-          <meshStandardMaterial
-            map={wallMaps.map}
-            bumpMap={wallMaps.bumpMap}
-            bumpScale={0.01}
-            color="#cfdcf0"
-            roughness={0.68}
-            metalness={0.14}
-          />
-        </mesh>
-
-        <mesh position={[0, 3.25, 28.7]}>
-          <boxGeometry args={[5.6, 6.5, 0.4]} />
-          <meshStandardMaterial
-            map={wallMaps.map}
-            bumpMap={wallMaps.bumpMap}
-            bumpScale={0.01}
-            color="#cfdcf0"
-            roughness={0.68}
-            metalness={0.14}
-          />
-        </mesh>
+      {/* ================= PANORAMIC COSMIC-GLASS OBSERVATORY WALLS & EXACT PHYSICS ================= */}
+      {/* Explicit 1:1 solid physics boundary walls (zero layout or collision changes) */}
+      <RigidBody type="fixed" colliders={false}>
+        <CuboidCollider args={[17, 3.25, 0.4]} position={[0, 3.25, -19]} />
+        <CuboidCollider args={[0.4, 3.25, 14]} position={[-17, 3.25, -5]} />
+        <CuboidCollider args={[0.4, 3.25, 14]} position={[17, 3.25, -5]} />
+        <CuboidCollider args={[7.25, 3.25, 0.4]} position={[-9.75, 3.25, 8.5]} />
+        <CuboidCollider args={[7.25, 3.25, 0.4]} position={[9.75, 3.25, 8.5]} />
+        <CuboidCollider args={[0.2, 3.25, 10.2]} position={[-2.6, 3.25, 18.5]} />
+        <CuboidCollider args={[0.2, 3.25, 10.2]} position={[2.6, 3.25, 18.5]} />
+        <CuboidCollider args={[2.8, 3.25, 0.2]} position={[0, 3.25, 28.7]} />
       </RigidBody>
+
+      {/* Architectural Solid Obsidian Dado Bases (y=0..0.92) & Upper Cornice Headers (y=6.0..6.5) */}
+      {[
+        { pos: [0, 0.46, -18.85] as [number, number, number], args: [34, 0.92, 0.45] as [number, number, number] },
+        { pos: [0, 6.26, -18.85] as [number, number, number], args: [34, 0.48, 0.45] as [number, number, number] },
+        { pos: [-16.85, 0.46, -5] as [number, number, number], args: [0.45, 0.92, 28] as [number, number, number] },
+        { pos: [-16.85, 6.26, -5] as [number, number, number], args: [0.45, 0.48, 28] as [number, number, number] },
+        { pos: [16.85, 0.46, -5] as [number, number, number], args: [0.45, 0.92, 28] as [number, number, number] },
+        { pos: [16.85, 6.26, -5] as [number, number, number], args: [0.45, 0.48, 28] as [number, number, number] },
+        { pos: [-9.75, 0.46, 8.35] as [number, number, number], args: [14.5, 0.92, 0.45] as [number, number, number] },
+        { pos: [-9.75, 6.26, 8.35] as [number, number, number], args: [14.5, 0.48, 0.45] as [number, number, number] },
+        { pos: [9.75, 0.46, 8.35] as [number, number, number], args: [14.5, 0.92, 0.45] as [number, number, number] },
+        { pos: [9.75, 6.26, 8.35] as [number, number, number], args: [14.5, 0.48, 0.45] as [number, number, number] },
+        // Entrance Tunnel dado & header frames
+        { pos: [-2.55, 0.46, 18.5] as [number, number, number], args: [0.28, 0.92, 20.4] as [number, number, number] },
+        { pos: [-2.55, 6.26, 18.5] as [number, number, number], args: [0.28, 0.48, 20.4] as [number, number, number] },
+        { pos: [2.55, 0.46, 18.5] as [number, number, number], args: [0.28, 0.92, 20.4] as [number, number, number] },
+        { pos: [2.55, 6.26, 18.5] as [number, number, number], args: [0.28, 0.48, 20.4] as [number, number, number] },
+        { pos: [0, 0.46, 28.65] as [number, number, number], args: [5.4, 0.92, 0.28] as [number, number, number] },
+        { pos: [0, 6.26, 28.65] as [number, number, number], args: [5.4, 0.48, 0.28] as [number, number, number] },
+      ].map((part, idx) => (
+        <mesh key={`obs-trim-${idx}`} position={part.pos} receiveShadow>
+          <boxGeometry args={part.args} />
+          <meshStandardMaterial
+            map={wallMaps.map}
+            roughnessMap={wallMaps.roughnessMap}
+            bumpMap={wallMaps.bumpMap}
+            bumpScale={0.008}
+            color="#15233b"
+            roughness={0.46}
+            metalness={0.54}
+          />
+        </mesh>
+      ))}
+
+      {/* Panoramic Smoked Space-Observatory Curtain-Wall Glass (y=0.92..6.02) revealing 360° cosmos outside */}
+      {[
+        { pos: [0, 3.47, -18.72] as [number, number, number], rot: [0, 0, 0] as [number, number, number], args: [33.4, 5.1] as [number, number] },
+        { pos: [-16.72, 3.47, -5] as [number, number, number], rot: [0, Math.PI / 2, 0] as [number, number, number], args: [27.4, 5.1] as [number, number] },
+        { pos: [16.72, 3.47, -5] as [number, number, number], rot: [0, -Math.PI / 2, 0] as [number, number, number], args: [27.4, 5.1] as [number, number] },
+        { pos: [-9.75, 3.47, 8.22] as [number, number, number], rot: [0, Math.PI, 0] as [number, number, number], args: [14.2, 5.1] as [number, number] },
+        { pos: [9.75, 3.47, 8.22] as [number, number, number], rot: [0, Math.PI, 0] as [number, number, number], args: [14.2, 5.1] as [number, number] },
+        // Entrance Tunnel glass observatory walls (stars glide outside during walkout!)
+        { pos: [-2.52, 3.47, 18.5] as [number, number, number], rot: [0, Math.PI / 2, 0] as [number, number, number], args: [20.2, 5.1] as [number, number] },
+        { pos: [2.52, 3.47, 18.5] as [number, number, number], rot: [0, -Math.PI / 2, 0] as [number, number, number], args: [20.2, 5.1] as [number, number] },
+        { pos: [0, 3.47, 28.58] as [number, number, number], rot: [0, Math.PI, 0] as [number, number, number], args: [5.2, 5.1] as [number, number] },
+      ].map((pane, idx) => (
+        <mesh key={`obs-glass-${idx}`} position={pane.pos} rotation={pane.rot}>
+          <planeGeometry args={pane.args} />
+          <meshPhysicalMaterial
+            color="#071329"
+            transparent
+            opacity={0.26}
+            roughness={0.08}
+            metalness={0.24}
+            clearcoat={0.9}
+            clearcoatRoughness={0.06}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      ))}
+
+      {/* Slim Brushed-Titanium Curtain-Wall Window Mullions framing the Cosmic Views */}
+      {[-12.5, -7.6, 7.6, 12.5].map((mx) => (
+        <mesh key={`back-mullion-${mx}`} position={[mx, 3.47, -18.74]}>
+          <boxGeometry args={[0.09, 5.1, 0.12]} />
+          <meshStandardMaterial color="#1e2d48" metalness={0.82} roughness={0.26} />
+        </mesh>
+      ))}
+      {[-12.5, -6.2, 6.2, 12.5].map((mx) => (
+        <mesh key={`front-mullion-${mx}`} position={[mx, 3.47, 8.24]}>
+          <boxGeometry args={[0.09, 5.1, 0.12]} />
+          <meshStandardMaterial color="#1e2d48" metalness={0.82} roughness={0.26} />
+        </mesh>
+      ))}
 
       {/* ================= SCULPTURAL ENTRANCE THRESHOLD PORTAL ================= */}
       <group position={[0, 0, 8.5]}>
