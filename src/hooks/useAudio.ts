@@ -278,10 +278,12 @@ export const soundFx = new MuseumAudioEngine();
 export const useAudio = () => {
   const isMuted = useHeritageStore((s) => s.isMuted);
   const audioVolume = useHeritageStore((s) => s.audioVolume);
+  const isCenterWallCinemaActive = useHeritageStore((s) => s.isCenterWallCinemaActive);
 
   useEffect(() => {
-    soundFx.syncVolume(isMuted, audioVolume);
-  }, [isMuted, audioVolume]);
+    // Duck museum ambient synth cleanly while the Giant 3D Cinema TV video plays
+    soundFx.syncVolume(isMuted || isCenterWallCinemaActive, audioVolume);
+  }, [isMuted, audioVolume, isCenterWallCinemaActive]);
 
   const initAudio = useCallback(() => soundFx.init(), []);
   const playChime = useCallback((freq = 660) => soundFx.playChime(freq), []);

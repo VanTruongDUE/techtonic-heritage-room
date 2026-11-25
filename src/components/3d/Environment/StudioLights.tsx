@@ -58,6 +58,7 @@ export const StudioLights: React.FC = () => {
     const t = state.clock.elapsedTime;
     const playerZ = state.camera.position.z;
     const hasEntered = useHeritageStore.getState().hasEntered;
+    const isCinemaActive = useHeritageStore.getState().isCenterWallCinemaActive;
 
     // Reset walkout ignition triggers when user returns to tunnel start so replay always feels epic
     if (playerZ > 24.9) {
@@ -117,7 +118,7 @@ export const StudioLights: React.FC = () => {
       }
     }
 
-    const targetHallReveal = hallTriggered ? 1.0 : 0.24;
+    const targetHallReveal = isCinemaActive ? 0.28 : hallTriggered ? 1.0 : 0.24;
     const hallRampSpeed = hallTriggered ? 2.4 : 1.8;
     hallRevealRef.current = THREE.MathUtils.lerp(
       hallRevealRef.current,
@@ -142,7 +143,8 @@ export const StudioLights: React.FC = () => {
     });
 
     if (centerWallSpotRef.current) {
-      centerWallSpotRef.current.intensity = 58 * hr;
+      // Turn down direct front spotlight over the OLED TV screen so colors stay rich & glare-free
+      centerWallSpotRef.current.intensity = isCinemaActive ? 6 : 58 * hr;
     }
     if (islandGoldSpotRef.current) {
       islandGoldSpotRef.current.intensity = 72 * hr;

@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
 import { useReducedMotionPreference } from './AmbientMotion';
+import { useHeritageStore } from '../../../store/useHeritageStore';
 
 interface TechBadgeDef {
   label: string;
@@ -122,6 +123,7 @@ function createBadgeSpriteTexture(item: TechBadgeDef): THREE.CanvasTexture {
  */
 export const CodeCosmosOrbit: React.FC = () => {
   const reducedMotion = useReducedMotionPreference();
+  const isCenterWallCinemaActive = useHeritageStore((s) => s.isCenterWallCinemaActive);
   const spriteRefs = useRef<Array<THREE.Sprite | null>>([]);
   const starPointsRef = useRef<THREE.Points>(null);
 
@@ -245,7 +247,7 @@ export const CodeCosmosOrbit: React.FC = () => {
   });
 
   return (
-    <group position={[0, 5.15, -16.85]}>
+    <group position={[0, 5.15, -16.85]} visible={!isCenterWallCinemaActive}>
       {/* 3 Clean Ordered Elliptical Orbital Guide Tracks */}
       {ORBIT_RINGS.map((ring) => (
         <group key={ring.id} rotation={ring.tilt} scale={[ring.rx, ring.ry, ring.rz]}>

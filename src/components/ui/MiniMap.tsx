@@ -1,7 +1,7 @@
 import React from 'react';
 import { Map, X } from 'lucide-react';
 import { TELEPORT_ZONES } from '../../data/heritageSeed';
-import { useHeritageStore } from '../../store/useHeritageStore';
+import { countOfficialVisitedZones, useHeritageStore } from '../../store/useHeritageStore';
 
 // World bounds: X in [-18, 18], Z in [-20, 29]
 const MAP_W = 180;
@@ -77,6 +77,8 @@ export const MiniMap: React.FC = () => {
     activeModal,
     showMiniMap,
     toggleMiniMap,
+    isCenterWallCinemaActive,
+    showJourneyPrompt,
     playerPose,
     currentZone,
     visitedZones,
@@ -84,7 +86,9 @@ export const MiniMap: React.FC = () => {
     requestCustomGlide,
   } = useHeritageStore();
 
-  if (!hasEntered || activeModal || !showMiniMap) return null;
+  if (!hasEntered || activeModal || showJourneyPrompt || isCenterWallCinemaActive || !showMiniMap) {
+    return null;
+  }
 
   const px = toSvgX(playerPose.x);
   const py = toSvgY(playerPose.z);
@@ -246,7 +250,7 @@ export const MiniMap: React.FC = () => {
       <div className="mt-2 flex items-center justify-between text-[10px] text-slate-300">
         <span>Nhấn điểm để lướt tới</span>
         <span className="font-mono text-tech-cyan tabular-nums">
-          {Math.min(visitedZones.length, TELEPORT_ZONES.length)}/{TELEPORT_ZONES.length} khu
+          {countOfficialVisitedZones(visitedZones)}/{TELEPORT_ZONES.length} khu
         </span>
       </div>
     </aside>

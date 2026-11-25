@@ -40,6 +40,12 @@ const VOLUME_STORAGE_KEY = 'techtonic_heritage_volume_v2';
 const LIKED_EXHIBITS_KEY = 'techtonic_heritage_liked_exhibits_v2';
 const LIKED_GUESTBOOK_KEY = 'techtonic_heritage_liked_guestbook_v2';
 
+export const OFFICIAL_ZONE_LABELS = TELEPORT_ZONES.map((z) => z.label);
+
+export function countOfficialVisitedZones(visited: string[]): number {
+  return OFFICIAL_ZONE_LABELS.filter((label) => visited.includes(label)).length;
+}
+
 function readStoredQuality(): GraphicsQuality {
   try {
     const val = window.localStorage.getItem(QUALITY_STORAGE_KEY);
@@ -106,6 +112,25 @@ interface HeritageState {
   isGuidedTourActive: boolean;
   toggleGuidedTour: () => void;
   stopGuidedTour: () => void;
+
+  // Giant Center-Wall Cinema TV & Full-Journey Finale Prompt
+  isCenterWallCinemaActive: boolean;
+  isCinemaPaused: boolean;
+  isCinemaMuted: boolean;
+  cinemaCurrentTime: number;
+  cinemaDuration: number;
+  cinemaSeekRequest: number | null;
+  showJourneyPrompt: boolean;
+  hasTriggeredJourneyPrompt: boolean;
+  startCenterWallCinema: () => void;
+  stopCenterWallCinema: () => void;
+  toggleCinemaPause: () => void;
+  toggleCinemaMute: () => void;
+  setCinemaProgress: (currentTime: number, duration: number) => void;
+  requestCinemaSeek: (time: number) => void;
+  clearCinemaSeek: () => void;
+  openJourneyPrompt: () => void;
+  dismissJourneyPrompt: () => void;
 
   // Spatial navigation, telemetry & smooth camera glide
   currentZone: string;
@@ -190,6 +215,30 @@ interface HeritageState {
 }
 
 let toastCounter = 0;
+let journeyPromptTimer: number | null = null;
+
+function maybeScheduleJourneyPrompt(get: () => HeritageState, set: (partial: Partial<HeritageState>) => void, nextVisited: string[]) {
+  const state = get();
+  if (state.hasTriggeredJourneyPrompt || state.isCenterWallCinemaActive || !state.hasEntered) {
+    return;
+  }
+  const completedAll = countOfficialVisitedZones(nextVisited) >= OFFICIAL_ZONE_LABELS.length;
+  if (!completedAll) return;
+
+  set({ hasTriggeredJourneyPrompt: true });
+  if (journeyPromptTimer !== null) {
+    window.clearTimeout(journeyPromptTimer);
+  }
+  journeyPromptTimer = window.setTimeout(() => {
+    const curr = get();
+    if (!curr.isCenterWallCinemaActive && !curr.activeModal) {
+      set({ showJourneyPrompt: true, isGuidedTourActive: false });
+    } else if (!curr.isCenterWallCinemaActive) {
+      // If user has another modal open right when finishing 8/8, show immediately after
+      set({ showJourneyPrompt: true, activeModal: null, modalData: null, isGuidedTourActive: false });
+    }
+  }, 950);
+}
 
 export const useHeritageStore = create<HeritageState>((set, get) => ({
   hasEntered: false,
@@ -237,7 +286,12 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
   isGuidedTourActive: false,
   toggleGuidedTour: () => {
     const next = !get().isGuidedTourActive;
-    set({ isGuidedTourActive: next, activeModal: null, modalData: null });
+    set({
+      isGuidedTourActive: next,
+      isCenterWallCinemaActive: next ? false : get().isCenterWallCinemaActive,
+      activeModal: null,
+      modalData: null,
+    });
     get().pushToast(
       next ? 'Bắt đầu tham quan tự động' : 'Đã tạm dừng tham quan tự động',
       next
@@ -252,22 +306,89 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
     }
   },
 
+  // Giant 3D Cinema TV state
+  isCenterWallCinemaActive: false,
+  isCinemaPaused: false,
+  isCinemaMuted: false,
+  cinemaCurrentTime: 0,
+  cinemaDuration: 0,
+  cinemaSeekRequest: null,
+  showJourneyPrompt: false,
+  hasTriggeredJourneyPrompt: false,
+
+  startCenterWallCinema: () => {
+    if (document.pointerLockElement && document.exitPointerLock) {
+      try {
+        document.exitPointerLock();
+      } catch {
+        // Ignore
+      }
+    }
+    const cinemaSeat: TeleportZone = {
+      id: 'cinema-front-row',
+      label: 'Vách Tâm Điểm',
+      shortLabel: 'Cinema TV',
+      description: 'Màn hình TV khổng lồ chiếu thước phim hành trình TechTonic Club.',
+      position: [0, 1.55, -10.1],
+      lookAt: [0, 3.35, -18.4],
+    };
+    set((state) => ({
+      isCenterWallCinemaActive: true,
+      isCinemaPaused: false,
+      showJourneyPrompt: false,
+      activeModal: null,
+      modalData: null,
+      isGuidedTourActive: false,
+      isLocked: false,
+      teleportTarget: cinemaSeat,
+      currentZone: 'Vách Tâm Điểm',
+      visitedZones: state.visitedZones.includes('Vách Tâm Điểm')
+        ? state.visitedZones
+        : [...state.visitedZones, 'Vách Tâm Điểm'],
+    }));
+    get().pushToast(
+      'Chế độ Rạp Chiếu 3D TechTonic',
+      'Bảng Dream it - Code it đã chuyển thành màn hình TV khổng lồ. Nhấn ESC để quay lại.',
+      'accent'
+    );
+  },
+
+  stopCenterWallCinema: () => {
+    set({
+      isCenterWallCinemaActive: false,
+      isCinemaPaused: false,
+      cinemaCurrentTime: 0,
+      cinemaSeekRequest: null,
+    });
+  },
+
+  toggleCinemaPause: () => set((state) => ({ isCinemaPaused: !state.isCinemaPaused })),
+  toggleCinemaMute: () => set((state) => ({ isCinemaMuted: !state.isCinemaMuted })),
+  setCinemaProgress: (currentTime, duration) =>
+    set({ cinemaCurrentTime: currentTime, cinemaDuration: duration }),
+  requestCinemaSeek: (time) => set({ cinemaSeekRequest: time }),
+  clearCinemaSeek: () => set({ cinemaSeekRequest: null }),
+  openJourneyPrompt: () => set({ showJourneyPrompt: true, activeModal: null, modalData: null }),
+  dismissJourneyPrompt: () => set({ showJourneyPrompt: false }),
+
   currentZone: 'Hành Lang Lối Vào',
   visitedZones: ['Hành Lang Lối Vào'],
   setCurrentZone: (zone) => {
     const state = get();
     if (state.currentZone === zone) return;
-    const isNewZone = !state.visitedZones.includes(zone);
-    const nextVisited = isNewZone ? [...state.visitedZones, zone] : state.visitedZones;
+    const isOfficial = OFFICIAL_ZONE_LABELS.includes(zone);
+    const isNewOfficial = isOfficial && !state.visitedZones.includes(zone);
+    const nextVisited = isNewOfficial ? [...state.visitedZones, zone] : state.visitedZones;
     set({ currentZone: zone, visitedZones: nextVisited });
-    if (isNewZone && state.hasEntered) {
-      const totalTrackable = TELEPORT_ZONES.length;
-      const clampedCount = Math.min(nextVisited.length, totalTrackable);
+
+    if (isNewOfficial && state.hasEntered) {
+      const count = countOfficialVisitedZones(nextVisited);
       get().pushToast(
         `Khám phá khu vực mới: ${zone}`,
-        `Tiến độ tham quan ${clampedCount}/${totalTrackable} phân khu chính`,
-        'accent'
+        `Tiến độ tham quan ${count}/${OFFICIAL_ZONE_LABELS.length} phân khu chính`,
+        count >= OFFICIAL_ZONE_LABELS.length ? 'success' : 'accent'
       );
+      maybeScheduleJourneyPrompt(get, set, nextVisited);
     }
   },
 
@@ -288,16 +409,22 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
   requestTeleport: (zoneId, options) => {
     const target = TELEPORT_ZONES.find((z) => z.id === zoneId);
     if (!target) return;
-    set((state) => ({
+    const state = get();
+    const isNew = !state.visitedZones.includes(target.label);
+    const nextVisited = isNew ? [...state.visitedZones, target.label] : state.visitedZones;
+
+    set({
       teleportTarget: target,
       currentZone: target.label,
-      visitedZones: state.visitedZones.includes(target.label)
-        ? state.visitedZones
-        : [...state.visitedZones, target.label],
+      visitedZones: nextVisited,
       isGuidedTourActive: options?.fromTour ? state.isGuidedTourActive : false,
       activeModal: null,
       modalData: null,
-    }));
+    });
+
+    if (isNew && state.hasEntered) {
+      maybeScheduleJourneyPrompt(get, set, nextVisited);
+    }
   },
   requestCustomGlide: (position, lookAt, label) => {
     const customTarget: TeleportZone = {
@@ -368,6 +495,7 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
     set({
       activeModal: type,
       modalData: data,
+      showJourneyPrompt: false,
       isGuidedTourActive: false,
       isLocked: false,
       isDraggingCamera: false,
@@ -388,6 +516,7 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
     set({
       activeModal: 'shirt',
       modalData: null,
+      showJourneyPrompt: false,
       boardDepartmentFilter: department,
       boardTermFilter: term,
       isGuidedTourActive: false,

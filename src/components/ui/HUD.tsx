@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useHeritageStore } from '../../store/useHeritageStore';
+import { countOfficialVisitedZones, useHeritageStore } from '../../store/useHeritageStore';
 import { TELEPORT_ZONES } from '../../data/heritageSeed';
 import { MiniMap } from './MiniMap';
 import {
@@ -20,6 +20,7 @@ import {
   Square,
   Map as MapIcon,
   Eye,
+  Film,
 } from 'lucide-react';
 
 export const HUD: React.FC = () => {
@@ -42,12 +43,17 @@ export const HUD: React.FC = () => {
     toggleGuidedTour,
     showMiniMap,
     toggleMiniMap,
+    isCenterWallCinemaActive,
+    startCenterWallCinema,
+    stopCenterWallCinema,
+    showJourneyPrompt,
   } = useHeritageStore();
   const [showControlsHint, setShowControlsHint] = useState(false);
   const [showTeleportBar, setShowTeleportBar] = useState(true);
 
-  const visitedCount = Math.min(visitedZones.length, TELEPORT_ZONES.length);
+  const visitedCount = countOfficialVisitedZones(visitedZones);
   const visitedPct = Math.round((visitedCount / TELEPORT_ZONES.length) * 100);
+  const completedAllZones = visitedCount >= TELEPORT_ZONES.length;
 
   const handleToggleControlMode = () => {
     if (controlMode === 'cursor') {
@@ -107,11 +113,31 @@ export const HUD: React.FC = () => {
           {hasEntered && (
             <button
               type="button"
+              onClick={isCenterWallCinemaActive ? stopCenterWallCinema : startCenterWallCinema}
+              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all text-xs cursor-pointer ${
+                isCenterWallCinemaActive
+                  ? 'bg-amber-400 border border-amber-300 text-slate-950 font-bold hover:bg-amber-300 shadow-[0_6px_20px_rgba(251,191,36,0.35)]'
+                  : completedAllZones
+                  ? 'glass-panel text-amber-300 border-amber-400/60 hover:bg-amber-400/15 font-medium'
+                  : 'glass-panel text-slate-200 hover:text-tech-cyan hover:border-tech-cyan/50 font-medium'
+              }`}
+              title="Biến bảng Dream it - Code it thành TV 3D chiếu phim hành trình TechTonic"
+            >
+              <Film className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              <span className="hidden lg:inline">
+                {isCenterWallCinemaActive ? 'Tắt TV 3D' : 'Phim hành trình'}
+              </span>
+            </button>
+          )}
+
+          {hasEntered && (
+            <button
+              type="button"
               onClick={toggleGuidedTour}
-              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl glass-panel transition-all text-xs font-medium cursor-pointer ${
+              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all text-xs cursor-pointer ${
                 isGuidedTourActive
-                  ? 'text-slate-950 bg-tech-cyan border-tech-cyan font-semibold'
-                  : 'text-slate-200 hover:text-tech-cyan hover:border-tech-cyan/50'
+                  ? 'bg-tech-cyan border border-tech-cyan text-slate-950 font-bold hover:bg-[#33f3ff] shadow-[0_6px_20px_rgba(0,240,255,0.35)]'
+                  : 'glass-panel text-slate-200 hover:text-tech-cyan hover:border-tech-cyan/50 font-medium'
               }`}
               title="Bật/Tắt chế độ tham quan tự động (T)"
             >
@@ -322,8 +348,12 @@ export const HUD: React.FC = () => {
         </aside>
       )}
 
-      {/* Bottom-docked Quick-Teleport Bar (always clickable with free console cursor) */}
-      {hasEntered && !activeModal && (controlMode === 'cursor' || !isLocked) && (
+      {/* Bottom-docked Quick-Teleport Bar (hidden cleanly during Cinema TV mode or Journey Prompt) */}
+      {hasEntered &&
+        !activeModal &&
+        !showJourneyPrompt &&
+        !isCenterWallCinemaActive &&
+        (controlMode === 'cursor' || !isLocked) && (
         <div className="mt-auto mb-2.5 self-center glass-panel px-4 py-2.5 rounded-2xl border border-tech-cyan/28 pointer-events-auto max-w-5xl w-full animate-panel-in">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">

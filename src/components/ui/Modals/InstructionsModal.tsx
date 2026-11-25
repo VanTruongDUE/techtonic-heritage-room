@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { useHeritageStore } from '../../../store/useHeritageStore';
+import { countOfficialVisitedZones, useHeritageStore } from '../../../store/useHeritageStore';
 import { TELEPORT_ZONES } from '../../../data/heritageSeed';
 import {
   X,
@@ -105,7 +105,7 @@ export const InstructionsModal: React.FC = () => {
                 className="text-sm font-semibold text-white flex items-center gap-2"
               >
                 <MapPin className="w-4 h-4 text-tech-cyan" aria-hidden="true" />
-                Lướt mượt tới khu vực trưng bày ({Math.min(visitedZones.length, TELEPORT_ZONES.length)}/{TELEPORT_ZONES.length})
+                Lướt mượt tới khu vực trưng bày ({countOfficialVisitedZones(visitedZones)}/{TELEPORT_ZONES.length})
               </h3>
 
               <button

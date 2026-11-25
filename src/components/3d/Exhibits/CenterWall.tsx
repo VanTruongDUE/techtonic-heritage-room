@@ -8,6 +8,8 @@ import { useReducedMotionPreference } from '../Effects/AmbientMotion';
 import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
 import type { ExhibitItem, HoverPreview } from '../../../types/heritage';
 
+const JOURNEY_VIDEO_URL = '/assets/videos/techtonic-journey.mp4';
+
 const MISSION_EXHIBIT: ExhibitItem = {
   id: 'mission-statement',
   title: 'Tầm Nhìn, Sứ Mệnh & Bản Sắc TechTonic Club',
@@ -23,18 +25,6 @@ const MISSION_EXHIBIT: ExhibitItem = {
   ],
 };
 
-const VALUES_EXHIBIT: ExhibitItem = {
-  id: 'core-values',
-  title: '7 Giá Trị Cốt Lõi & Dấu Ấn TechTonic Club',
-  category: 'history',
-  year: '2024 - 2026',
-  highlight: 'Học Thuật • Kết Nối • Phát Triển • Trải Nghiệm • Chân Thành',
-  description:
-    'Hệ giá trị dẫn dắt văn hóa học thuật cạnh tranh lành mạnh, chia sẻ chân thành và đổi mới liên tục tại TechTonic Club.',
-  metrics: CLUB_PROFILE.metrics,
-  bullets: CLUB_PROFILE.coreValues.map((v) => `${v.name}: ${v.note}`),
-};
-
 const MISSION_PREVIEW: HoverPreview = {
   title: 'Tầm Nhìn & Sứ Mệnh TechTonic Club',
   badge: 'DUE ĐÀ NẴNG • DREAM IT - CODE IT',
@@ -47,17 +37,16 @@ const MISSION_PREVIEW: HoverPreview = {
   actionLabel: 'Xem tuyên ngôn & 3 lợi ích cốt lõi',
 };
 
-const VALUES_PREVIEW: HoverPreview = {
-  title: '7 Giá Trị Cốt Lõi & Thành Tựu CLB',
-  badge: '10+ Giải Thưởng • 100+ Thành Viên • 20+ Dự Án',
+const PLAY_CONSOLE_PREVIEW: HoverPreview = {
+  title: 'Phim Hành Trình TechTonic Club',
+  badge: 'GIANT 3D CINEMA TV • FULL HD',
   summary:
-    'Văn hóa TechTonic được xây dựng trên 7 giá trị nền tảng từ tinh thần chia sẻ đến cơ chế đổi mới phản chứng.',
-  metrics: CLUB_PROFILE.metrics,
+    'Biến bảng Dream it - Code it thành màn hình TV 3D khổng lồ và phát thước phim nhìn lại những dấu ấn TechTonic đã đi qua.',
   bullets: [
-    'Chia sẻ (hiểu) • Tương trợ (hiểu rồi mới giúp) • Chân thành',
-    'Tôn trọng • Trách nhiệm • Đổi mới (phản chứng) • Vui vẻ',
+    'Tự động đưa góc nhìn về hàng ghế chính diện rạp chiếu 3D',
+    'Dịu ánh sáng phòng triển lãm để thưởng thức trọn vẹn thước phim',
   ],
-  actionLabel: 'Xem chi tiết 7 giá trị cốt lõi',
+  actionLabel: 'Phát video trên màn hình TV khổng lồ',
 };
 
 const SLAT_POSITIONS = [-6.95, -6.55, -6.15, 6.15, 6.55, 6.95];
@@ -86,12 +75,213 @@ function drawWrappedText(
   if (line) ctx.fillText(line, x, y);
 }
 
+function buildPlayConsoleTexture(isPlaying: boolean, isHovered: boolean): THREE.CanvasTexture {
+  const { canvas, ctx } = createHiResCanvas(1024, 140, 2);
+  if (ctx) {
+    // Deep metallic obsidian pill background
+    const grad = ctx.createLinearGradient(0, 0, 1024, 0);
+    if (isPlaying) {
+      grad.addColorStop(0, '#1e1026');
+      grad.addColorStop(0.5, '#2b1236');
+      grad.addColorStop(1, '#1e1026');
+    } else if (isHovered) {
+      grad.addColorStop(0, '#0a2540');
+      grad.addColorStop(0.5, '#0f385c');
+      grad.addColorStop(1, '#0a2540');
+    } else {
+      grad.addColorStop(0, '#091426');
+      grad.addColorStop(0.5, '#0e1f38');
+      grad.addColorStop(1, '#091426');
+    }
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(8, 8, 1008, 124, 62);
+    ctx.fill();
+
+    // Glowing border
+    ctx.strokeStyle = isPlaying ? '#f472b6' : isHovered ? '#38f8ff' : '#00F0FF';
+    ctx.lineWidth = isHovered ? 5 : 3.5;
+    ctx.beginPath();
+    ctx.roundRect(8, 8, 1008, 124, 62);
+    ctx.stroke();
+
+    // Left Circular Play / Stop Icon Badge
+    const circleX = 88;
+    const circleY = 70;
+    ctx.fillStyle = isPlaying ? '#fb7185' : '#00F0FF';
+    ctx.beginPath();
+    ctx.arc(circleX, circleY, 38, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#050b16';
+    if (isPlaying) {
+      ctx.fillRect(circleX - 14, circleY - 14, 28, 28);
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(circleX - 10, circleY - 17);
+      ctx.lineTo(circleX + 19, circleY);
+      ctx.lineTo(circleX - 10, circleY + 17);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Label text
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 32px Inter, sans-serif';
+    ctx.fillText(
+      isPlaying
+        ? 'ĐANG CHIẾU TRÊN TV KHỔNG LỒ • NHẤN ĐỂ TẮT TV'
+        : 'XEM NHỮNG GÌ TECHTONIC ĐÃ ĐI QUA',
+      154,
+      64
+    );
+
+    ctx.fillStyle = isPlaying ? '#fbcfe8' : '#7dd3fc';
+    ctx.font = '600 21px "JetBrains Mono", monospace';
+    ctx.fillText(
+      isPlaying
+        ? 'ON AIR  •  GIANT 3D CINEMA MODE  •  NHẤN [ESC] ĐỂ QUAY LẠI'
+        : 'NHẤN PLAY ĐỂ BIẾN BẢNG DREAM IT - CODE IT THÀNH TV 3D KHỔNG LỒ',
+      154,
+      104
+    );
+  }
+  return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
+}
+
 export const CenterWall: React.FC = () => {
-  const { setHoveringInteractive, openModal, activityHighlights } = useHeritageStore();
+  const {
+    setHoveringInteractive,
+    openModal,
+    activityHighlights,
+    isCenterWallCinemaActive,
+    isCinemaPaused,
+    isCinemaMuted,
+    cinemaSeekRequest,
+    audioVolume,
+    isMuted,
+    startCenterWallCinema,
+    stopCenterWallCinema,
+    setCinemaProgress,
+    clearCinemaSeek,
+    pushToast,
+  } = useHeritageStore();
   const reducedMotion = useReducedMotionPreference();
   const emblemRef = useRef<THREE.Group>(null);
   const haloRef = useRef<THREE.Mesh>(null);
   const [isEmblemHovered, setIsEmblemHovered] = useState(false);
+  const [isPlayBtnHovered, setIsPlayBtnHovered] = useState(false);
+
+  // Giant 3D Cinema TV HTMLVideoElement + THREE.VideoTexture state
+  const videoElRef = useRef<HTMLVideoElement | null>(null);
+  const [videoTex, setVideoTex] = useState<THREE.VideoTexture | null>(null);
+  const [videoAspect, setVideoAspect] = useState<number>(16 / 9);
+  const lastProgressReportRef = useRef<number>(0);
+
+  // Create & manage HTML5 video stream only when Cinema TV mode is active
+  useEffect(() => {
+    if (!isCenterWallCinemaActive) {
+      if (videoElRef.current) {
+        videoElRef.current.pause();
+        videoElRef.current.removeAttribute('src');
+        videoElRef.current.load();
+        videoElRef.current = null;
+      }
+      setVideoTex((prev) => {
+        prev?.dispose();
+        return null;
+      });
+      return;
+    }
+
+    const video = document.createElement('video');
+    video.src = JOURNEY_VIDEO_URL;
+    video.crossOrigin = 'anonymous';
+    video.playsInline = true;
+    video.preload = 'auto';
+    video.loop = false;
+    video.muted = useHeritageStore.getState().isCinemaMuted;
+    video.volume = useHeritageStore.getState().isMuted
+      ? 0
+      : Math.max(0.25, useHeritageStore.getState().audioVolume);
+    videoElRef.current = video;
+
+    const handleLoadedMetadata = () => {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        setVideoAspect(video.videoWidth / video.videoHeight);
+      }
+      setCinemaProgress(0, Number.isFinite(video.duration) ? video.duration : 0);
+    };
+
+    const handleEnded = () => {
+      pushToast(
+        'Đã phát xong thước phim hành trình TechTonic',
+        'Cảm ơn bạn đã đồng hành cùng Phòng Truyền Thống 3D!',
+        'success'
+      );
+      stopCenterWallCinema();
+    };
+
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('ended', handleEnded);
+
+    const tex = new THREE.VideoTexture(video);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    setVideoTex(tex);
+
+    // Start playback; if browser autoplay blocks with sound, retry muted cleanly
+    video.play().catch(() => {
+      video.muted = true;
+      video.play().catch(() => {});
+    });
+
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('ended', handleEnded);
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+      tex.dispose();
+      videoElRef.current = null;
+      setVideoTex(null);
+    };
+  }, [isCenterWallCinemaActive, setCinemaProgress, stopCenterWallCinema, pushToast]);
+
+  // Sync Play/Pause state from HUD Cinema Controls
+  useEffect(() => {
+    const video = videoElRef.current;
+    if (!video || !isCenterWallCinemaActive) return;
+    if (isCinemaPaused) {
+      video.pause();
+    } else {
+      video.play().catch(() => {});
+    }
+  }, [isCinemaPaused, isCenterWallCinemaActive]);
+
+  // Sync Mute & Volume state
+  useEffect(() => {
+    const video = videoElRef.current;
+    if (!video) return;
+    video.muted = isCinemaMuted || isMuted;
+    video.volume = isMuted ? 0 : Math.min(1, Math.max(0.15, audioVolume));
+  }, [isCinemaMuted, isMuted, audioVolume]);
+
+  // Handle Scrub / Seek requests from HUD Cinema Bar
+  useEffect(() => {
+    const video = videoElRef.current;
+    if (!video || cinemaSeekRequest === null) return;
+    try {
+      video.currentTime = cinemaSeekRequest;
+      setCinemaProgress(cinemaSeekRequest, Number.isFinite(video.duration) ? video.duration : 0);
+    } catch {
+      // Ignore transient seek before metadata ready
+    }
+    clearCinemaSeek();
+  }, [cinemaSeekRequest, clearCinemaSeek, setCinemaProgress]);
 
   const { outerHexGeom, innerHexGeom } = useMemo(() => {
     const makeHexRing = (outerR: number, innerR: number, depth: number) => {
@@ -140,7 +330,6 @@ export const CenterWall: React.FC = () => {
     if (ctx) {
       ctx.clearRect(0, 0, 2048, 1024);
 
-      // Headline cleanly below 3D emblem (y >= 295)
       ctx.fillStyle = '#38bdf8';
       ctx.font = 'bold 52px Inter, sans-serif';
       ctx.textAlign = 'center';
@@ -160,7 +349,6 @@ export const CenterWall: React.FC = () => {
         390
       );
 
-      // Two balanced detail boxes: Vision (Left) & Mission (Right)
       ctx.textAlign = 'left';
 
       // Left box: TẦM NHÌN
@@ -206,7 +394,13 @@ export const CenterWall: React.FC = () => {
     return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, []);
 
-  // Back-left wing panel (left of Dream It - Code It): 6 Key Term Events & Activities
+  // Crisp 3D Play Console Button Texture (mounted directly below Dream It - Code It!)
+  const playConsoleTex = useMemo(
+    () => buildPlayConsoleTexture(isCenterWallCinemaActive, isPlayBtnHovered),
+    [isCenterWallCinemaActive, isPlayBtnHovered]
+  );
+
+  // Back-right wing panel (right of Dream It - Code It): 6 Key Term Events & Activities
   const eventsWingTexture = useMemo(() => {
     const { canvas, ctx } = createHiResCanvas(1520, 1100, 2);
     if (ctx) {
@@ -274,16 +468,34 @@ export const CenterWall: React.FC = () => {
     };
   }, [outerHexGeom, innerHexGeom, textTexture, eventsWingTexture]);
 
+  useEffect(() => {
+    return () => {
+      playConsoleTex.dispose();
+    };
+  }, [playConsoleTex]);
+
   useFrame((state, delta) => {
-    if (!reducedMotion && emblemRef.current) {
-      emblemRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.08;
-      emblemRef.current.position.y = 5.05 + Math.sin(state.clock.elapsedTime * 1.1) * 0.03;
-      const targetScale = isEmblemHovered ? 1.08 : 1;
-      emblemRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.12);
-    }
-    if (!reducedMotion && haloRef.current) {
-      haloRef.current.rotation.x += delta * 0.18;
-      haloRef.current.rotation.y += delta * 0.24;
+    if (!isCenterWallCinemaActive) {
+      if (!reducedMotion && emblemRef.current) {
+        emblemRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.08;
+        emblemRef.current.position.y = 5.05 + Math.sin(state.clock.elapsedTime * 1.1) * 0.03;
+        const targetScale = isEmblemHovered ? 1.08 : 1;
+        emblemRef.current.scale.lerp(
+          new THREE.Vector3(targetScale, targetScale, targetScale),
+          0.12
+        );
+      }
+      if (!reducedMotion && haloRef.current) {
+        haloRef.current.rotation.x += delta * 0.18;
+        haloRef.current.rotation.y += delta * 0.24;
+      }
+    } else if (videoElRef.current) {
+      const now = state.clock.elapsedTime;
+      if (now - lastProgressReportRef.current > 0.25) {
+        const v = videoElRef.current;
+        setCinemaProgress(v.currentTime || 0, Number.isFinite(v.duration) ? v.duration : 0);
+        lastProgressReportRef.current = now;
+      }
     }
   });
 
@@ -319,9 +531,27 @@ export const CenterWall: React.FC = () => {
 
   const handleOpenMission = () => openModal('exhibit', MISSION_EXHIBIT);
   const handleOpenEvents = () => openModal('exhibit', eventsWingExhibit);
+  const handleToggleCinema = () => {
+    if (isCenterWallCinemaActive) {
+      stopCenterWallCinema();
+    } else {
+      startCenterWallCinema();
+    }
+  };
+
+  // Compute aspect-locked Giant TV screen dimensions cleanly fitting inside the 13.4 x 5.05 cinema bezel
+  const maxTvW = 13.4;
+  const maxTvH = 5.02;
+  let screenW = maxTvW;
+  let screenH = screenW / Math.max(0.5, videoAspect);
+  if (screenH > maxTvH) {
+    screenH = maxTvH;
+    screenW = screenH * videoAspect;
+  }
 
   return (
     <group position={[0, 0, -18.42]}>
+      {/* Main Back Wall Structural Frame / Giant TV Chassis */}
       <RoundedBox
         position={[0, 3.35, -0.05]}
         args={[14.6, 5.5, 0.14]}
@@ -329,127 +559,241 @@ export const CenterWall: React.FC = () => {
         smoothness={4}
         receiveShadow
       >
-        <meshStandardMaterial color="#0e1524" roughness={0.42} metalness={0.38} />
+        <meshStandardMaterial
+          color={isCenterWallCinemaActive ? '#05080f' : '#0e1524'}
+          roughness={isCenterWallCinemaActive ? 0.25 : 0.42}
+          metalness={isCenterWallCinemaActive ? 0.65 : 0.38}
+        />
       </RoundedBox>
 
-      {SLAT_POSITIONS.map((sx) => (
-        <RoundedBox
-          key={`slat-${sx}`}
-          position={[sx, 3.35, 0.05]}
-          args={[0.16, 5.1, 0.1]}
-          radius={0.02}
-          smoothness={4}
-          castShadow
-        >
-          <meshStandardMaterial color="#1c273d" roughness={0.5} metalness={0.3} />
-        </RoundedBox>
-      ))}
+      {!isCenterWallCinemaActive &&
+        SLAT_POSITIONS.map((sx) => (
+          <RoundedBox
+            key={`slat-${sx}`}
+            position={[sx, 3.35, 0.05]}
+            args={[0.16, 5.1, 0.1]}
+            radius={0.02}
+            smoothness={4}
+            castShadow
+          >
+            <meshStandardMaterial color="#1c273d" roughness={0.5} metalness={0.3} />
+          </RoundedBox>
+        ))}
 
+      {/* Top & Bottom Neon Bezel Bars (shift to royal cinema glow while TV is on) */}
       <mesh position={[0, 6.08, 0.04]}>
         <boxGeometry args={[14.4, 0.06, 0.08]} />
-        <meshStandardMaterial color="#00F0FF" emissive="#00F0FF" emissiveIntensity={1.6} toneMapped={false} />
+        <meshStandardMaterial
+          color={isCenterWallCinemaActive ? '#fbbf24' : '#00F0FF'}
+          emissive={isCenterWallCinemaActive ? '#f59e0b' : '#00F0FF'}
+          emissiveIntensity={1.6}
+          toneMapped={false}
+        />
       </mesh>
       <mesh position={[0, 0.62, 0.04]}>
         <boxGeometry args={[14.4, 0.06, 0.08]} />
-        <meshStandardMaterial color="#38bdf8" emissive="#0ea5e9" emissiveIntensity={1.1} toneMapped={false} />
-      </mesh>
-
-      {/* Wireframe Geometric Halo around Emblem (inspired by events-hero-scene) */}
-      <mesh ref={haloRef} position={[0, 5.05, 0.12]}>
-        <icosahedronGeometry args={[0.88, 0]} />
-        <meshBasicMaterial
-          color="#38bdf8"
-          wireframe
-          transparent
-          opacity={isEmblemHovered ? 0.26 : 0.11}
+        <meshStandardMaterial
+          color={isCenterWallCinemaActive ? '#00F0FF' : '#38bdf8'}
+          emissive={isCenterWallCinemaActive ? '#00F0FF' : '#0ea5e9'}
+          emissiveIntensity={1.25}
+          toneMapped={false}
         />
       </mesh>
 
-      {/* Sculpted Beveled 3D Hexagonal TechTonic Emblem */}
-      <group
-        ref={emblemRef}
-        position={[0, 5.05, 0.2]}
-        onClick={(e) => {
-          e.stopPropagation();
-          handleOpenMission();
-        }}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          setIsEmblemHovered(true);
-          setHoveringInteractive(
-            true,
-            'Xem Tầm nhìn & Sứ mệnh',
-            handleOpenMission,
-            MISSION_PREVIEW
-          );
-        }}
-        onPointerOut={() => {
-          setIsEmblemHovered(false);
-          setHoveringInteractive(false);
-        }}
-      >
-        <mesh geometry={outerHexGeom} castShadow>
-          <meshStandardMaterial
-            color="#38bdf8"
-            emissive="#0284c7"
-            emissiveIntensity={isEmblemHovered ? 0.95 : 0.45}
-            metalness={0.85}
-            roughness={0.18}
-          />
-        </mesh>
+      {/* ================= GIANT 3D CINEMA TV MODE ================= */}
+      {isCenterWallCinemaActive ? (
+        <group position={[0, 3.35, 0.05]}>
+          {/* Ultra-Slim Brushed Titanium OLED TV Bezel Backing */}
+          <RoundedBox position={[0, 0, -0.02]} args={[14.1, 5.34, 0.06]} radius={0.05} smoothness={4}>
+            <meshStandardMaterial color="#070b14" metalness={0.85} roughness={0.22} />
+          </RoundedBox>
 
-        <mesh geometry={innerHexGeom} position={[0, 0, 0.03]}>
-          <meshStandardMaterial
-            color="#cbd5e1"
-            emissive="#3b82f6"
-            emissiveIntensity={isEmblemHovered ? 0.9 : 0.4}
-            metalness={0.9}
-            roughness={0.16}
-          />
-        </mesh>
+          {/* True Aspect-Locked Live Video Screen Surface */}
+          {videoTex && (
+            <mesh position={[0, 0, 0.03]}>
+              <planeGeometry args={[screenW, screenH]} />
+              <meshBasicMaterial map={videoTex} toneMapped={false} />
+            </mesh>
+          )}
 
-        <mesh position={[0, 0, 0.06]}>
-          <sphereGeometry args={[0.19, 48, 32]} />
-          <meshPhysicalMaterial
-            color="#e0f2fe"
-            emissive="#38bdf8"
-            emissiveIntensity={isEmblemHovered ? 0.85 : 0.45}
-            metalness={0.2}
-            roughness={0.08}
-            clearcoat={1}
+          {/* Subtle Red/Emerald Live ON-AIR Power LED on TV bottom-right corner */}
+          <mesh position={[6.72, -2.56, 0.03]}>
+            <circleGeometry args={[0.045, 24]} />
+            <meshBasicMaterial color={isCinemaPaused ? '#fbbf24' : '#22c55e'} toneMapped={false} />
+          </mesh>
+
+          {/* Subtle Cinema Screen Bounce Light onto the Reflective Museum Floor */}
+          <pointLight
+            position={[0, -0.4, 3.2]}
+            intensity={12}
+            distance={14}
+            decay={2}
+            color="#bae6fd"
           />
+        </group>
+      ) : (
+        <>
+          {/* Wireframe Geometric Halo around Emblem */}
+          <mesh ref={haloRef} position={[0, 5.05, 0.12]}>
+            <icosahedronGeometry args={[0.88, 0]} />
+            <meshBasicMaterial
+              color="#38bdf8"
+              wireframe
+              transparent
+              opacity={isEmblemHovered ? 0.26 : 0.11}
+            />
+          </mesh>
+
+          {/* Sculpted Beveled 3D Hexagonal TechTonic Emblem */}
+          <group
+            ref={emblemRef}
+            position={[0, 5.05, 0.2]}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleOpenMission();
+            }}
+            onPointerOver={(e) => {
+              e.stopPropagation();
+              setIsEmblemHovered(true);
+              setHoveringInteractive(
+                true,
+                'Xem Tầm nhìn & Sứ mệnh',
+                handleOpenMission,
+                MISSION_PREVIEW
+              );
+            }}
+            onPointerOut={() => {
+              setIsEmblemHovered(false);
+              setHoveringInteractive(false);
+            }}
+          >
+            <mesh geometry={outerHexGeom} castShadow>
+              <meshStandardMaterial
+                color="#38bdf8"
+                emissive="#0284c7"
+                emissiveIntensity={isEmblemHovered ? 0.95 : 0.45}
+                metalness={0.85}
+                roughness={0.18}
+              />
+            </mesh>
+
+            <mesh geometry={innerHexGeom} position={[0, 0, 0.03]}>
+              <meshStandardMaterial
+                color="#cbd5e1"
+                emissive="#3b82f6"
+                emissiveIntensity={isEmblemHovered ? 0.9 : 0.4}
+                metalness={0.9}
+                roughness={0.16}
+              />
+            </mesh>
+
+            <mesh position={[0, 0, 0.06]}>
+              <sphereGeometry args={[0.19, 48, 32]} />
+              <meshPhysicalMaterial
+                color="#e0f2fe"
+                emissive="#38bdf8"
+                emissiveIntensity={isEmblemHovered ? 0.85 : 0.45}
+                metalness={0.2}
+                roughness={0.08}
+                clearcoat={1}
+              />
+            </mesh>
+          </group>
+
+          {/* Vision & Mission Graphic Plane centered cleanly inside Dream It - Code It */}
+          <mesh
+            position={[0, 2.55, 0.06]}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleOpenMission();
+            }}
+            onPointerOver={(e) => {
+              e.stopPropagation();
+              setHoveringInteractive(
+                true,
+                'Xem Tầm nhìn & Sứ mệnh',
+                handleOpenMission,
+                MISSION_PREVIEW
+              );
+            }}
+            onPointerOut={() => setHoveringInteractive(false)}
+          >
+            <planeGeometry args={[13.6, 6.6]} />
+            <meshStandardMaterial
+              map={textTexture}
+              transparent
+              emissive="#ffffff"
+              emissiveMap={textTexture}
+              emissiveIntensity={0.42}
+              roughness={0.42}
+              metalness={0.05}
+            />
+          </mesh>
+        </>
+      )}
+
+      {/* ================= 3D PLAY CONSOLE BUTTON RIGHT BELOW DREAM IT - CODE IT ================= */}
+      <group position={[0, 0.33, 0.14]}>
+        <RoundedBox
+          args={[4.2, 0.54, 0.09]}
+          radius={0.06}
+          smoothness={4}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleToggleCinema();
+          }}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            setIsPlayBtnHovered(true);
+            setHoveringInteractive(
+              true,
+              isCenterWallCinemaActive
+                ? 'Tắt TV 3D & quay lại Dream it - Code it'
+                : 'Phát phim hành trình TechTonic trên TV 3D',
+              handleToggleCinema,
+              PLAY_CONSOLE_PREVIEW
+            );
+          }}
+          onPointerOut={() => {
+            setIsPlayBtnHovered(false);
+            setHoveringInteractive(false);
+          }}
+        >
+          <meshStandardMaterial
+            color="#0b1528"
+            metalness={0.82}
+            roughness={0.22}
+            emissive={isCenterWallCinemaActive ? '#f472b6' : '#00F0FF'}
+            emissiveIntensity={isPlayBtnHovered ? 0.35 : 0.14}
+          />
+        </RoundedBox>
+        <mesh
+          position={[0, 0, 0.05]}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleToggleCinema();
+          }}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            setIsPlayBtnHovered(true);
+            setHoveringInteractive(
+              true,
+              isCenterWallCinemaActive
+                ? 'Tắt TV 3D & quay lại Dream it - Code it'
+                : 'Phát phim hành trình TechTonic trên TV 3D',
+              handleToggleCinema,
+              PLAY_CONSOLE_PREVIEW
+            );
+          }}
+          onPointerOut={() => {
+            setIsPlayBtnHovered(false);
+            setHoveringInteractive(false);
+          }}
+        >
+          <planeGeometry args={[4.06, 0.52]} />
+          <meshBasicMaterial map={playConsoleTex} transparent toneMapped={false} />
         </mesh>
       </group>
-
-      {/* Vision & Mission Graphic Plane centered cleanly inside Dream It - Code It */}
-      <mesh
-        position={[0, 2.55, 0.06]}
-        onClick={(e) => {
-          e.stopPropagation();
-          handleOpenMission();
-        }}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          setHoveringInteractive(
-            true,
-            'Xem Tầm nhìn & Sứ mệnh',
-            handleOpenMission,
-            MISSION_PREVIEW
-          );
-        }}
-        onPointerOut={() => setHoveringInteractive(false)}
-      >
-        <planeGeometry args={[13.6, 6.6]} />
-        <meshStandardMaterial
-          map={textTexture}
-          transparent
-          emissive="#ffffff"
-          emissiveMap={textTexture}
-          emissiveIntensity={0.42}
-          roughness={0.42}
-          metalness={0.05}
-        />
-      </mesh>
 
       {/* Back-Right Wing: Framed 6 Chương Trình & Sự Kiện CLB cleanly to the right of Dream It - Code It */}
       <group position={[11.75, 3.25, 0.04]}>

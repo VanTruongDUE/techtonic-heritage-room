@@ -32,8 +32,9 @@ function isEditableElement(el: Element | null): boolean {
 
 export const useKeyboardControls = () => {
   const [movement, setMovement] = useState<MovementKeys>(INITIAL_MOVEMENT);
-  const { hasEntered, controlMode, isLocked, activeModal } = useHeritageStore();
-  const canMove = hasEntered && !activeModal && (controlMode === 'cursor' || isLocked);
+  const { hasEntered, controlMode, isLocked, activeModal, showJourneyPrompt } = useHeritageStore();
+  const canMove =
+    hasEntered && !activeModal && !showJourneyPrompt && (controlMode === 'cursor' || isLocked);
 
   // Reset held keys whenever movement is disallowed so keys never stick
   useEffect(() => {
@@ -45,7 +46,7 @@ export const useKeyboardControls = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const state = useHeritageStore.getState();
-      if (!state.hasEntered || state.activeModal) {
+      if (!state.hasEntered || state.activeModal || state.showJourneyPrompt) {
         return;
       }
 

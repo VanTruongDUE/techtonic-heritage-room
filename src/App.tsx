@@ -4,10 +4,12 @@ import { LoadingScreen } from './components/ui/LoadingScreen';
 import { HUD } from './components/ui/HUD';
 import { Crosshair } from './components/ui/Crosshair';
 import { ToastStack } from './components/ui/ToastStack';
+import { CinemaControlsBar } from './components/ui/CinemaControlsBar';
 import { ExecutiveBoardModal } from './components/ui/Modals/ExecutiveBoardModal';
 import { GuestbookModal } from './components/ui/Modals/GuestbookModal';
 import { ExhibitDetailModal } from './components/ui/Modals/ExhibitDetailModal';
 import { InstructionsModal } from './components/ui/Modals/InstructionsModal';
+import { JourneyPromptModal } from './components/ui/Modals/JourneyPromptModal';
 import { TELEPORT_ZONES } from './data/heritageSeed';
 import { useHeritageStore } from './store/useHeritageStore';
 import { useAudio } from './hooks/useAudio';
@@ -29,6 +31,10 @@ export const App: React.FC = () => {
     toggleGuidedTour,
     stopGuidedTour,
     isGuidedTourActive,
+    showJourneyPrompt,
+    dismissJourneyPrompt,
+    isCenterWallCinemaActive,
+    stopCenterWallCinema,
   } = useHeritageStore();
   const { initAudio, playChime, playSuccessChord } = useAudio();
 
@@ -78,8 +84,16 @@ export const App: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (showJourneyPrompt) {
+          dismissJourneyPrompt();
+          return;
+        }
         if (activeModal) {
           closeModal();
+          return;
+        }
+        if (isCenterWallCinemaActive) {
+          stopCenterWallCinema();
           return;
         }
         if (isGuidedTourActive) {
@@ -127,9 +141,13 @@ export const App: React.FC = () => {
   }, [
     hasEntered,
     activeModal,
+    showJourneyPrompt,
+    isCenterWallCinemaActive,
     isGuidedTourActive,
     openModal,
     closeModal,
+    dismissJourneyPrompt,
+    stopCenterWallCinema,
     toggleMiniMap,
     toggleGuidedTour,
     stopGuidedTour,
@@ -144,19 +162,23 @@ export const App: React.FC = () => {
       {/* 2. 2D Interactive HUD Layer (including MiniMap) */}
       <HUD />
 
-      {/* 3. Subtle Toast Notifications */}
+      {/* 3. Giant 3D Cinema TV Floating Remote Bar */}
+      <CinemaControlsBar />
+
+      {/* 4. Subtle Toast Notifications */}
       <ToastStack />
 
-      {/* 4. Cursor Halo / Center Crosshair targeting reticle */}
+      {/* 5. Cursor Halo / Center Crosshair targeting reticle */}
       <Crosshair />
 
-      {/* 5. Interactive Modals outside Canvas */}
+      {/* 6. Interactive Modals outside Canvas */}
       <ExecutiveBoardModal />
       <GuestbookModal />
       <ExhibitDetailModal />
       <InstructionsModal />
+      <JourneyPromptModal />
 
-      {/* 6. Mandatory Loading Screen with Progress and Entry Button */}
+      {/* 7. Mandatory Loading Screen with Progress and Entry Button */}
       <LoadingScreen onEnter={handleEnter} />
     </main>
   );
