@@ -17,12 +17,12 @@ interface ClubShirtExhibitProps {
 }
 
 /**
- * Generates an organic lofted torso BufferGeometry (smooth chest contour, tapered waist,
- * natural sloping shoulders, and subtle cotton hem drape folds).
+ * Generates an organic lofted polo torso BufferGeometry with non-mirrored exterior UVs:
+ * uTex = 0/1 -> wearer's left side (+X), uTex = 0.25 -> center back (-Z), uTex = 0.75 -> center front (+Z).
  */
 function createSculptedTorsoGeometry(): THREE.BufferGeometry {
-  const radialSegs = 64;
-  const heightSegs = 32;
+  const radialSegs = 72;
+  const heightSegs = 36;
   const positions: number[] = [];
   const uvs: number[] = [];
   const indices: number[] = [];
@@ -31,7 +31,6 @@ function createSculptedTorsoGeometry(): THREE.BufferGeometry {
     const v = iy / heightSegs; // 0 = bottom hem (-0.58), 1 = neckband (+0.58)
     const y = -0.58 + v * 1.16;
 
-    // Smooth torso silhouette profile: bottom hem -> waist taper -> broad chest -> tapered collar shoulder slope
     let rx: number;
     let rzFront: number;
     let rzBack: number;
@@ -39,25 +38,24 @@ function createSculptedTorsoGeometry(): THREE.BufferGeometry {
     if (v < 0.35) {
       const t = v / 0.35;
       const ease = t * t * (3 - 2 * t);
-      rx = THREE.MathUtils.lerp(0.415, 0.39, ease);
-      rzFront = THREE.MathUtils.lerp(0.205, 0.195, ease);
-      rzBack = THREE.MathUtils.lerp(0.185, 0.18, ease);
+      rx = THREE.MathUtils.lerp(0.415, 0.388, ease);
+      rzFront = THREE.MathUtils.lerp(0.202, 0.192, ease);
+      rzBack = THREE.MathUtils.lerp(0.184, 0.178, ease);
     } else if (v < 0.72) {
       const t = (v - 0.35) / 0.37;
       const ease = t * t * (3 - 2 * t);
-      rx = THREE.MathUtils.lerp(0.39, 0.465, ease);
-      rzFront = THREE.MathUtils.lerp(0.195, 0.242, ease);
-      rzBack = THREE.MathUtils.lerp(0.18, 0.208, ease);
+      rx = THREE.MathUtils.lerp(0.388, 0.455, ease);
+      rzFront = THREE.MathUtils.lerp(0.192, 0.236, ease);
+      rzBack = THREE.MathUtils.lerp(0.178, 0.205, ease);
     } else {
       const t = (v - 0.72) / 0.28;
-      const ease = Math.pow(t, 1.35);
-      rx = THREE.MathUtils.lerp(0.465, 0.165, ease);
-      rzFront = THREE.MathUtils.lerp(0.242, 0.155, ease);
-      rzBack = THREE.MathUtils.lerp(0.208, 0.148, ease);
+      const ease = Math.pow(t, 1.32);
+      rx = THREE.MathUtils.lerp(0.455, 0.158, ease);
+      rzFront = THREE.MathUtils.lerp(0.236, 0.148, ease);
+      rzBack = THREE.MathUtils.lerp(0.205, 0.144, ease);
     }
 
-    // Subtle anatomical drop across shoulders/back at very top
-    const shoulderDrop = v > 0.72 ? Math.pow((v - 0.72) / 0.28, 1.6) * 0.055 : 0;
+    const shoulderDrop = v > 0.72 ? Math.pow((v - 0.72) / 0.28, 1.6) * 0.052 : 0;
 
     for (let ix = 0; ix <= radialSegs; ix++) {
       const u = ix / radialSegs;
@@ -65,27 +63,24 @@ function createSculptedTorsoGeometry(): THREE.BufferGeometry {
       const cosT = Math.cos(theta);
       const sinT = Math.sin(theta);
 
-      // Gentle vertical fabric drape folds near waist/hem
       const foldWeight = Math.max(0, 1 - v * 1.45);
-      const drapeFold = Math.sin(theta * 5 + 0.6) * 0.006 * foldWeight;
-
-      // Subtle squaring of the shoulder-chest box into rounded oval
-      const superFactor = 0.045 * Math.cos(theta * 2) * (v > 0.3 && v < 0.88 ? 1 : 0.3);
+      const drapeFold = Math.sin(theta * 5 + 0.6) * 0.005 * foldWeight;
+      const superFactor = 0.042 * Math.cos(theta * 2) * (v > 0.3 && v < 0.88 ? 1 : 0.3);
 
       const x = cosT * (rx + drapeFold + superFactor);
       const rz = sinT >= 0 ? rzFront : rzBack;
       const z = sinT * (rz + drapeFold * 0.75);
 
-      // Gentle collar notch dip at front center top (sinT > 0, cosT ~ 0, v > 0.88)
       const neckDip =
         v > 0.86 && sinT > 0.25
-          ? ((v - 0.86) / 0.14) * Math.pow(sinT, 1.4) * 0.065
+          ? ((v - 0.86) / 0.14) * Math.pow(sinT, 1.4) * 0.068
           : 0;
 
       const py = y - Math.abs(cosT) * shoulderDrop - neckDip;
 
       positions.push(x, py, z);
-      uvs.push(u, v);
+      // 1 - u ensures exterior text reads cleanly left-to-right on both Front (+Z, uTex=0.75) & Back (-Z, uTex=0.25)
+      uvs.push(1 - u, v);
     }
   }
 
@@ -109,17 +104,18 @@ function createSculptedTorsoGeometry(): THREE.BufferGeometry {
 }
 
 /**
- * Creates a smooth curved raglan sleeve tapering from deltoid shoulder cap down to cuffed hem.
+ * Tailored polo short sleeve emerging seamlessly from inside the shoulder contour with a tucked ribbed cuff hem.
  */
 function createSculptedSleeveGeometry(side: -1 | 1): THREE.BufferGeometry {
   const curve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(side * 0.35, 0.32, 0.0),
-    new THREE.Vector3(side * 0.46, 0.27, 0.008),
-    new THREE.Vector3(side * 0.56, 0.16, 0.016),
-    new THREE.Vector3(side * 0.62, 0.03, 0.022),
+    new THREE.Vector3(side * 0.28, 0.23, 0.0),
+    new THREE.Vector3(side * 0.42, 0.20, 0.006),
+    new THREE.Vector3(side * 0.53, 0.11, 0.014),
+    new THREE.Vector3(side * 0.61, -0.02, 0.02),
+    new THREE.Vector3(side * 0.605, -0.024, 0.02),
   ]);
 
-  const lengthSegs = 24;
+  const lengthSegs = 28;
   const radialSegs = 40;
   const frames = curve.computeFrenetFrames(lengthSegs, false);
   const positions: number[] = [];
@@ -132,10 +128,19 @@ function createSculptedSleeveGeometry(side: -1 | 1): THREE.BufferGeometry {
     const N = frames.normals[i];
     const B = frames.binormals[i];
 
-    // Smooth tailored transition from embedded armhole inside shoulder to sleek cuff
-    const armholeEase = t < 0.2 ? THREE.MathUtils.lerp(0.145, 0.158, t / 0.2) : 0.158;
-    const rMain = THREE.MathUtils.lerp(armholeEase, 0.128, Math.pow(t, 0.9));
-    const rDepth = THREE.MathUtils.lerp(armholeEase * 0.94, 0.122, Math.pow(t, 0.9));
+    // Smooth taper starting tucked inside the shoulder/armhole, peaking subtly at upper arm, tapering cleanly to tucked cuff
+    let rMain: number;
+    if (t < 0.26) {
+      rMain = THREE.MathUtils.lerp(0.105, 0.148, Math.sin((t / 0.26) * (Math.PI / 2)));
+    } else if (t < 0.94) {
+      const k = (t - 0.26) / 0.68;
+      rMain = THREE.MathUtils.lerp(0.148, 0.122, k);
+    } else {
+      // Subtle inward fabric thickness tuck at cuff hem
+      const k = (t - 0.94) / 0.06;
+      rMain = THREE.MathUtils.lerp(0.122, 0.098, k);
+    }
+    const rDepth = rMain * 0.94;
 
     for (let j = 0; j <= radialSegs; j++) {
       const theta = (j / radialSegs) * Math.PI * 2;
@@ -171,7 +176,72 @@ function createSculptedSleeveGeometry(side: -1 | 1): THREE.BufferGeometry {
 }
 
 /**
- * Tailored smooth 3D Polo Shirt mounted on an anatomical mannequin & veined marble turntable.
+ * Generates a continuous folded 3D polo collar band wrapping smoothly around the neck
+ * to twin pointed collar tips at the front V-placket, plus its outer white knitted edge piping.
+ */
+function createPoloCollarGeometries(): {
+  collarGeom: THREE.BufferGeometry;
+  whiteTrimGeom: THREE.BufferGeometry;
+} {
+  const segs = 56;
+  const startAngle = 0.24; // right side of V-placket opening
+  const endAngle = Math.PI * 2 - 0.24; // left side of V-placket opening
+
+  const positions: number[] = [];
+  const indices: number[] = [];
+  const outerRimPoints: THREE.Vector3[] = [];
+
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs;
+    // Angle around neck where 0 = front (+Z), PI = back (-Z)
+    const phi = THREE.MathUtils.lerp(startAngle, endAngle, t);
+    const sinP = Math.sin(phi);
+    const cosP = Math.cos(phi);
+
+    // Inner crease sits snugly on the neckband; outer edge folds gracefully outward & downward
+    const innerR = 0.152;
+    const innerY = 0.562 - (cosP > 0 ? Math.pow(cosP, 1.5) * 0.048 : 0);
+
+    // Slight collar tip extension at the front ends
+    const tipBoost = cosP > 0.65 ? Math.pow((cosP - 0.65) / 0.35, 1.3) * 0.024 : 0;
+    const outerR = 0.212 + tipBoost;
+    const outerY = 0.502 - (cosP > 0 ? Math.pow(cosP, 1.4) * 0.068 : 0);
+
+    // Top-crease ring & folded outer-edge ring (with subtle thickness extrusion)
+    const ix = sinP * innerR;
+    const iz = cosP * innerR;
+    const ox = sinP * outerR;
+    const oz = cosP * outerR;
+
+    positions.push(ix, innerY + 0.008, iz);
+    positions.push(ox, outerY + 0.005, oz);
+
+    outerRimPoints.push(new THREE.Vector3(ox, outerY + 0.004, oz));
+  }
+
+  for (let i = 0; i < segs; i++) {
+    const a = i * 2;
+    const b = a + 1;
+    const c = a + 2;
+    const d = a + 3;
+    indices.push(a, b, c);
+    indices.push(c, b, d);
+  }
+
+  const collarGeom = new THREE.BufferGeometry();
+  collarGeom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  collarGeom.setIndex(indices);
+  collarGeom.computeVertexNormals();
+
+  const rimCurve = new THREE.CatmullRomCurve3(outerRimPoints, false);
+  const whiteTrimGeom = new THREE.TubeGeometry(rimCurve, 72, 0.0055, 10, false);
+
+  return { collarGeom, whiteTrimGeom };
+}
+
+/**
+ * Tailored 3D TechTonic Polo Shirt matching the official club uniform photo
+ * on a motorized 360-degree museum turntable.
  */
 export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
   onInteract,
@@ -194,29 +264,33 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
     []
   );
 
-  const { torsoGeometry, leftSleeveGeom, rightSleeveGeom } = useMemo(
+  const { torsoGeometry, leftSleeveGeom, rightSleeveGeom, collarGeom, whiteTrimGeom } = useMemo(
     () => ({
       torsoGeometry: createSculptedTorsoGeometry(),
       leftSleeveGeom: createSculptedSleeveGeometry(-1),
       rightSleeveGeom: createSculptedSleeveGeometry(1),
+      ...createPoloCollarGeometries(),
     }),
     []
   );
 
-  // Tailored TechTonic Polo Shirt diffuse texture: deep navy-indigo body with crisp sky-blue left side panel + knit micro-texture
+  // High-res 2048x1024 baked shirt diffuse map:
+  // deep navy body + light sky-blue left flank panel + curved left-chest TECH TONIC + back TECHTONIC / Dream it - Code it
   const shirtDiffuseTex = useMemo(() => {
-    const { canvas, ctx } = createHiResCanvas(1024, 512, 1);
+    const W = 2048;
+    const H = 1024;
+    const { canvas, ctx } = createHiResCanvas(W, H, 1);
     if (ctx) {
-      // Base deep navy-indigo fabric (#1f305c matching official polo reference)
+      // Base deep navy-indigo fabric (#1f305c)
       ctx.fillStyle = '#1f305c';
-      ctx.fillRect(0, 0, 1024, 512);
+      ctx.fillRect(0, 0, W, H);
 
-      // Subtle micro-knit pique texture across torso
+      // Subtle vertical-horizontal pique knit grain
       const step = 4;
-      for (let y = 0; y < 512; y += step) {
-        for (let x = 0; x < 1024; x += step) {
+      for (let y = 0; y < H; y += step) {
+        for (let x = 0; x < W; x += step) {
           if (((x + y) / step) % 2 === 0) {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.028)';
             ctx.fillRect(x, y, step - 1, step - 1);
           } else {
             ctx.fillStyle = 'rgba(8, 15, 34, 0.14)';
@@ -225,78 +299,93 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
         }
       }
 
-      // Distinctive sky-blue vertical side panel on wearer's left flank (theta near 0 => u near 0 and 1)
-      // Taper cleanly from underarm (y ≈ 118 in flipped canvas -> top 34%) down to bottom hem
+      // 1. Distinctive light sky-blue vertical side panel along wearer's left flank (uTex near 0 and 1)
       const drawSideStripe = (cx: number) => {
-        const grad = ctx.createLinearGradient(cx - 56, 0, cx + 56, 0);
-        grad.addColorStop(0, '#7ebde8');
-        grad.addColorStop(0.5, '#9cd1f2');
-        grad.addColorStop(1, '#7ebde8');
+        const grad = ctx.createLinearGradient(cx - 110, 0, cx + 110, 0);
+        grad.addColorStop(0, '#85c3eb');
+        grad.addColorStop(0.5, '#a3d5f5');
+        grad.addColorStop(1, '#85c3eb');
         ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.moveTo(cx - 52, 512);
-        ctx.lineTo(cx - 38, 178);
-        ctx.quadraticCurveTo(cx, 152, cx + 38, 178);
-        ctx.lineTo(cx + 52, 512);
+        ctx.moveTo(cx - 106, H);
+        ctx.lineTo(cx - 72, 355);
+        ctx.quadraticCurveTo(cx, 315, cx + 72, 355);
+        ctx.lineTo(cx + 106, H);
         ctx.closePath();
         ctx.fill();
       };
       drawSideStripe(0);
-      drawSideStripe(1024);
-    }
-    return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
-  }, []);
+      drawSideStripe(W);
 
-  // Official Left Chest Gear-C + "TECH TONIC" white emblem matching reference shirt
-  const chestBadgeTex = useMemo(() => {
-    const { canvas, ctx } = createHiResCanvas(320, 160, 2);
-    if (ctx) {
-      ctx.clearRect(0, 0, 320, 160);
-
-      // Gear C icon on left
-      const gx = 74;
-      const gy = 80;
+      // 2. Front Left-Chest Official "TECH TONIC" Gear-C Logo (uTex ≈ 0.862, v ≈ 0.69 -> y ≈ 318)
+      const cx = W * 0.858;
+      const cy = 322;
       ctx.save();
-      ctx.translate(gx, gy);
+      ctx.translate(cx - 32, cy);
       ctx.fillStyle = '#ffffff';
       for (let i = 0; i < 8; i++) {
         const angle = (Math.PI / 4) * i;
-        if (angle > -0.45 && angle < 0.45) continue; // open C gap on right
+        if (angle > -0.5 && angle < 0.5) continue;
         ctx.save();
         ctx.rotate(angle);
-        ctx.fillRect(-6, -34, 12, 11);
+        ctx.fillRect(-3.5, -21, 7, 6.5);
         ctx.restore();
       }
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 10;
+      ctx.lineWidth = 6;
       ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.arc(0, 0, 22, 0.55, Math.PI * 2 - 0.55);
+      ctx.arc(0, 0, 14, 0.55, Math.PI * 2 - 0.55);
       ctx.stroke();
       ctx.restore();
 
-      // Stacked bold "TECH" / "TONIC" typography
       ctx.textAlign = 'left';
       ctx.fillStyle = '#ffffff';
-      ctx.font = '900 40px Inter, sans-serif';
-      ctx.fillText('TECH', 112, 74);
-      ctx.fillText('TONIC', 112, 114);
+      ctx.font = '900 26px Inter, sans-serif';
+      ctx.fillText('TECH', cx - 6, cy - 3);
+      ctx.fillText('TONIC', cx - 6, cy + 22);
+
+      // 3. Upper Back Official Typography: "TECHTONIC" + "Dream it - Code it" (uTex = 0.25, v ≈ 0.72 -> y ≈ 290)
+      const bx = W * 0.25;
+      const by = 296;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 46px Inter, sans-serif';
+      ctx.fillText('TECHTONIC', bx, by);
+
+      ctx.fillStyle = '#8ec8ec';
+      ctx.font = '700 26px Inter, sans-serif';
+      ctx.fillText('Dream it - Code it', bx, by + 38);
     }
     return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, []);
 
-  // Official Back Print: Bold white "TECHTONIC" + sky-blue "Dream it - Code it"
-  const backPrintTex = useMemo(() => {
-    const { canvas, ctx } = createHiResCanvas(512, 180, 2);
+  // Sleeve UV texture with deep navy fabric, ribbed cuff band, and baked crisp white pinstripe (zero detached rings)
+  const sleeveDiffuseTex = useMemo(() => {
+    const W = 512;
+    const H = 512;
+    const { canvas, ctx } = createHiResCanvas(W, H, 1);
     if (ctx) {
-      ctx.clearRect(0, 0, 512, 180);
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 54px Inter, sans-serif';
-      ctx.fillText('TECHTONIC', 256, 78);
-      ctx.fillStyle = '#8ac8ef';
-      ctx.font = '700 30px Inter, sans-serif';
-      ctx.fillText('Dream it - Code it', 256, 126);
+      ctx.fillStyle = '#1f305c';
+      ctx.fillRect(0, 0, W, H);
+
+      const step = 4;
+      for (let y = 0; y < H; y += step) {
+        for (let x = 0; x < W; x += step) {
+          ctx.fillStyle =
+            ((x + y) / step) % 2 === 0 ? 'rgba(255,255,255,0.028)' : 'rgba(8,15,34,0.14)';
+          ctx.fillRect(x, y, step - 1, step - 1);
+        }
+      }
+
+      // v = 0..1 goes shoulder (bottom of flipped canvas, y=512) -> sleeve cuff hem (top, y=0)
+      // Ribbed cuff band at t in [0.85, 1.0] -> y in [0, 76]
+      ctx.fillStyle = '#18264c';
+      ctx.fillRect(0, 0, W, 72);
+
+      // Crisp white knitted cuff pinstripe right near cuff rim (t ≈ 0.90 -> y ≈ 36..50)
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 38, W, 13);
     }
     return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, []);
@@ -314,9 +403,10 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
       torsoGeometry.dispose();
       leftSleeveGeom.dispose();
       rightSleeveGeom.dispose();
-      chestBadgeTex.dispose();
-      backPrintTex.dispose();
+      collarGeom.dispose();
+      whiteTrimGeom.dispose();
       shirtDiffuseTex.dispose();
+      sleeveDiffuseTex.dispose();
     };
   }, [
     fabricMaps,
@@ -326,15 +416,16 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
     torsoGeometry,
     leftSleeveGeom,
     rightSleeveGeom,
-    chestBadgeTex,
-    backPrintTex,
+    collarGeom,
+    whiteTrimGeom,
     shirtDiffuseTex,
+    sleeveDiffuseTex,
   ]);
 
-  useFrame((state) => {
+  useFrame((_, delta) => {
     if (mannequinTurnRef.current) {
-      mannequinTurnRef.current.rotation.y =
-        -Math.PI / 2 + Math.sin(state.clock.elapsedTime * 0.65) * 0.22;
+      // Smooth 360° museum turntable so visitors can see front logo, sky-blue flank, and back print effortlessly
+      mannequinTurnRef.current.rotation.y += delta * (hovered ? 0.1 : 0.45);
       const targetScale = hovered ? 1.035 : 1;
       mannequinTurnRef.current.scale.lerp(
         new THREE.Vector3(targetScale, targetScale, targetScale),
@@ -466,7 +557,7 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
         <meshBasicMaterial color="#7dd3fc" transparent opacity={0.45} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* ================= ULTRA-SMOOTH TAILORED 3D POLO SHIRT ON MANNEQUIN STAND ================= */}
+      {/* ================= TAILORED 3D POLO SHIRT ON 360-DEGREE TURNTABLE ================= */}
       <group
         ref={mannequinTurnRef}
         position={[14.5, 1.0, -4]}
@@ -494,144 +585,96 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
           <cylinderGeometry args={[0.032, 0.038, 1.25, 32]} />
           <meshStandardMaterial color="#cbd5e1" metalness={0.92} roughness={0.16} />
         </mesh>
-        {/* Tailored Mannequin Neck Neckform & Brushed Metal Collar Finial */}
-        <mesh position={[0, 1.86, 0]} castShadow>
-          <cylinderGeometry args={[0.095, 0.125, 0.22, 36]} />
-          <meshStandardMaterial color="#1e293b" metalness={0.55} roughness={0.42} />
+        {/* Dark Neck Liner & Brushed Metal Collar Finial */}
+        <mesh position={[0, 1.84, 0]} castShadow>
+          <cylinderGeometry args={[0.095, 0.135, 0.2, 36]} />
+          <meshStandardMaterial color="#141e35" metalness={0.35} roughness={0.62} />
         </mesh>
-        <mesh position={[0, 1.98, 0]}>
-          <cylinderGeometry args={[0.105, 0.105, 0.035, 36]} />
+        <mesh position={[0, 1.96, 0]}>
+          <cylinderGeometry args={[0.102, 0.102, 0.03, 36]} />
           <meshStandardMaterial color="#94a3b8" metalness={0.9} roughness={0.2} />
         </mesh>
-        <mesh position={[0, 2.02, 0]}>
-          <sphereGeometry args={[0.092, 32, 24]} />
+        <mesh position={[0, 2.0, 0]}>
+          <sphereGeometry args={[0.088, 32, 24]} />
           <meshStandardMaterial color="#cbd5e1" metalness={0.9} roughness={0.2} />
         </mesh>
 
-        {/* Sculpted Soft Cotton Polo Torso & Raglan Sleeves with Official Navy + Sky-Blue Side Panel */}
+        {/* Sculpted Polo Torso with Contoured UV-Baked Graphics & Raglan Sleeves */}
         <group position={[0, 1.26, 0]}>
           <mesh geometry={torsoGeometry} castShadow receiveShadow>
             <meshPhysicalMaterial
               map={shirtDiffuseTex}
               bumpMap={fabricMaps.bumpMap}
-              bumpScale={0.015}
+              bumpScale={0.014}
               color="#ffffff"
-              roughness={0.86}
+              roughness={0.85}
               metalness={0.02}
-              sheen={0.72}
+              sheen={0.7}
               sheenRoughness={0.7}
               sheenColor="#93c5fd"
-              emissive="#0f1d3d"
-              emissiveIntensity={hovered ? 0.25 : 0.06}
+              emissive="#102044"
+              emissiveIntensity={hovered ? 0.24 : 0.08}
             />
           </mesh>
 
           <mesh geometry={leftSleeveGeom} castShadow receiveShadow>
             <meshPhysicalMaterial
-              map={fabricMaps.map}
+              map={sleeveDiffuseTex}
               bumpMap={fabricMaps.bumpMap}
-              bumpScale={0.015}
-              color="#1f305c"
-              roughness={0.86}
+              bumpScale={0.014}
+              color="#ffffff"
+              roughness={0.85}
               metalness={0.02}
-              sheen={0.72}
+              sheen={0.7}
               sheenRoughness={0.7}
               sheenColor="#93c5fd"
+              emissive="#102044"
+              emissiveIntensity={hovered ? 0.24 : 0.08}
               side={THREE.DoubleSide}
             />
           </mesh>
 
           <mesh geometry={rightSleeveGeom} castShadow receiveShadow>
             <meshPhysicalMaterial
-              map={fabricMaps.map}
+              map={sleeveDiffuseTex}
               bumpMap={fabricMaps.bumpMap}
-              bumpScale={0.015}
-              color="#1f305c"
-              roughness={0.86}
+              bumpScale={0.014}
+              color="#ffffff"
+              roughness={0.85}
               metalness={0.02}
-              sheen={0.72}
+              sheen={0.7}
               sheenRoughness={0.7}
               sheenColor="#93c5fd"
+              emissive="#102044"
+              emissiveIntensity={hovered ? 0.24 : 0.08}
               side={THREE.DoubleSide}
             />
           </mesh>
 
-          {/* Left & Right Ribbed Sleeve Cuff Rings with Crisp White Pinstripe */}
-          {[-1, 1].map((side) => (
-            <group
-              key={`cuff-${side}`}
-              position={[side * 0.62, 0.03, 0.022]}
-              rotation={[0, 0, side * -0.95]}
-            >
-              <mesh>
-                <torusGeometry args={[0.128, 0.013, 16, 40]} />
-                <meshPhysicalMaterial color="#182548" roughness={0.78} sheen={0.5} sheenColor="#93c5fd" />
-              </mesh>
-              <mesh position={[0, 0, 0.004]}>
-                <torusGeometry args={[0.132, 0.0045, 12, 40]} />
-                <meshStandardMaterial color="#f8fafc" roughness={0.5} metalness={0.05} />
-              </mesh>
-            </group>
-          ))}
-
-          {/* Ribbed Polo Collar Band + Tailored Folded Collar Wings with White Outer Edge Trim */}
-          <mesh position={[0, 0.56, -0.005]} rotation={[Math.PI / 2 - 0.12, 0, 0]}>
-            <torusGeometry args={[0.158, 0.036, 24, 56]} />
+          {/* Continuous Folded 3D Polo Collar & White Outer Edge Piping */}
+          <mesh geometry={collarGeom} castShadow>
             <meshPhysicalMaterial
               color="#182548"
-              roughness={0.78}
-              sheen={0.6}
+              roughness={0.76}
+              sheen={0.58}
               sheenColor="#93c5fd"
+              side={THREE.DoubleSide}
             />
           </mesh>
-          <mesh position={[0, 0.578, -0.005]} rotation={[Math.PI / 2 - 0.12, 0, 0]}>
-            <torusGeometry args={[0.164, 0.006, 16, 56]} />
-            <meshStandardMaterial color="#f8fafc" roughness={0.5} metalness={0.05} />
+          <mesh geometry={whiteTrimGeom}>
+            <meshStandardMaterial color="#f8fafc" roughness={0.45} metalness={0.04} />
           </mesh>
-          {[-0.082, 0.082].map((cx) => (
-            <group
-              key={`collar-wing-${cx}`}
-              position={[cx, 0.51, 0.155]}
-              rotation={[0.36, cx > 0 ? -0.26 : 0.26, cx > 0 ? 0.34 : -0.34]}
-            >
-              <RoundedBox args={[0.125, 0.088, 0.022]} radius={0.01} smoothness={6}>
-                <meshPhysicalMaterial
-                  color="#182548"
-                  roughness={0.76}
-                  sheen={0.55}
-                  sheenColor="#93c5fd"
-                />
-              </RoundedBox>
-              {/* Crisp white collar tip trim matching official shirt */}
-              <mesh position={[0, -0.038, 0.008]}>
-                <boxGeometry args={[0.118, 0.011, 0.01]} />
-                <meshStandardMaterial color="#f8fafc" roughness={0.48} />
-              </mesh>
-            </group>
-          ))}
 
-          {/* Contoured Front Polo Placket & Mother-of-Pearl Buttons */}
-          <RoundedBox position={[0, 0.38, 0.205]} rotation={[-0.14, 0, 0]} args={[0.068, 0.25, 0.02]} radius={0.008} smoothness={4}>
-            <meshPhysicalMaterial color="#182548" roughness={0.76} sheen={0.5} sheenColor="#93c5fd" />
+          {/* Contoured Front 2-Button Polo Placket & High-Contrast Pearlescent Buttons */}
+          <RoundedBox position={[0, 0.37, 0.205]} rotation={[-0.14, 0, 0]} args={[0.068, 0.24, 0.018]} radius={0.008} smoothness={4}>
+            <meshPhysicalMaterial color="#24396b" roughness={0.74} sheen={0.55} sheenColor="#93c5fd" />
           </RoundedBox>
-          {[0.44, 0.35].map((btnY, i) => (
-            <mesh key={`btn-${i}`} position={[0, btnY, 0.214 - i * 0.01]} rotation={[Math.PI / 2 - 0.14, 0, 0]}>
-              <cylinderGeometry args={[0.013, 0.013, 0.008, 20]} />
-              <meshPhysicalMaterial color="#f8fafc" metalness={0.25} roughness={0.18} clearcoat={1} />
+          {[0.435, 0.34].map((btnY, i) => (
+            <mesh key={`btn-${i}`} position={[0, btnY, 0.214 - i * 0.011]} rotation={[Math.PI / 2 - 0.14, 0, 0]}>
+              <cylinderGeometry args={[0.014, 0.014, 0.01, 24]} />
+              <meshStandardMaterial color="#ffffff" emissive="#e2e8f0" emissiveIntensity={0.22} roughness={0.2} />
             </mesh>
           ))}
-
-          {/* Chest Embroidered "TECH TONIC" White Crest on Left Chest */}
-          <mesh position={[0.205, 0.215, 0.23]} rotation={[-0.08, 0.28, 0]}>
-            <planeGeometry args={[0.21, 0.105]} />
-            <meshStandardMaterial map={chestBadgeTex} transparent roughness={0.62} />
-          </mesh>
-
-          {/* Upper Back Printed "TECHTONIC / Dream it - Code it" */}
-          <mesh position={[0, 0.24, -0.208]} rotation={[0.06, Math.PI, 0]}>
-            <planeGeometry args={[0.6, 0.21]} />
-            <meshStandardMaterial map={backPrintTex} transparent roughness={0.65} />
-          </mesh>
         </group>
       </group>
     </group>
