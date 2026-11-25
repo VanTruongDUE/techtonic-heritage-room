@@ -11,6 +11,7 @@ import { GuestbookModal } from './components/ui/Modals/GuestbookModal';
 import { ExhibitDetailModal } from './components/ui/Modals/ExhibitDetailModal';
 import { InstructionsModal } from './components/ui/Modals/InstructionsModal';
 import { JourneyPromptModal } from './components/ui/Modals/JourneyPromptModal';
+import { TestimonialsModal } from './components/ui/Modals/TestimonialsModal';
 import { TELEPORT_ZONES } from './data/heritageSeed';
 import { useHeritageStore } from './store/useHeritageStore';
 import { useAudio } from './hooks/useAudio';
@@ -184,6 +185,7 @@ export const App: React.FC = () => {
       <ExhibitDetailModal />
       <InstructionsModal />
       <JourneyPromptModal />
+      <TestimonialsModal />
 
       {/* 7. Mandatory Loading Screen with Progress and Entry Button */}
       <LoadingScreen onEnter={handleEnter} />

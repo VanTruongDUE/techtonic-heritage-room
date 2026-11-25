@@ -6,6 +6,7 @@ import { CLUB_PROFILE } from '../../../data/heritageSeed';
 import { createBrushedMetalMaps } from '../utils/proceduralMaterials';
 import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
 import { ClubShirtExhibit } from './ClubShirtExhibit';
+import { FloatingTestimonials3D } from './FloatingTestimonials3D';
 import type { ExhibitItem, HoverPreview } from '../../../types/heritage';
 
 interface MuseumWallBoardProps {
@@ -150,6 +151,7 @@ export const PerimeterGallery: React.FC = () => {
   const {
     setHoveringInteractive,
     openModal,
+    openTestimonialsModal,
     timelineMilestones,
     activityHighlights,
   } = useHeritageStore();
@@ -560,24 +562,31 @@ export const PerimeterGallery: React.FC = () => {
         const w = 635;
         const h = 218;
 
-        ctx.fillStyle = '#131d32';
+        ctx.fillStyle = '#101b30';
         ctx.fillRect(x, y, w, h);
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.28)';
+        ctx.strokeStyle = `${t.accent}66`;
         ctx.lineWidth = 2;
         ctx.strokeRect(x, y, w, h);
 
-        ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 26px Inter, sans-serif';
-        ctx.fillText(t.name, x + 26, y + 48);
+        ctx.fillStyle = t.accent;
+        ctx.fillRect(x, y, 6, h);
+
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 25px Inter, sans-serif';
+        ctx.fillText(t.name, x + 26, y + 42);
+
+        ctx.fillStyle = t.accent;
+        ctx.font = '600 16px "JetBrains Mono", monospace';
+        ctx.fillText(t.tag.toUpperCase(), x + 26, y + 68);
 
         ctx.fillStyle = '#cbd5e1';
-        ctx.font = '400 20px Inter, sans-serif';
-        drawWrappedText(ctx, t.role, x + 26, y + 92, w - 52, 28, 4);
+        ctx.font = 'italic 400 18px Inter, sans-serif';
+        drawWrappedText(ctx, `“${t.quote}”`, x + 26, y + 102, w - 48, 25, 4);
       });
 
       ctx.fillStyle = '#7dd3fc';
       ctx.font = '500 22px "JetBrains Mono", monospace';
-      ctx.fillText('• Nhấp / [E] để xem danh sách Ban Chủ Nhiệm & Mentor các nhiệm kỳ', 68, 706);
+      ctx.fillText('• Nhấp bảng hoặc các thẻ 3D lơ lửng để đọc trọn vẹn lời chia sẻ của thành viên', 68, 706);
     }
     return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, []);
@@ -735,16 +744,17 @@ export const PerimeterGallery: React.FC = () => {
 
   const testimonialsPreview: HoverPreview = useMemo(
     () => ({
-      title: 'Tiếng Nói Thành Viên & Mentor',
-      badge: 'CỘNG ĐỒNG TECHTONIC',
-      summary: 'Chia sẻ thực tế từ cố vấn học thuật, ban chủ nhiệm và thành viên đang phát triển sản phẩm tại TechTonic.',
-      bullets: CLUB_PROFILE.testimonials.slice(0, 3).map((t) => t.name),
-      actionLabel: 'Xem hồ sơ BCN & Mentor',
+      title: 'Thành Viên Nói Gì Về TechTonic',
+      badge: '4 LỜI CHIA SẺ CHÂN THÀNH',
+      summary: 'Cảm nhận thực tế từ Co-Founder, Chủ nhiệm, Mentor và Trưởng Ban Chuyên Môn về môi trường học thuật tại TechTonic.',
+      bullets: CLUB_PROFILE.testimonials.slice(0, 4).map((t) => `${t.name} (${t.tag})`),
+      actionLabel: 'Đọc trọn vẹn lời chia sẻ của thành viên',
     }),
     []
   );
 
   const openShirtModal = () => openModal('shirt');
+  const openTestimonials = () => openTestimonialsModal(CLUB_PROFILE.testimonials[0]?.id ?? null);
   const openTimelineModal = () => openModal('exhibit', timelineExhibit);
   const openCoreValuesModal = () => openModal('exhibit', coreValuesExhibit);
   const openAcademicModal = () => openModal('exhibit', academicExhibit);
@@ -842,11 +852,13 @@ export const PerimeterGallery: React.FC = () => {
         planeArgs={[6.8, 3.5]}
         texture={testimonialsTexture}
         metalMaps={metalMaps}
-        tooltip="Xem Ban Chủ Nhiệm & Mentor"
+        tooltip="Đọc lời chia sẻ của Thành viên & Mentor"
         preview={testimonialsPreview}
-        onInteract={openShirtModal}
+        onInteract={openTestimonials}
         onHover={setHoveringInteractive}
       />
+
+      <FloatingTestimonials3D />
     </group>
   );
 };

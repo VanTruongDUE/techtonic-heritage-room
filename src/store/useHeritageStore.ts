@@ -189,12 +189,15 @@ interface HeritageState {
   // Modal system
   activeModal: ModalType;
   modalData: ExhibitItem | null;
+  selectedTestimonialId: string | null;
+  setSelectedTestimonialId: (id: string | null) => void;
   boardDepartmentFilter: string;
   setBoardDepartmentFilter: (dept: string) => void;
   boardTermFilter: string;
   setBoardTermFilter: (term: string) => void;
   openModal: (type: ModalType, data?: ExhibitItem | null) => void;
   openExecutiveBoard: (department?: string, term?: string) => void;
+  openTestimonialsModal: (testimonialId?: string | null) => void;
   closeModal: () => void;
 
   // Audio state
@@ -503,6 +506,8 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
 
   activeModal: null,
   modalData: null,
+  selectedTestimonialId: null,
+  setSelectedTestimonialId: (id) => set({ selectedTestimonialId: id }),
   boardDepartmentFilter: 'ALL',
   setBoardDepartmentFilter: (dept) => set({ boardDepartmentFilter: dept }),
   boardTermFilter: 'Nhiệm kỳ 2026 - 2027',
@@ -542,6 +547,28 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
       showJourneyPrompt: false,
       boardDepartmentFilter: department,
       boardTermFilter: term,
+      isGuidedTourActive: false,
+      isLocked: false,
+      isDraggingCamera: false,
+      isHoveringInteractive: false,
+      hoverTooltip: '',
+      hoverPreview: null,
+      hoverAction: null,
+    });
+  },
+  openTestimonialsModal: (testimonialId = null) => {
+    if (document.pointerLockElement && document.exitPointerLock) {
+      try {
+        document.exitPointerLock();
+      } catch {
+        // Ignore
+      }
+    }
+    set({
+      activeModal: 'testimonials',
+      modalData: null,
+      selectedTestimonialId: testimonialId,
+      showJourneyPrompt: false,
       isGuidedTourActive: false,
       isLocked: false,
       isDraggingCamera: false,

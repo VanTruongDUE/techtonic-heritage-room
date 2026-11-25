@@ -123,7 +123,17 @@ export interface ApiErrorResponse {
   fieldErrors?: Partial<Record<'author' | 'roleOrAffiliation' | 'message', string>>;
 }
 
-export type ModalType = 'shirt' | 'guestbook' | 'exhibit' | 'instructions' | null;
+export interface MemberTestimonial {
+  id: string;
+  name: string;
+  role: string;
+  tag: string;
+  quote: string;
+  avatar: string;
+  accent: string;
+}
+
+export type ModalType = 'shirt' | 'guestbook' | 'exhibit' | 'instructions' | 'testimonials' | null;
 
 export type GraphicsQuality = 'high' | 'balanced';
 
