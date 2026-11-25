@@ -76,76 +76,113 @@ function drawWrappedText(
 }
 
 function buildPlayConsoleTexture(isPlaying: boolean, isHovered: boolean): THREE.CanvasTexture {
-  const { canvas, ctx } = createHiResCanvas(1024, 140, 2);
+  const { canvas, ctx } = createHiResCanvas(1280, 148, 2);
   if (ctx) {
-    // Deep metallic obsidian pill background
-    const grad = ctx.createLinearGradient(0, 0, 1024, 0);
+    ctx.clearRect(0, 0, 1280, 148);
+
+    // Sleek dark-obsidian glass pill body (exact rounded capsule silhouette, zero boxy overflow)
+    const bgGrad = ctx.createLinearGradient(0, 0, 1280, 148);
     if (isPlaying) {
-      grad.addColorStop(0, '#1e1026');
-      grad.addColorStop(0.5, '#2b1236');
-      grad.addColorStop(1, '#1e1026');
+      bgGrad.addColorStop(0, '#180d22');
+      bgGrad.addColorStop(0.5, '#251133');
+      bgGrad.addColorStop(1, '#180d22');
     } else if (isHovered) {
-      grad.addColorStop(0, '#0a2540');
-      grad.addColorStop(0.5, '#0f385c');
-      grad.addColorStop(1, '#0a2540');
+      bgGrad.addColorStop(0, '#0a1f36');
+      bgGrad.addColorStop(0.5, '#0f2f4f');
+      bgGrad.addColorStop(1, '#0a1f36');
     } else {
-      grad.addColorStop(0, '#091426');
-      grad.addColorStop(0.5, '#0e1f38');
-      grad.addColorStop(1, '#091426');
+      bgGrad.addColorStop(0, '#081223');
+      bgGrad.addColorStop(0.5, '#0d1b31');
+      bgGrad.addColorStop(1, '#081223');
     }
-    ctx.fillStyle = grad;
+
+    ctx.fillStyle = bgGrad;
     ctx.beginPath();
-    ctx.roundRect(8, 8, 1008, 124, 62);
+    ctx.roundRect(10, 10, 1260, 128, 64);
     ctx.fill();
 
-    // Glowing border
-    ctx.strokeStyle = isPlaying ? '#f472b6' : isHovered ? '#38f8ff' : '#00F0FF';
-    ctx.lineWidth = isHovered ? 5 : 3.5;
+    // Subtle top specular glass sheen
+    const sheen = ctx.createLinearGradient(0, 10, 0, 74);
+    sheen.addColorStop(0, 'rgba(255, 255, 255, 0.14)');
+    sheen.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = sheen;
     ctx.beginPath();
-    ctx.roundRect(8, 8, 1008, 124, 62);
+    ctx.roundRect(14, 12, 1252, 62, 60);
+    ctx.fill();
+
+    // Hair-thin silky luminous rim border
+    const rimGrad = ctx.createLinearGradient(0, 0, 1280, 0);
+    if (isPlaying) {
+      rimGrad.addColorStop(0, 'rgba(244, 114, 182, 0.55)');
+      rimGrad.addColorStop(0.5, '#fb7185');
+      rimGrad.addColorStop(1, 'rgba(244, 114, 182, 0.55)');
+    } else {
+      rimGrad.addColorStop(0, 'rgba(56, 189, 248, 0.5)');
+      rimGrad.addColorStop(0.5, isHovered ? '#67f9ff' : '#00F0FF');
+      rimGrad.addColorStop(1, 'rgba(56, 189, 248, 0.5)');
+    }
+    ctx.strokeStyle = rimGrad;
+    ctx.lineWidth = isHovered ? 4 : 2.8;
+    ctx.beginPath();
+    ctx.roundRect(10, 10, 1260, 128, 64);
     ctx.stroke();
 
-    // Left Circular Play / Stop Icon Badge
-    const circleX = 88;
-    const circleY = 70;
-    ctx.fillStyle = isPlaying ? '#fb7185' : '#00F0FF';
+    // Jewel-like circular Play / Stop medallion on left
+    const cx = 78;
+    const cy = 74;
+    const iconGrad = ctx.createRadialGradient(cx - 8, cy - 10, 4, cx, cy, 42);
+    if (isPlaying) {
+      iconGrad.addColorStop(0, '#fda4af');
+      iconGrad.addColorStop(1, '#e11d48');
+    } else {
+      iconGrad.addColorStop(0, '#a5f3fc');
+      iconGrad.addColorStop(1, '#00d4ff');
+    }
+    ctx.fillStyle = iconGrad;
     ctx.beginPath();
-    ctx.arc(circleX, circleY, 38, 0, Math.PI * 2);
+    ctx.arc(cx, cy, 38, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#050b16';
+    ctx.fillStyle = '#040a14';
     if (isPlaying) {
-      ctx.fillRect(circleX - 14, circleY - 14, 28, 28);
+      ctx.beginPath();
+      ctx.roundRect(cx - 12, cy - 12, 24, 24, 5);
+      ctx.fill();
     } else {
       ctx.beginPath();
-      ctx.moveTo(circleX - 10, circleY - 17);
-      ctx.lineTo(circleX + 19, circleY);
-      ctx.lineTo(circleX - 10, circleY + 17);
+      ctx.moveTo(cx - 8, cy - 15);
+      ctx.lineTo(cx + 17, cy);
+      ctx.lineTo(cx - 8, cy + 15);
       ctx.closePath();
       ctx.fill();
     }
 
-    // Label text
+    // Crisp single-line minimalist primary title
     ctx.textAlign = 'left';
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '800 32px Inter, sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = '700 38px Inter, sans-serif';
     ctx.fillText(
-      isPlaying
-        ? 'ĐANG CHIẾU TRÊN TV KHỔNG LỒ • NHẤN ĐỂ TẮT TV'
-        : 'XEM NHỮNG GÌ TECHTONIC ĐÃ ĐI QUA',
-      154,
-      64
+      isPlaying ? 'ĐANG PHÁT PHIM HÀNH TRÌNH • NHẤN ĐỂ TẮT' : 'XEM HÀNH TRÌNH TECHTONIC',
+      146,
+      76
     );
 
-    ctx.fillStyle = isPlaying ? '#fbcfe8' : '#7dd3fc';
-    ctx.font = '600 21px "JetBrains Mono", monospace';
-    ctx.fillText(
-      isPlaying
-        ? 'ON AIR  •  GIANT 3D CINEMA MODE  •  NHẤN [ESC] ĐỂ QUAY LẠI'
-        : 'NHẤN PLAY ĐỂ BIẾN BẢNG DREAM IT - CODE IT THÀNH TV 3D KHỔNG LỒ',
-      154,
-      104
-    );
+    // Sleek minimalist right-side badge pill
+    const badgeW = isPlaying ? 186 : 168;
+    const badgeX = 1244 - badgeW;
+    ctx.fillStyle = isPlaying ? 'rgba(251, 113, 133, 0.16)' : 'rgba(0, 240, 255, 0.14)';
+    ctx.strokeStyle = isPlaying ? 'rgba(251, 113, 133, 0.55)' : 'rgba(0, 240, 255, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(badgeX, 42, badgeW, 64, 32);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = isPlaying ? '#fecdd3' : '#7dd3fc';
+    ctx.font = '700 24px "JetBrains Mono", monospace';
+    ctx.fillText(isPlaying ? '● ON AIR' : 'TV 3D ▶', badgeX + badgeW / 2, 75);
   }
   return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
 }
@@ -170,8 +207,34 @@ export const CenterWall: React.FC = () => {
   const reducedMotion = useReducedMotionPreference();
   const emblemRef = useRef<THREE.Group>(null);
   const haloRef = useRef<THREE.Mesh>(null);
+  const playBtnGroupRef = useRef<THREE.Group>(null);
   const [isEmblemHovered, setIsEmblemHovered] = useState(false);
   const [isPlayBtnHovered, setIsPlayBtnHovered] = useState(false);
+
+  // True sculpted 3D capsule/pill chassis geometry (zero square corners sticking out!)
+  const playPillGeom = useMemo(() => {
+    const w = 3.12;
+    const h = 0.35;
+    const r = h / 2;
+    const hw = w / 2 - r;
+    const shape = new THREE.Shape();
+    shape.absarc(-hw, 0, r, Math.PI / 2, (3 * Math.PI) / 2, false);
+    shape.lineTo(hw, -r);
+    shape.absarc(hw, 0, r, -Math.PI / 2, Math.PI / 2, false);
+    shape.lineTo(-hw, r);
+
+    const geom = new THREE.ExtrudeGeometry(shape, {
+      depth: 0.045,
+      bevelEnabled: true,
+      bevelThickness: 0.012,
+      bevelSize: 0.01,
+      bevelSegments: 8,
+      curveSegments: 32,
+    });
+    geom.center();
+    geom.computeVertexNormals();
+    return geom;
+  }, []);
 
   // Giant 3D Cinema TV HTMLVideoElement + THREE.VideoTexture state
   const videoElRef = useRef<HTMLVideoElement | null>(null);
@@ -463,10 +526,11 @@ export const CenterWall: React.FC = () => {
     return () => {
       outerHexGeom.dispose();
       innerHexGeom.dispose();
+      playPillGeom.dispose();
       textTexture.dispose();
       eventsWingTexture.dispose();
     };
-  }, [outerHexGeom, innerHexGeom, textTexture, eventsWingTexture]);
+  }, [outerHexGeom, innerHexGeom, playPillGeom, textTexture, eventsWingTexture]);
 
   useEffect(() => {
     return () => {
@@ -475,6 +539,15 @@ export const CenterWall: React.FC = () => {
   }, [playConsoleTex]);
 
   useFrame((state, delta) => {
+    // Silky smooth spring scale on the slim 3D Play Pill Button
+    if (playBtnGroupRef.current) {
+      const targetS = isPlayBtnHovered ? 1.045 : 1.0;
+      playBtnGroupRef.current.scale.lerp(
+        new THREE.Vector3(targetS, targetS, targetS),
+        1 - Math.exp(-12 * Math.min(delta, 0.05))
+      );
+    }
+
     if (!isCenterWallCinemaActive) {
       if (!reducedMotion && emblemRef.current) {
         emblemRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.08;
@@ -732,43 +805,10 @@ export const CenterWall: React.FC = () => {
         </>
       )}
 
-      {/* ================= 3D PLAY CONSOLE BUTTON RIGHT BELOW DREAM IT - CODE IT ================= */}
-      <group position={[0, 0.33, 0.14]}>
-        <RoundedBox
-          args={[4.2, 0.54, 0.09]}
-          radius={0.06}
-          smoothness={4}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleToggleCinema();
-          }}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            setIsPlayBtnHovered(true);
-            setHoveringInteractive(
-              true,
-              isCenterWallCinemaActive
-                ? 'Tắt TV 3D & quay lại Dream it - Code it'
-                : 'Phát phim hành trình TechTonic trên TV 3D',
-              handleToggleCinema,
-              PLAY_CONSOLE_PREVIEW
-            );
-          }}
-          onPointerOut={() => {
-            setIsPlayBtnHovered(false);
-            setHoveringInteractive(false);
-          }}
-        >
-          <meshStandardMaterial
-            color="#0b1528"
-            metalness={0.82}
-            roughness={0.22}
-            emissive={isCenterWallCinemaActive ? '#f472b6' : '#00F0FF'}
-            emissiveIntensity={isPlayBtnHovered ? 0.35 : 0.14}
-          />
-        </RoundedBox>
+      {/* ================= SLEEK SLIM SCULPTED 3D PLAY PILL RIGHT BELOW DREAM IT - CODE IT ================= */}
+      <group ref={playBtnGroupRef} position={[0, 0.34, 0.14]}>
         <mesh
-          position={[0, 0, 0.05]}
+          geometry={playPillGeom}
           onClick={(e) => {
             e.stopPropagation();
             handleToggleCinema();
@@ -790,7 +830,40 @@ export const CenterWall: React.FC = () => {
             setHoveringInteractive(false);
           }}
         >
-          <planeGeometry args={[4.06, 0.52]} />
+          <meshPhysicalMaterial
+            color="#0b1629"
+            metalness={0.86}
+            roughness={0.18}
+            clearcoat={0.9}
+            clearcoatRoughness={0.12}
+            emissive={isCenterWallCinemaActive ? '#f472b6' : '#00F0FF'}
+            emissiveIntensity={isPlayBtnHovered ? 0.28 : 0.1}
+          />
+        </mesh>
+        <mesh
+          position={[0, 0, 0.036]}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleToggleCinema();
+          }}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            setIsPlayBtnHovered(true);
+            setHoveringInteractive(
+              true,
+              isCenterWallCinemaActive
+                ? 'Tắt TV 3D & quay lại Dream it - Code it'
+                : 'Phát phim hành trình TechTonic trên TV 3D',
+              handleToggleCinema,
+              PLAY_CONSOLE_PREVIEW
+            );
+          }}
+          onPointerOut={() => {
+            setIsPlayBtnHovered(false);
+            setHoveringInteractive(false);
+          }}
+        >
+          <planeGeometry args={[3.14, 0.365]} />
           <meshBasicMaterial map={playConsoleTex} transparent toneMapped={false} />
         </mesh>
       </group>

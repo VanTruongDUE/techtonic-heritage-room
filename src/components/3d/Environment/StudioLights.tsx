@@ -286,13 +286,13 @@ export const StudioLights: React.FC = () => {
         <primitive key={`tunnel-target-${st.z}`} object={tunnelTargets.current[idx]} position={[0, 0.2, st.z]} />
       ))}
 
-      {/* 1. Deep Low-Key Cosmic Fill so vibrant neon & spotlights pop dramatically */}
-      <hemisphereLight color="#38bdf8" groundColor="#03060f" intensity={0.22} />
-      <ambientLight color="#081020" intensity={0.11} />
+      {/* 1. Smooth Velvety Architectural Ambient Bounce so transitions between lit zones stay silky */}
+      <hemisphereLight color="#60a5fa" groundColor="#071022" intensity={0.34} />
+      <ambientLight color="#0c172b" intensity={0.14} />
       <directionalLight
         position={[4, 14, 8]}
-        intensity={0.22}
-        color="#dbeafe"
+        intensity={0.24}
+        color="#e2eeff"
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0005}
@@ -362,17 +362,17 @@ export const StudioLights: React.FC = () => {
         />
       ))}
 
-      {/* 4. Center Wall Stage: Crisp Hero Beam + Vivid Breathing Cyan/Violet Neon Flanking Washes */}
+      {/* 4. Center Wall Stage: Silky Wide-Penumbra Hero Key + Balanced Cyan (left) & Violet (right) Washes */}
       <spotLight
         ref={centerWallSpotRef}
         position={[0, 5.9, -11.2]}
         target={centerWallTarget.current}
-        intensity={62}
-        distance={20}
-        decay={1.7}
-        angle={0.72}
-        penumbra={0.55}
-        color="#e0f7ff"
+        intensity={58}
+        distance={22}
+        decay={1.65}
+        angle={0.78}
+        penumbra={0.86}
+        color="#e8f6ff"
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0004}
@@ -380,48 +380,48 @@ export const StudioLights: React.FC = () => {
       />
       <spotLight
         ref={centerCyanWashRef}
-        position={[-6.8, 5.8, -12.0]}
+        position={[-7.2, 5.8, -11.8]}
         target={centerWallTarget.current}
-        intensity={36}
-        distance={19}
-        decay={1.7}
-        angle={0.66}
-        penumbra={0.68}
+        intensity={32}
+        distance={20}
+        decay={1.65}
+        angle={0.76}
+        penumbra={0.88}
         color="#00F0FF"
       />
       <spotLight
         ref={centerVioletWashRef}
-        position={[6.8, 5.8, -12.0]}
+        position={[7.2, 5.8, -11.8]}
         target={centerWallTarget.current}
-        intensity={34}
-        distance={19}
-        decay={1.7}
-        angle={0.66}
-        penumbra={0.68}
+        intensity={30}
+        distance={20}
+        decay={1.65}
+        angle={0.76}
+        penumbra={0.88}
         color="#a855f7"
       />
       <spotLight
-        position={[11.75, 5.8, -12.5]}
+        position={[11.75, 5.8, -12.4]}
         target={valuesTarget.current}
-        intensity={46}
-        distance={17}
-        decay={1.75}
-        angle={0.68}
-        penumbra={0.6}
+        intensity={44}
+        distance={18}
+        decay={1.7}
+        angle={0.76}
+        penumbra={0.86}
         color="#c084fc"
       />
 
-      {/* 5. Central Sovereign Island 360°: Royal Champagne-Gold Key + Crisp Rim + Vivid Neon Pulse */}
+      {/* 5. Central Sovereign Island 360°: Silky Champagne-Gold Key + Soft Sky Counter-Rim */}
       <spotLight
         ref={islandGoldSpotRef}
         position={[0, 6.25, -4.4]}
         target={centralIslandTarget.current}
-        intensity={76}
-        distance={17}
+        intensity={74}
+        distance={18}
         decay={1.55}
-        angle={0.72}
-        penumbra={0.52}
-        color="#ffe29e"
+        angle={0.78}
+        penumbra={0.84}
+        color="#ffe6ad"
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.00035}
@@ -431,65 +431,65 @@ export const StudioLights: React.FC = () => {
         ref={islandRimSpotRef}
         position={[-3.4, 5.85, -8.6]}
         target={centralIslandTarget.current}
-        intensity={42}
-        distance={16}
+        intensity={40}
+        distance={17}
         decay={1.65}
-        angle={0.64}
-        penumbra={0.54}
-        color="#7dd3fc"
+        angle={0.72}
+        penumbra={0.86}
+        color="#93c5fd"
       />
       <pointLight
         ref={islandCrownGlowRef}
         position={[0, 2.55, -5]}
-        intensity={16}
-        distance={10.5}
+        intensity={15}
+        distance={11}
         decay={2}
         color="#fbbf24"
       />
       <pointLight
         ref={islandCyanPulseRef}
         position={[0, 1.05, -5]}
-        intensity={12.5}
-        distance={10.0}
+        intensity={11.5}
+        distance={10.5}
         decay={2}
         color="#00F0FF"
       />
 
-      {/* 6. Left Wall Exhibits: Electric Cyan Timeline + Vivid Neon Magenta Activities */}
+      {/* 6. Left Wall Exhibits: Silky High-Penumbra Cyan (Timeline) + Soft Violet-Magenta (Core Values) */}
       <spotLight
-        position={[-9.5, 5.9, -6]}
+        position={[-9.5, 5.9, -5.9]}
         target={timelineTarget.current}
-        intensity={50}
-        distance={17}
+        intensity={48}
+        distance={18}
         decay={1.65}
-        angle={0.7}
-        penumbra={0.58}
-        color="#00F0FF"
+        angle={0.78}
+        penumbra={0.86}
+        color="#38bdf8"
         castShadow
         shadow-bias={-0.0004}
         shadow-normalBias={0.02}
       />
       <spotLight
-        position={[-9.5, 5.9, 3.6]}
+        position={[-9.5, 5.9, 4.1]}
         target={activitiesTarget.current}
-        intensity={48}
-        distance={17}
+        intensity={46}
+        distance={18}
         decay={1.65}
-        angle={0.7}
-        penumbra={0.6}
-        color="#d946ef"
+        angle={0.78}
+        penumbra={0.88}
+        color="#c084fc"
       />
 
-      {/* 7. Right Wall Exhibits: Couture Club Shirt + Vivid Electric Cyan/Cobalt Academics */}
+      {/* 7. Right Wall Exhibits: Boutique Neutral-Cool Key (Club Shirt) + Cobalt-Sky Academic Washes */}
       <spotLight
         position={[9.2, 6.0, -9.2]}
         target={shirtTarget.current}
-        intensity={52}
-        distance={16}
+        intensity={50}
+        distance={17}
         decay={1.65}
-        angle={0.6}
-        penumbra={0.52}
-        color="#e0f7ff"
+        angle={0.68}
+        penumbra={0.82}
+        color="#eef8ff"
         castShadow
         shadow-bias={-0.0004}
         shadow-normalBias={0.02}
@@ -497,53 +497,53 @@ export const StudioLights: React.FC = () => {
       <pointLight
         ref={shirtRimRef}
         position={[14.8, 3.2, -10.4]}
-        intensity={13.5}
-        distance={8.5}
+        intensity={12.5}
+        distance={9.0}
         decay={2}
         color="#00F0FF"
       />
-      <pointLight position={[14.2, 3.6, -4.2]} intensity={17} distance={10} decay={2} color="#38bdf8" />
-      <pointLight position={[14.2, 3.6, 3.8]} intensity={17} distance={10} decay={2} color="#818cf8" />
+      <pointLight position={[14.0, 3.6, -4.2]} intensity={16} distance={11} decay={2} color="#38bdf8" />
+      <pointLight position={[14.0, 3.6, 3.8]} intensity={16} distance={11} decay={2} color="#60a5fa" />
 
-      {/* 8. Interactive Corner (Left Wing): Dynamic Neon Events Display + Guestbook Pool */}
+      {/* 8. Interactive Corner (Left Wing): Smooth Cyan Wash over Dynamic Events LED & Guestbook */}
       <spotLight
         position={[-11.75, 5.9, -12.2]}
         target={interactiveTarget.current}
-        intensity={42}
-        distance={16}
-        decay={1.75}
-        angle={0.68}
-        penumbra={0.58}
+        intensity={40}
+        distance={17}
+        decay={1.7}
+        angle={0.76}
+        penumbra={0.86}
         color="#38bdf8"
       />
       <pointLight
         ref={screenGlowRef}
         position={[-11.75, 3.2, -14.6]}
-        intensity={14.5}
-        distance={10}
+        intensity={13.5}
+        distance={10.5}
         decay={2}
         color="#00F0FF"
       />
 
-      {/* 9. Front Inner Wall Boards: Partners & Testimonials */}
+      {/* 9. Front Inner Wall Boards: Smooth Feathered Sky-Cyan (Partners) & Soft Cobalt (Testimonials) */}
       <spotLight
         position={[-12.6, 5.6, 2.2]}
         target={partnersTarget.current}
-        intensity={40}
-        distance={15}
-        decay={1.75}
-        angle={0.66}
-        penumbra={0.6}
-        color="#00F0FF"
+        intensity={38}
+        distance={16}
+        decay={1.7}
+        angle={0.76}
+        penumbra={0.88}
+        color="#38bdf8"
       />
       <spotLight
         position={[9.6, 5.6, 2.2]}
         target={testimonialsTarget.current}
-        intensity={40}
-        distance={15}
-        decay={1.75}
-        angle={0.66}
-        penumbra={0.6}
+        intensity={38}
+        distance={16}
+        decay={1.7}
+        angle={0.76}
+        penumbra={0.88}
         color="#60a5fa"
       />
     </group>

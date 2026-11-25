@@ -59,7 +59,32 @@ const HALL_BEAM_CONFIG = [
   { z: 3, color: '#a855f7' },
 ];
 const TUNNEL_RIB_Z = [26, 22, 18, 14, 10];
-const PILASTER_Z = [-18.1, -11.9, -4, 1, 6];
+// Strictly placed at room corners (never intersecting or obstructing side-wall exhibit boards)
+const CORNER_PILASTER_Z = [-18.3, 7.8];
+
+/** Smooth Gaussian bell-curve alpha texture so ceiling & cove neon halos fade like silk with ZERO hard edges */
+function createGaussianGlowTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    const grad = ctx.createLinearGradient(0, 0, 0, 128);
+    grad.addColorStop(0.0, 'rgba(255,255,255,0)');
+    grad.addColorStop(0.22, 'rgba(255,255,255,0.22)');
+    grad.addColorStop(0.42, 'rgba(255,255,255,0.78)');
+    grad.addColorStop(0.5, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.58, 'rgba(255,255,255,0.78)');
+    grad.addColorStop(0.78, 'rgba(255,255,255,0.22)');
+    grad.addColorStop(1.0, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 64, 128);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  return tex;
+}
 
 export const MuseumRoom: React.FC = () => {
   const graphicsQuality = useHeritageStore((s) => s.graphicsQuality);
@@ -67,6 +92,7 @@ export const MuseumRoom: React.FC = () => {
   const wallMaps = useMemo(() => createArchitecturalWallMaps(), []);
   const metalMaps = useMemo(() => createBrushedMetalMaps(), []);
   const leatherMaps = useMemo(() => createLeatherMaps(), []);
+  const softGlowTex = useMemo(() => createGaussianGlowTexture(), []);
   const guideMatRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const hallBeamHaloRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const tunnelRibTopRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
@@ -181,8 +207,9 @@ export const MuseumRoom: React.FC = () => {
       metalMaps.bumpMap.dispose();
       leatherMaps.roughnessMap.dispose();
       leatherMaps.bumpMap.dispose();
+      softGlowTex.dispose();
     };
-  }, [floorMaps, wallMaps, metalMaps, leatherMaps]);
+  }, [floorMaps, wallMaps, metalMaps, leatherMaps, softGlowTex]);
 
   return (
     <group>
@@ -210,22 +237,22 @@ export const MuseumRoom: React.FC = () => {
         </mesh>
       </RigidBody>
 
-      {/* Main Hall Planar Real-Time Space-Mirror Reflector Floor (crisp dynamic neon & cosmic reflections!) */}
+      {/* Main Hall Planar Real-Time Space-Mirror Reflector Floor (silky smooth blurred neon reflections) */}
       <mesh position={[0, 0.002, -5]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[31.8, 25.8]} />
         <MeshReflectorMaterial
           key={`floor-reflector-${graphicsQuality}`}
-          blur={graphicsQuality === 'high' ? [190, 60] : [140, 50]}
+          blur={graphicsQuality === 'high' ? [280, 95] : [180, 70]}
           resolution={graphicsQuality === 'high' ? 512 : 256}
-          mixBlur={0.82}
-          mixStrength={graphicsQuality === 'high' ? 0.85 : 0.62}
-          roughness={0.32}
-          depthScale={0.75}
-          minDepthThreshold={0.35}
+          mixBlur={0.9}
+          mixStrength={graphicsQuality === 'high' ? 0.72 : 0.56}
+          roughness={0.38}
+          depthScale={0.82}
+          minDepthThreshold={0.38}
           maxDepthThreshold={1.4}
-          color="#0c1528"
-          metalness={0.44}
-          mirror={0.72}
+          color="#0d162a"
+          metalness={0.38}
+          mirror={0.64}
           map={floorMaps.map}
           roughnessMap={floorMaps.roughnessMap}
           bumpMap={floorMaps.bumpMap}
@@ -350,16 +377,17 @@ export const MuseumRoom: React.FC = () => {
               toneMapped={false}
             />
           </mesh>
-          {/* Wide breathing optical neon ceiling halo */}
+          {/* Feathered Gaussian optical neon ceiling halo (silky soft edges) */}
           <mesh position={[0, -0.18, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[28.8, 0.78]} />
+            <planeGeometry args={[28.8, 1.05]} />
             <meshBasicMaterial
               ref={(el) => {
                 hallBeamHaloRefs.current[bIdx] = el;
               }}
+              map={softGlowTex}
               color={beam.color}
               transparent
-              opacity={0.28}
+              opacity={0.34}
               blending={THREE.AdditiveBlending}
               depthWrite={false}
               side={THREE.DoubleSide}
@@ -368,35 +396,13 @@ export const MuseumRoom: React.FC = () => {
         </group>
       ))}
 
-      {/* Cinematic Volumetric Light Shafts under Hero Spotlights */}
+      {/* Ultra-Subtle Golden Crown Mist exclusively over Central Honor Island */}
       <mesh position={[0, 3.6, -5]}>
-        <coneGeometry args={[3.5, 5.1, 32, 1, true]} />
+        <coneGeometry args={[3.4, 4.9, 32, 1, true]} />
         <meshBasicMaterial
           color="#fbbf24"
           transparent
-          opacity={0.045}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      <mesh position={[13.8, 3.6, -10.4]}>
-        <coneGeometry args={[2.1, 4.9, 28, 1, true]} />
-        <meshBasicMaterial
-          color="#00F0FF"
-          transparent
-          opacity={0.044}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      <mesh position={[0, 4.1, -15.4]} rotation={[-0.36, 0, 0]}>
-        <coneGeometry args={[2.7, 4.9, 28, 1, true]} />
-        <meshBasicMaterial
-          color="#38bdf8"
-          transparent
-          opacity={0.036}
+          opacity={0.022}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           side={THREE.DoubleSide}
@@ -429,16 +435,17 @@ export const MuseumRoom: React.FC = () => {
                 toneMapped={false}
               />
             </mesh>
-            {/* Ceiling arch optical neon halo */}
+            {/* Ceiling arch feathered optical neon halo */}
             <mesh position={[0, -0.155, 0]} rotation={[Math.PI / 2, 0, 0]}>
-              <planeGeometry args={[4.5, 0.62]} />
+              <planeGeometry args={[4.5, 0.85]} />
               <meshBasicMaterial
                 ref={(el) => {
                   tunnelRibHaloRefs.current[i] = el;
                 }}
+                map={softGlowTex}
                 color={ribColor}
                 transparent
-                opacity={i === 0 ? 0.08 : 0.01}
+                opacity={i === 0 ? 0.1 : 0.01}
                 blending={THREE.AdditiveBlending}
                 depthWrite={false}
                 side={THREE.DoubleSide}
@@ -716,30 +723,30 @@ export const MuseumRoom: React.FC = () => {
         </mesh>
       </group>
 
-      {/* ================= PERIMETER NEON COVE LIGHTING (TOP + LOWER REFLECTION SKIRTING) ================= */}
+      {/* ================= PERIMETER NEON COVE LIGHTING (FEATHERED GAUSSIAN HALO + FLOOR SKIRTING) ================= */}
       <mesh position={[0, 6.22, -18.55]}>
-        <boxGeometry args={[32.8, 0.065, 0.085]} />
+        <boxGeometry args={[32.8, 0.055, 0.075]} />
         <meshBasicMaterial color="#00F0FF" toneMapped={false} />
       </mesh>
-      <mesh position={[0, 6.18, -18.5]} rotation={[Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[32.8, 0.45]} />
-        <meshBasicMaterial color="#00F0FF" transparent opacity={0.22} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
+      <mesh position={[0, 6.18, -18.48]} rotation={[Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[32.8, 0.68]} />
+        <meshBasicMaterial map={softGlowTex} color="#00F0FF" transparent opacity={0.28} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
       <mesh position={[-16.55, 6.22, -5]}>
-        <boxGeometry args={[0.085, 0.065, 26.8]} />
+        <boxGeometry args={[0.075, 0.055, 26.8]} />
         <meshBasicMaterial color="#a855f7" toneMapped={false} />
       </mesh>
-      <mesh position={[-16.5, 6.18, -5]} rotation={[Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[0.45, 26.8]} />
-        <meshBasicMaterial color="#a855f7" transparent opacity={0.22} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
+      <mesh position={[-16.48, 6.18, -5]} rotation={[Math.PI / 2, 0, Math.PI / 2]}>
+        <planeGeometry args={[26.8, 0.68]} />
+        <meshBasicMaterial map={softGlowTex} color="#a855f7" transparent opacity={0.28} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
       <mesh position={[16.55, 6.22, -5]}>
-        <boxGeometry args={[0.085, 0.065, 26.8]} />
+        <boxGeometry args={[0.075, 0.055, 26.8]} />
         <meshBasicMaterial color="#38bdf8" toneMapped={false} />
       </mesh>
-      <mesh position={[16.5, 6.18, -5]} rotation={[Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[0.45, 26.8]} />
-        <meshBasicMaterial color="#38bdf8" transparent opacity={0.22} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
+      <mesh position={[16.48, 6.18, -5]} rotation={[Math.PI / 2, 0, Math.PI / 2]}>
+        <planeGeometry args={[26.8, 0.68]} />
+        <meshBasicMaterial map={softGlowTex} color="#38bdf8" transparent opacity={0.28} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
       <mesh position={[-9.75, 6.22, 8.05]}>
         <boxGeometry args={[13.2, 0.065, 0.085]} />
@@ -938,64 +945,42 @@ export const MuseumRoom: React.FC = () => {
         </RigidBody>
       ))}
 
-      {/* ================= CHAMFERED ARCHITECTURAL PILASTERS WITH OPTICAL NEON HALOS ================= */}
-      {PILASTER_Z.map((z, i) => {
-        const col = i % 2 === 0 ? '#00F0FF' : '#a855f7';
+      {/* ================= CLEAN CORNER ARCHITECTURAL PILASTERS (ZERO BOARD OBSTRUCTION) ================= */}
+      {CORNER_PILASTER_Z.map((z, i) => {
+        const col = i === 0 ? '#00F0FF' : '#a855f7';
         return (
-          <group key={`left-pillar-${z}`} position={[-16.62, 3.25, z]}>
-            <RoundedBox args={[0.18, 5.9, 0.42]} radius={0.03} smoothness={4} castShadow>
+          <group key={`left-corner-pillar-${z}`} position={[-16.66, 3.25, z]}>
+            <RoundedBox args={[0.18, 5.9, 0.36]} radius={0.03} smoothness={4} castShadow>
               <meshStandardMaterial
-                color="#162035"
+                color="#141e33"
                 roughnessMap={metalMaps.roughnessMap}
-                metalness={0.74}
+                metalness={0.76}
                 roughness={0.28}
               />
             </RoundedBox>
             <mesh position={[0.095, 0, 0]}>
-              <boxGeometry args={[0.028, 5.25, 0.072]} />
+              <boxGeometry args={[0.022, 5.2, 0.048]} />
               <meshBasicMaterial color={col} toneMapped={false} />
-            </mesh>
-            <mesh position={[0.115, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
-              <planeGeometry args={[0.34, 5.4]} />
-              <meshBasicMaterial
-                color={col}
-                transparent
-                opacity={0.22}
-                blending={THREE.AdditiveBlending}
-                depthWrite={false}
-                side={THREE.DoubleSide}
-              />
             </mesh>
           </group>
         );
       })}
 
-      {PILASTER_Z.map((z, i) => {
-        const col = i % 2 === 0 ? '#a855f7' : '#00F0FF';
+      {CORNER_PILASTER_Z.map((z, i) => {
+        const col = i === 0 ? '#38bdf8' : '#a855f7';
         return (
-          <group key={`right-pillar-${z}`} position={[16.62, 3.25, z]}>
-            <RoundedBox args={[0.18, 5.9, 0.42]} radius={0.03} smoothness={4} castShadow>
+          <group key={`right-corner-pillar-${z}`} position={[16.66, 3.25, z]}>
+            <RoundedBox args={[0.18, 5.9, 0.36]} radius={0.03} smoothness={4} castShadow>
               <meshStandardMaterial
-                color="#162035"
+                color="#141e33"
                 roughnessMap={metalMaps.roughnessMap}
-                metalness={0.74}
+                metalness={0.76}
                 roughness={0.28}
               />
             </RoundedBox>
             <mesh position={[-0.095, 0, 0]}>
-              <boxGeometry args={[0.028, 5.25, 0.072]} />
+              <boxGeometry args={[0.022, 5.2, 0.048]} />
               <meshBasicMaterial color={col} toneMapped={false} />
-            </mesh>
-            <mesh position={[-0.115, 0, 0]} rotation={[0, -Math.PI / 2, 0]}>
-              <planeGeometry args={[0.34, 5.4]} />
-              <meshBasicMaterial
-                color={col}
-                transparent
-                opacity={0.22}
-                blending={THREE.AdditiveBlending}
-                depthWrite={false}
-                side={THREE.DoubleSide}
-              />
             </mesh>
           </group>
         );
