@@ -355,6 +355,17 @@ const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
     accent: '#00F5FF',
   },
   {
+    id: 'pedestal-btt-1',
+    position: [-5.8, 0, 6.25],
+    rotationY: Math.PI,
+    tag: 'BAN TRUYỀN THÔNG • BTT',
+    title: 'Tập Thể Ban Truyền Thông TechTonic',
+    description:
+      'Đội ngũ sáng tạo nội dung, thiết kế ấn phẩm, ghi hình và lan tỏa hình ảnh năng động của CLB TechTonic đến cộng đồng sinh viên DUE.',
+    image: '/assets/images/gallery/btt_team.jpg',
+    accent: '#38bdf8',
+  },
+  {
     id: 'pedestal-fw-4',
     position: [7.2, 0, 7.05],
     rotationY: Math.PI,
