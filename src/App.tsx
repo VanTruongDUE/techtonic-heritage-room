@@ -5,6 +5,7 @@ import { HUD } from './components/ui/HUD';
 import { Crosshair } from './components/ui/Crosshair';
 import { ToastStack } from './components/ui/ToastStack';
 import { CinemaControlsBar } from './components/ui/CinemaControlsBar';
+import { MusicPlayer } from './components/ui/MusicPlayer';
 import { ExecutiveBoardModal } from './components/ui/Modals/ExecutiveBoardModal';
 import { GuestbookModal } from './components/ui/Modals/GuestbookModal';
 import { ExhibitDetailModal } from './components/ui/Modals/ExhibitDetailModal';
@@ -13,6 +14,8 @@ import { JourneyPromptModal } from './components/ui/Modals/JourneyPromptModal';
 import { TELEPORT_ZONES } from './data/heritageSeed';
 import { useHeritageStore } from './store/useHeritageStore';
 import { useAudio } from './hooks/useAudio';
+import { emitPlayerEvent } from './utils/playerEvents';
+import { PLAYER_EVENTS } from './types/playerEvents';
 
 export const App: React.FC = () => {
   const {
@@ -53,10 +56,11 @@ export const App: React.FC = () => {
     }
   }, [activeModal, playChime]);
 
-  // Handle Enter Experience from LoadingScreen (keeps visible console mouse cursor enabled)
+  // Handle Enter Experience from LoadingScreen (starts TechTonic playlist + SFX cleanly)
   const handleEnter = () => {
     initAudio();
     playSuccessChord();
+    emitPlayerEvent(PLAYER_EVENTS.PLAY);
     setHasEntered(true);
     void recordVisit();
   };
@@ -164,6 +168,9 @@ export const App: React.FC = () => {
 
       {/* 3. Giant 3D Cinema TV Floating Remote Bar */}
       <CinemaControlsBar />
+
+      {/* 3b. Floating TechTonic Background Music Player (always mounted to preserve playback) */}
+      <MusicPlayer show={hasEntered && !isCenterWallCinemaActive && !showJourneyPrompt} />
 
       {/* 4. Subtle Toast Notifications */}
       <ToastStack />

@@ -79,6 +79,26 @@
   }
 }
 
+@keyframes music-eq-bounce-1 {
+  0%, 100% { height: 25%; }
+  50% { height: 92%; }
+}
+
+@keyframes music-eq-bounce-2 {
+  0%, 100% { height: 75%; }
+  50% { height: 22%; }
+}
+
+@keyframes music-eq-bounce-3 {
+  0%, 100% { height: 38%; }
+  50% { height: 100%; }
+}
+
+@keyframes music-eq-bounce-4 {
+  0%, 100% { height: 64%; }
+  50% { height: 28%; }
+}
+
 /* Grounded HUD & Overlay Surfaces */
 @layer components {
   .animate-fade-in {
@@ -158,6 +178,22 @@
       transparent 100%
     );
     animation: museum-shimmer 1.8s infinite ease-in-out;
+  }
+
+  .music-eq-1 {
+    animation: music-eq-bounce-1 0.55s ease-in-out infinite;
+  }
+
+  .music-eq-2 {
+    animation: music-eq-bounce-2 0.45s ease-in-out 0.1s infinite;
+  }
+
+  .music-eq-3 {
+    animation: music-eq-bounce-3 0.65s ease-in-out 0.2s infinite;
+  }
+
+  .music-eq-4 {
+    animation: music-eq-bounce-4 0.5s ease-in-out 0.15s infinite;
   }
 }
 

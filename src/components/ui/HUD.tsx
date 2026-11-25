@@ -354,7 +354,7 @@ export const HUD: React.FC = () => {
         !showJourneyPrompt &&
         !isCenterWallCinemaActive &&
         (controlMode === 'cursor' || !isLocked) && (
-        <div className="mt-auto mb-2.5 self-center glass-panel px-4 py-2.5 rounded-2xl border border-tech-cyan/28 pointer-events-auto max-w-5xl w-full animate-panel-in">
+        <div className="mt-auto mb-2.5 self-center glass-panel px-4 py-2.5 rounded-2xl border border-tech-cyan/28 pointer-events-auto max-w-[820px] w-full animate-panel-in">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <MousePointerClick className="w-4 h-4 text-tech-cyan shrink-0" aria-hidden="true" />

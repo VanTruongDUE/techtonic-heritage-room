@@ -1,5 +1,7 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useHeritageStore } from '../store/useHeritageStore';
+import { emitPlayerEvent, subscribePlayerEvent } from '../utils/playerEvents';
+import { PLAYER_EVENTS } from '../types/playerEvents';
 
 class MuseumAudioEngine {
   private ctx: AudioContext | null = null;
@@ -279,11 +281,20 @@ export const useAudio = () => {
   const isMuted = useHeritageStore((s) => s.isMuted);
   const audioVolume = useHeritageStore((s) => s.audioVolume);
   const isCenterWallCinemaActive = useHeritageStore((s) => s.isCenterWallCinemaActive);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
 
   useEffect(() => {
-    // Duck museum ambient synth cleanly while the Giant 3D Cinema TV video plays
-    soundFx.syncVolume(isMuted || isCenterWallCinemaActive, audioVolume);
-  }, [isMuted, audioVolume, isCenterWallCinemaActive]);
+    const unsubscribe = subscribePlayerEvent(PLAYER_EVENTS.STATE, ({ detail }) => {
+      setIsMusicPlaying(detail.isPlaying);
+    });
+    emitPlayerEvent(PLAYER_EVENTS.REQUEST_STATE);
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    // Duck synthetic ambient hum while real TechTonic playlist or Giant 3D Cinema TV is playing
+    soundFx.syncVolume(isMuted || isCenterWallCinemaActive || isMusicPlaying, audioVolume);
+  }, [isMuted, audioVolume, isCenterWallCinemaActive, isMusicPlaying]);
 
   const initAudio = useCallback(() => soundFx.init(), []);
   const playChime = useCallback((freq = 660) => soundFx.playChime(freq), []);
