@@ -24,7 +24,7 @@ export const CanvasContainer: React.FC = () => {
           fov: 65,
           near: 0.1,
           far: 120,
-          position: [0, 2, 13.5],
+          position: [0, 2, 25.8],
         }}
         gl={{
           antialias: true,

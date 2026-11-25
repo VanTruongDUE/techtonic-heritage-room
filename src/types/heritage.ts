@@ -11,6 +11,7 @@ export interface ExecutiveMember {
   role: string;
   term: string; // e.g. "Nhiệm kỳ 2024 - 2025", "Nhiệm kỳ 2025 - 2026", "Nhiệm kỳ 2026 - 2027"
   avatar?: string;
+  avatarPosition?: string;
   bio?: string;
   department: Department;
   isFounder?: boolean;

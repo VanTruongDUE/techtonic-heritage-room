@@ -33,7 +33,7 @@ interface PlayerControllerProps {
 }
 
 export const PlayerController: React.FC<PlayerControllerProps> = ({
-  initialPosition = [0, 1.4, 13.5],
+  initialPosition = [0, 1.4, 25.8],
 }) => {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const controlsRef = useRef<PointerLockControlsImpl | null>(null);

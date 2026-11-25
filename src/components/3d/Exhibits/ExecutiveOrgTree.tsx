@@ -9,13 +9,17 @@ import type { Department, ExecutiveMember, HoverPreview } from '../../../types/h
 const TREE_POSITION: [number, number, number] = [-9.6, 0, -12.2];
 const TREE_ROTATION: [number, number, number] = [0, Math.PI / 4.2, 0];
 
-type TreeTermFilter = 'ALL' | 'Nhiệm kỳ 2026 - 2027' | 'Nhiệm kỳ 2025 - 2026' | 'Nhiệm kỳ 2024 - 2025';
+type TreeTermFilter =
+  | 'Nhiệm kỳ 2026 - 2027'
+  | 'Nhiệm kỳ 2025 - 2026'
+  | 'Nhiệm kỳ 2024 - 2025'
+  | 'ALL';
 
 const TERM_OPTIONS: Array<{ value: TreeTermFilter; label: string }> = [
-  { value: 'ALL', label: 'Tất cả 3 NK' },
   { value: 'Nhiệm kỳ 2026 - 2027', label: 'NK 2026–2027' },
   { value: 'Nhiệm kỳ 2025 - 2026', label: 'NK 2025–2026' },
   { value: 'Nhiệm kỳ 2024 - 2025', label: '2024–2025 ★' },
+  { value: 'ALL', label: 'Tất cả 3 NK' },
 ];
 
 const DEPT_COLUMNS: Array<{
@@ -45,9 +49,22 @@ function compactRole(role: string): string {
     return `PCN & ${second}`;
   }
   if (role.includes('Phó Chủ nhiệm')) return 'Phó Chủ nhiệm';
-  if (role.includes('Trưởng Ban')) return 'Trưởng ban';
-  if (role.includes('Phó Ban')) return 'Phó ban';
-  return role;
+  if (role.toLowerCase().includes('trưởng ban')) return 'Trưởng ban';
+  if (role.toLowerCase().includes('phó ban')) return 'Phó ban';
+  return role.replace('(Co-Founder)', '').trim();
+}
+
+function rolePriority(role: string): number {
+  const lower = role.toLowerCase();
+  if (lower.includes('trưởng ban')) return 0;
+  if (lower.includes('phó ban')) return 1;
+  return 2;
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] ?? ''}${parts[parts.length - 1][0] ?? ''}`.toUpperCase();
 }
 
 function makeCanvasTexture(
@@ -67,64 +84,54 @@ function makeCanvasTexture(
   return tex;
 }
 
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0] ?? ''}${parts[parts.length - 1][0] ?? ''}`.toUpperCase();
-}
-
 function buildMemberNodeTexture(
   member: ExecutiveMember,
   accent: string,
   highlightGold = false
 ): THREE.CanvasTexture {
   return makeCanvasTexture(560, 144, (ctx) => {
+    const isLead =
+      highlightGold || member.role.toLowerCase().includes('trưởng ban');
     const primaryColor = highlightGold ? '#fbbf24' : accent;
 
-    // Subtle dark gradient backdrop
     const grad = ctx.createLinearGradient(0, 0, 560, 144);
     grad.addColorStop(0, '#0f1a2e');
     grad.addColorStop(1, '#0b1322');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 560, 144);
 
-    // Glowing framed card border
-    ctx.strokeStyle = primaryColor;
-    ctx.lineWidth = 4;
+    ctx.strokeStyle = isLead ? '#fbbf24' : primaryColor;
+    ctx.lineWidth = isLead ? 4.5 : 3.5;
     ctx.strokeRect(4, 4, 552, 136);
 
-    // Left accent status bar
-    ctx.fillStyle = primaryColor;
+    ctx.fillStyle = isLead ? '#fbbf24' : primaryColor;
     ctx.fillRect(4, 4, 10, 136);
 
-    // Circular monogram / avatar ring badge on left
-    const cx = 64;
+    const cx = 62;
     const cy = 72;
     ctx.beginPath();
-    ctx.arc(cx, cy, 34, 0, Math.PI * 2);
+    ctx.arc(cx, cy, 33, 0, Math.PI * 2);
     ctx.fillStyle = '#16243d';
     ctx.fill();
-    ctx.strokeStyle = primaryColor;
+    ctx.strokeStyle = isLead ? '#fbbf24' : primaryColor;
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    ctx.fillStyle = primaryColor;
-    ctx.font = 'bold 26px Inter, sans-serif';
+    ctx.fillStyle = isLead ? '#fbbf24' : primaryColor;
+    ctx.font = 'bold 25px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(getInitials(member.name), cx, cy + 9);
 
-    // Member Full Name
     ctx.textAlign = 'left';
     ctx.fillStyle = '#f8fafc';
     ctx.font = 'bold 27px Inter, sans-serif';
-    ctx.fillText(member.name, 114, 58, 424);
+    ctx.fillText(member.name, 110, 58, 428);
 
-    // Role Pill + Term + Co-Founder star
     const roleStr = compactRole(member.role);
     const termStr = shortTerm(member.term);
-    ctx.fillStyle = highlightGold ? '#fde68a' : '#7dd3fc';
+    ctx.fillStyle = isLead ? '#fde68a' : '#7dd3fc';
     ctx.font = '600 19px "JetBrains Mono", monospace';
-    ctx.fillText(`${roleStr} • ${termStr}${member.isFounder ? ' ★' : ''}`, 114, 102, 424);
+    ctx.fillText(`${roleStr} • ${termStr}${member.isFounder ? ' ★' : ''}`, 110, 102, 428);
   });
 }
 
@@ -144,7 +151,7 @@ function buildDeptParentTexture(title: string, count: number, accent: string): T
 
     ctx.fillStyle = '#cbd5e1';
     ctx.font = '600 19px "JetBrains Mono", monospace';
-    ctx.fillText(`${count} VỊ TRÍ ĐIỀU HÀNH`, 256, 94);
+    ctx.fillText(`${count} THÀNH VIÊN`, 256, 94);
   });
 }
 
@@ -158,15 +165,15 @@ function buildHeaderTexture(termFilter: TreeTermFilter, totalCount: number): THR
     ctx.strokeRect(6, 6, 1524, 124);
 
     ctx.fillStyle = '#38bdf8';
-    ctx.font = '700 24px "JetBrains Mono", monospace';
-    ctx.fillText('SƠ ĐỒ CÂY TỔ CHỨC BAN CHỦ NHIỆM TECHTONIC CLUB', 42, 54);
+    ctx.font = '700 23px "JetBrains Mono", monospace';
+    ctx.fillText('SƠ ĐỒ CÂY BAN CHỦ NHIỆM & THÀNH VIÊN CÁC BAN • TECHTONIC CLUB', 42, 52);
 
     ctx.fillStyle = '#f8fafc';
     ctx.font = 'bold 31px Inter, sans-serif';
     const sub =
       termFilter === 'ALL'
-        ? `CẤU TRÚC 3 CẤP: CHỦ NHIỆM → PHÓ CHỦ NHIỆM → 4 BAN (${totalCount} HỒ SƠ • 2024–2027)`
-        : `${termFilter.toUpperCase()} • CHỦ NHIỆM → PHÓ CHỦ NHIỆM → 4 BAN (${totalCount} HỒ SƠ)`;
+        ? `CẤU TRÚC: CHỦ NHIỆM → PHÓ CHỦ NHIỆM → 4 BAN (${totalCount} HỒ SƠ • 2024–2027)`
+        : `${termFilter.toUpperCase()} (HIỆN TẠI) • CHỦ NHIỆM → PHÓ CHỦ NHIỆM → 4 BAN (${totalCount} TV)`;
     ctx.fillText(sub, 42, 102, 1452);
   });
 }
@@ -181,9 +188,9 @@ function buildTabButtonTexture(label: string, active: boolean): THREE.CanvasText
     ctx.strokeRect(4, 4, 312, 88);
 
     ctx.fillStyle = active ? '#ffffff' : '#cbd5e1';
-    ctx.font = 'bold 28px Inter, sans-serif';
+    ctx.font = 'bold 27px Inter, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(label, 160, 58);
+    ctx.fillText(label, 160, 58, 290);
   });
 }
 
@@ -195,7 +202,6 @@ interface TreeConnectorProps {
   color?: string;
 }
 
-/** Orthogonal architectural glowing metallic-cyan connector bar */
 const TreeConnector: React.FC<TreeConnectorProps> = ({ x1, y1, x2, y2, color = '#38bdf8' }) => {
   const cx = (x1 + x2) / 2;
   const cy = (y1 + y2) / 2;
@@ -217,9 +223,8 @@ const TreeConnector: React.FC<TreeConnectorProps> = ({ x1, y1, x2, y2, color = '
           roughness={0.28}
         />
       </mesh>
-      {/* Brushed junction joint dot at branch split ends */}
       <mesh position={[x1, y1, 0.028]}>
-        <sphereGeometry args={[0.022, 10, 8]} />
+        <sphereGeometry args={[0.021, 10, 8]} />
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.7} />
       </mesh>
     </group>
@@ -294,7 +299,8 @@ const MemberNodeCard: React.FC<MemberNodeCardProps> = ({
 
 export const ExecutiveOrgTree: React.FC = () => {
   const { executiveMembers, setHoveringInteractive, openExecutiveBoard } = useHeritageStore();
-  const [termFilter, setTermFilter] = useState<TreeTermFilter>('ALL');
+  // Default to the current active term (Nhiệm kỳ 2026 - 2027)
+  const [termFilter, setTermFilter] = useState<TreeTermFilter>('Nhiệm kỳ 2026 - 2027');
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const marbleMaps = useMemo(() => createMarbleMaps(), []);
@@ -308,7 +314,6 @@ export const ExecutiveOrgTree: React.FC = () => {
     [executiveMembers, termFilter]
   );
 
-  // Partition into 3 hierarchical Org-Chart layers: Chủ Nhiệm -> Phó Chủ Nhiệm -> 4 Ban
   const { chairs, viceChairs, deptLeaves } = useMemo(() => {
     const ch = scopedMembers.filter((m) => m.role.startsWith('Chủ nhiệm'));
     const vc = scopedMembers.filter((m) => m.role.includes('Phó Chủ nhiệm'));
@@ -316,11 +321,7 @@ export const ExecutiveOrgTree: React.FC = () => {
     DEPT_COLUMNS.forEach((col) => {
       const members = scopedMembers
         .filter((m) => m.department === col.dept)
-        .sort((a, b) => {
-          const aHead = a.role.includes('Trưởng Ban') ? 0 : 1;
-          const bHead = b.role.includes('Trưởng Ban') ? 0 : 1;
-          return aHead - bHead;
-        });
+        .sort((a, b) => rolePriority(a.role) - rolePriority(b.role));
       leaves.set(col.dept, members);
     });
     return { chairs: ch, viceChairs: vc, deptLeaves: leaves };
@@ -362,17 +363,16 @@ export const ExecutiveOrgTree: React.FC = () => {
     };
   }, [headerTex, deptHeaderTextures, tabButtonTextures]);
 
-  // Layout positions for Level 1 (Chủ Nhiệm) & Level 2 (Phó Chủ Nhiệm)
   const chairNodes = useMemo(() => {
     const count = chairs.length;
-    const w = count <= 1 ? 1.95 : 1.56;
+    const w = count <= 1 ? 2.04 : 1.56;
     const h = 0.36;
     const step = count <= 1 ? 0 : 1.78;
     const startX = -((count - 1) * step) / 2;
     return chairs.map((m, idx) => ({
       member: m,
       x: startX + idx * step,
-      y: 4.38,
+      y: 4.54,
       w,
       h,
     }));
@@ -381,24 +381,23 @@ export const ExecutiveOrgTree: React.FC = () => {
   const viceNodes = useMemo(() => {
     const count = viceChairs.length;
     if (count <= 4) {
-      const w = 1.34;
+      const w = count <= 2 ? 1.58 : 1.34;
       const h = 0.34;
-      const step = count <= 1 ? 0 : 1.48;
+      const step = count <= 1 ? 0 : count === 2 ? 1.88 : 1.48;
       const startX = -((count - 1) * step) / 2;
       return viceChairs.map((m, idx) => ({
         member: m,
         x: startX + idx * step,
-        y: 3.74,
+        y: 3.92,
         w,
         h,
       }));
     }
-    // Clean 2 rows × 4 columns for all 8 PCNs across 3 terms
     const xs = [-2.18, -0.73, 0.73, 2.18];
     return viceChairs.slice(0, 8).map((m, idx) => ({
       member: m,
       x: xs[idx % 4],
-      y: idx < 4 ? 3.82 : 3.4,
+      y: idx < 4 ? 3.98 : 3.58,
       w: 1.28,
       h: 0.3,
     }));
@@ -416,17 +415,31 @@ export const ExecutiveOrgTree: React.FC = () => {
     actionLabel: `Mở hồ sơ ${m.department}`,
   });
 
-  const viceLowestY = viceNodes.length > 4 ? 3.25 : 3.57;
-  const deptHeaderY = viceNodes.length > 4 ? 2.86 : 3.06;
+  const modalTermArg = termFilter === 'ALL' ? 'all' : termFilter;
+  const viceLowestY = viceNodes.length > 4 ? 3.43 : 3.75;
+  const deptHeaderY = viceNodes.length > 4 ? 3.02 : 3.3;
   const deptBusY = (viceLowestY + deptHeaderY + 0.14) / 2;
-  const leafPitch = termFilter === 'ALL' ? 0.215 : 0.31;
-  const leafH = termFilter === 'ALL' ? 0.185 : 0.255;
+  const maxDeptCount = Math.max(
+    1,
+    ...DEPT_COLUMNS.map((c) => (deptLeaves.get(c.dept) ?? []).length)
+  );
+  // Fit up to 9 members cleanly inside the 2.18m vertical bay under deptHeaderY
+  const leafSpan = deptHeaderY - 0.24 - 1.05;
+  const leafPitch = Math.min(0.26, leafSpan / Math.max(1, maxDeptCount - 1));
+  const leafH = Math.min(0.21, leafPitch * 0.84);
 
   return (
     <group position={TREE_POSITION} rotation={TREE_ROTATION}>
       {/* ================= VEINED MARBLE MUSEUM PLINTH WITH PHYSICS ================= */}
       <RigidBody type="fixed" position={[0, 0.31, 0.15]}>
-        <RoundedBox position={[0, -0.18, 0]} args={[6.7, 0.26, 1.45]} radius={0.04} smoothness={6} receiveShadow castShadow>
+        <RoundedBox
+          position={[0, -0.18, 0]}
+          args={[6.7, 0.26, 1.45]}
+          radius={0.04}
+          smoothness={6}
+          receiveShadow
+          castShadow
+        >
           <meshStandardMaterial
             map={marbleMaps.map}
             roughnessMap={marbleMaps.roughnessMap}
@@ -437,7 +450,14 @@ export const ExecutiveOrgTree: React.FC = () => {
             metalness={0.3}
           />
         </RoundedBox>
-        <RoundedBox position={[0, 0.1, 0]} args={[6.42, 0.34, 1.15]} radius={0.03} smoothness={6} receiveShadow castShadow>
+        <RoundedBox
+          position={[0, 0.1, 0]}
+          args={[6.42, 0.34, 1.15]}
+          radius={0.03}
+          smoothness={6}
+          receiveShadow
+          castShadow
+        >
           <meshStandardMaterial
             map={marbleMaps.map}
             roughnessMap={marbleMaps.roughnessMap}
@@ -448,7 +468,6 @@ export const ExecutiveOrgTree: React.FC = () => {
             metalness={0.32}
           />
         </RoundedBox>
-        {/* Brushed titanium top plinth cap */}
         <RoundedBox position={[0, 0.285, 0]} args={[6.48, 0.04, 1.2]} radius={0.01} smoothness={4}>
           <meshStandardMaterial
             color="#64748b"
@@ -491,13 +510,13 @@ export const ExecutiveOrgTree: React.FC = () => {
                   e.stopPropagation();
                   setHoveringInteractive(
                     true,
-                    `Lọc sơ đồ cây: ${opt.label}`,
+                    `Sơ đồ cây: ${opt.label}`,
                     () => setTermFilter(opt.value),
                     {
                       title: `Sơ đồ cây — ${opt.label}`,
-                      badge: 'BỘ LỌC NHIỆM KỲ TRỰC TIẾP',
+                      badge: 'CHỌN NHIỆM KỲ',
                       summary:
-                        'Chuyển đổi sơ đồ cây giữa tổng hợp cả 3 nhiệm kỳ (26 hồ sơ) và từng nhiệm kỳ riêng biệt.',
+                        'Chuyển đổi sơ đồ cây giữa nhiệm kỳ hiện tại 2026–2027 (29 thành viên), các nhiệm kỳ trước hoặc tổng hợp cả 3 nhiệm kỳ.',
                       actionLabel: `Hiển thị ${opt.label}`,
                     }
                   );
@@ -512,10 +531,16 @@ export const ExecutiveOrgTree: React.FC = () => {
         })}
       </group>
 
-      {/* ================= ARCHITECTURAL GLASS MONUMENT BACKDROP ================= */}
+      {/* ================= ARCHITECTURAL ANTI-GLARE GLASS MONUMENT BACKDROP ================= */}
       <group position={[0, 0, 0]}>
-        {/* Brushed Titanium Perimeter Frame */}
-        <RoundedBox position={[0, 2.95, -0.06]} args={[6.36, 4.46, 0.14]} radius={0.04} smoothness={6} castShadow receiveShadow>
+        <RoundedBox
+          position={[0, 3.08, -0.06]}
+          args={[6.36, 4.66, 0.14]}
+          radius={0.04}
+          smoothness={6}
+          castShadow
+          receiveShadow
+        >
           <meshStandardMaterial
             color="#1e293b"
             roughnessMap={metalMaps.roughnessMap}
@@ -525,9 +550,8 @@ export const ExecutiveOrgTree: React.FC = () => {
             roughness={0.25}
           />
         </RoundedBox>
-        {/* Matte Anti-Glare Museum Backdrop Plate (zero spotlight glare hotspot) */}
-        <mesh position={[0, 2.95, 0.015]}>
-          <planeGeometry args={[6.14, 4.24]} />
+        <mesh position={[0, 3.08, 0.015]}>
+          <planeGeometry args={[6.14, 4.44]} />
           <meshStandardMaterial
             color="#0a1220"
             roughness={0.86}
@@ -535,18 +559,16 @@ export const ExecutiveOrgTree: React.FC = () => {
             envMapIntensity={0.25}
           />
         </mesh>
-        {/* Top Glowing Cyan Accent Trim */}
-        <mesh position={[0, 5.1, 0.02]}>
+        <mesh position={[0, 5.33, 0.02]}>
           <boxGeometry args={[6.14, 0.03, 0.02]} />
           <meshBasicMaterial color="#38bdf8" />
         </mesh>
 
-        {/* 4 Brushed Brass Corner Standoff Fasteners */}
         {[
-          [-3.04, 5.04],
-          [3.04, 5.04],
-          [-3.04, 0.86],
-          [3.04, 0.86],
+          [-3.04, 5.26],
+          [3.04, 5.26],
+          [-3.04, 0.9],
+          [3.04, 0.9],
         ].map(([cx, cy], idx) => (
           <mesh key={`standoff-${idx}`} position={[cx, cy, 0.03]} rotation={[Math.PI / 2, 0, 0]}>
             <cylinderGeometry args={[0.04, 0.04, 0.045, 20]} />
@@ -555,27 +577,26 @@ export const ExecutiveOrgTree: React.FC = () => {
         ))}
 
         {/* Header Banner */}
-        <mesh position={[0, 4.86, 0.025]}>
+        <mesh position={[0, 5.04, 0.025]}>
           <planeGeometry args={[5.8, 0.42]} />
           <meshBasicMaterial map={headerTex} />
         </mesh>
 
-        {/* ================= HIERARCHICAL TREE CONNECTORS (CHỦ NHIỆM → PCN → 4 BAN → THÀNH VIÊN) ================= */}
-        {/* Tier 1 Root Crown Rail & Stems */}
+        {/* ================= HIERARCHICAL TREE CONNECTORS ================= */}
         {chairNodes.length > 1 && (
           <>
             <TreeConnector
               x1={chairNodes[0].x}
-              y1={4.61}
+              y1={4.78}
               x2={chairNodes[chairNodes.length - 1].x}
-              y2={4.61}
+              y2={4.78}
               color="#fbbf24"
             />
             {chairNodes.map((cn) => (
               <TreeConnector
                 key={`cn-top-${cn.member.id}`}
                 x1={cn.x}
-                y1={4.61}
+                y1={4.78}
                 x2={cn.x}
                 y2={cn.y + cn.h / 2}
                 color="#fbbf24"
@@ -587,15 +608,15 @@ export const ExecutiveOrgTree: React.FC = () => {
                 x1={cn.x}
                 y1={cn.y - cn.h / 2}
                 x2={cn.x}
-                y2={4.1}
+                y2={4.24}
                 color="#fbbf24"
               />
             ))}
             <TreeConnector
               x1={chairNodes[0].x}
-              y1={4.1}
+              y1={4.24}
               x2={chairNodes[chairNodes.length - 1].x}
-              y2={4.1}
+              y2={4.24}
               color="#7dd3fc"
             />
           </>
@@ -604,28 +625,25 @@ export const ExecutiveOrgTree: React.FC = () => {
         {/* Central Spine: Chủ Nhiệm -> PCN Bus */}
         <TreeConnector
           x1={0}
-          y1={chairNodes.length > 1 ? 4.1 : 4.2}
+          y1={chairNodes.length > 1 ? 4.24 : 4.36}
           x2={0}
-          y2={viceNodes.length > 4 ? 4.02 : 3.98}
+          y2={viceNodes.length > 4 ? 4.16 : 4.14}
           color="#7dd3fc"
         />
 
-        {/* Tier 2 PCN Distribution Bus & Vertical Feeders */}
+        {/* Tier 2 PCN Distribution Bus */}
         {viceNodes.length > 0 && (
           <>
             <TreeConnector
               x1={Math.min(...viceNodes.map((v) => v.x))}
-              y1={viceNodes.length > 4 ? 4.02 : 3.98}
+              y1={viceNodes.length > 4 ? 4.16 : 4.14}
               x2={Math.max(...viceNodes.map((v) => v.x))}
-              y2={viceNodes.length > 4 ? 4.02 : 3.98}
+              y2={viceNodes.length > 4 ? 4.16 : 4.14}
               color="#7dd3fc"
             />
-            {/* Vertical feeder line for each column of PCNs */}
             {Array.from(new Set(viceNodes.map((v) => v.x))).map((vx) => {
-              const colTop = viceNodes.length > 4 ? 4.02 : 3.98;
-              const colMinY = Math.min(
-                ...viceNodes.filter((v) => v.x === vx).map((v) => v.y)
-              );
+              const colTop = viceNodes.length > 4 ? 4.16 : 4.14;
+              const colMinY = Math.min(...viceNodes.filter((v) => v.x === vx).map((v) => v.y));
               return (
                 <TreeConnector
                   key={`vc-col-${vx}`}
@@ -637,7 +655,6 @@ export const ExecutiveOrgTree: React.FC = () => {
                 />
               );
             })}
-            {/* Collector rail below PCNs leading down to 4 Ban Bus */}
             <TreeConnector
               x1={Math.min(...viceNodes.map((v) => v.x))}
               y1={viceLowestY - 0.04}
@@ -683,7 +700,7 @@ export const ExecutiveOrgTree: React.FC = () => {
           />
         ))}
 
-        {/* ================= RENDER INDIVIDUAL NODE BOXES: TIER 1 (CHỦ NHIỆM) ================= */}
+        {/* ================= RENDER TIER 1 (CHỦ NHIỆM) ================= */}
         {chairNodes.map((cn) => (
           <MemberNodeCard
             key={`node-cn-${cn.member.id}`}
@@ -700,15 +717,15 @@ export const ExecutiveOrgTree: React.FC = () => {
               setHoveringInteractive(
                 h,
                 `${cn.member.name} (${cn.member.role})`,
-                () => openExecutiveBoard('Ban Chủ Nhiệm'),
+                () => openExecutiveBoard('Ban Chủ Nhiệm', modalTermArg),
                 memberPreview(cn.member)
               );
             }}
-            onClick={() => openExecutiveBoard('Ban Chủ Nhiệm')}
+            onClick={() => openExecutiveBoard('Ban Chủ Nhiệm', modalTermArg)}
           />
         ))}
 
-        {/* ================= RENDER INDIVIDUAL NODE BOXES: TIER 2 (PHÓ CHỦ NHIỆM) ================= */}
+        {/* ================= RENDER TIER 2 (PHÓ CHỦ NHIỆM) ================= */}
         {viceNodes.map((vn) => (
           <MemberNodeCard
             key={`node-vc-${vn.member.id}`}
@@ -724,29 +741,31 @@ export const ExecutiveOrgTree: React.FC = () => {
               setHoveringInteractive(
                 h,
                 `${vn.member.name} (${compactRole(vn.member.role)})`,
-                () => openExecutiveBoard(vn.member.department),
+                () => openExecutiveBoard(vn.member.department, modalTermArg),
                 memberPreview(vn.member)
               );
             }}
-            onClick={() => openExecutiveBoard(vn.member.department)}
+            onClick={() => openExecutiveBoard(vn.member.department, modalTermArg)}
           />
         ))}
 
-        {/* ================= RENDER TIER 3: 4 BAN PARENT NODES & SIDE-SPINE MEMBER LEAVES ================= */}
+        {/* ================= RENDER TIER 3: 4 BAN & TỪNG THÀNH VIÊN ================= */}
         {DEPT_COLUMNS.map((col, colIdx) => {
-          const members = deptLeaves.get(col.dept) ?? [];
+          const allDeptMembers = deptLeaves.get(col.dept) ?? [];
+          const useTwoCols = allDeptMembers.length > 9;
           const spineX = col.x - 0.62;
           const cardX = col.x + 0.04;
           const cardW = 1.18;
           const firstLeafY = deptHeaderY - 0.28;
+          const colStepY = useTwoCols ? 0.21 : leafPitch;
+          const rowCount = useTwoCols ? Math.ceil(allDeptMembers.length / 2) : allDeptMembers.length;
           const lastLeafY =
-            members.length > 0 ? firstLeafY - (members.length - 1) * leafPitch : deptHeaderY - 0.14;
+            rowCount > 0 ? firstLeafY - (rowCount - 1) * colStepY : deptHeaderY - 0.14;
 
           return (
             <group key={`dept-col-${col.dept}`}>
-              {/* Department Header Node Box */}
               <group position={[col.x, deptHeaderY, hoveredId === col.dept ? 0.068 : 0.052]}>
-                <RoundedBox args={[1.32, 0.28, 0.036]} radius={0.012} smoothness={4} castShadow>
+                <RoundedBox args={[1.32, 0.27, 0.036]} radius={0.012} smoothness={4} castShadow>
                   <meshStandardMaterial
                     color="#1b2840"
                     emissive={col.accent}
@@ -759,20 +778,24 @@ export const ExecutiveOrgTree: React.FC = () => {
                   position={[0, 0, 0.02]}
                   onClick={(e) => {
                     e.stopPropagation();
-                    openExecutiveBoard(col.dept);
+                    openExecutiveBoard(col.dept, modalTermArg);
                   }}
                   onPointerOver={(e) => {
                     e.stopPropagation();
                     setHoveredId(col.dept);
                     setHoveringInteractive(
                       true,
-                      `Nhánh ${col.dept} (${members.length} vị trí)`,
-                      () => openExecutiveBoard(col.dept),
+                      `Nhánh ${col.dept} (${allDeptMembers.length} thành viên)`,
+                      () => openExecutiveBoard(col.dept, modalTermArg),
                       {
                         title: col.dept,
-                        badge: `${members.length} VỊ TRÍ • ${shortTerm(termFilter === 'ALL' ? '2024–2027' : termFilter)}`,
-                        summary: `Nhánh tổ chức ${col.dept} hiển thị từng vị trí Trưởng ban & Phó ban.`,
-                        bullets: members.slice(0, 4).map((m) => `${m.name} (${compactRole(m.role)})`),
+                        badge: `${allDeptMembers.length} THÀNH VIÊN • ${shortTerm(
+                          termFilter === 'ALL' ? '2024–2027' : termFilter
+                        )}`,
+                        summary: `Nhánh tổ chức ${col.dept} hiển thị đầy đủ Trưởng ban, Phó ban và Thành viên.`,
+                        bullets: allDeptMembers
+                          .slice(0, 4)
+                          .map((m) => `${m.name} (${compactRole(m.role)})`),
                         actionLabel: `Lọc danh sách ${col.dept}`,
                       }
                     );
@@ -782,48 +805,53 @@ export const ExecutiveOrgTree: React.FC = () => {
                     setHoveringInteractive(false);
                   }}
                 >
-                  <planeGeometry args={[1.29, 0.255]} />
+                  <planeGeometry args={[1.29, 0.245]} />
                   <meshBasicMaterial map={deptHeaderTextures[colIdx]} />
                 </mesh>
               </group>
 
-              {/* Vertical Tree Spine + Branch Ticks + Individual Leaf Member Nodes */}
-              {members.length > 0 && (
+              {allDeptMembers.length > 0 && (
                 <>
-                  {/* Drop connector from Department Parent Box left edge down vertical spine */}
                   <TreeConnector
                     x1={col.x - 0.48}
-                    y1={deptHeaderY - 0.14}
+                    y1={deptHeaderY - 0.135}
                     x2={spineX}
-                    y2={deptHeaderY - 0.14}
+                    y2={deptHeaderY - 0.135}
                     color={col.accent}
                   />
                   <TreeConnector
                     x1={spineX}
-                    y1={deptHeaderY - 0.14}
+                    y1={deptHeaderY - 0.135}
                     x2={spineX}
                     y2={lastLeafY}
                     color={col.accent}
                   />
 
-                  {members.map((member, mIdx) => {
-                    const ly = firstLeafY - mIdx * leafPitch;
+                  {allDeptMembers.slice(0, 18).map((member, mIdx) => {
+                    const rowIdx = useTwoCols ? Math.floor(mIdx / 2) : mIdx;
+                    const subCol = useTwoCols ? mIdx % 2 : 0;
+                    const ly = firstLeafY - rowIdx * colStepY;
+                    const lx = useTwoCols ? col.x - 0.26 + subCol * 0.62 : cardX;
+                    const lw = useTwoCols ? 0.59 : cardW;
+                    const lh = useTwoCols ? 0.175 : leafH;
+
                     return (
                       <React.Fragment key={`leaf-${member.id}`}>
-                        {/* Horizontal branch line connecting spine into leaf box */}
-                        <TreeConnector
-                          x1={spineX}
-                          y1={ly}
-                          x2={cardX - cardW / 2}
-                          y2={ly}
-                          color={col.accent}
-                        />
+                        {(!useTwoCols || subCol === 0) && (
+                          <TreeConnector
+                            x1={spineX}
+                            y1={ly}
+                            x2={lx - lw / 2}
+                            y2={ly}
+                            color={col.accent}
+                          />
+                        )}
                         <MemberNodeCard
                           member={member}
-                          x={cardX}
+                          x={lx}
                           y={ly}
-                          w={cardW}
-                          h={leafH}
+                          w={lw}
+                          h={lh}
                           accent={col.accent}
                           isHovered={hoveredId === member.id}
                           onHover={(h) => {
@@ -831,11 +859,11 @@ export const ExecutiveOrgTree: React.FC = () => {
                             setHoveringInteractive(
                               h,
                               `${member.name} (${compactRole(member.role)})`,
-                              () => openExecutiveBoard(member.department),
+                              () => openExecutiveBoard(member.department, modalTermArg),
                               memberPreview(member)
                             );
                           }}
-                          onClick={() => openExecutiveBoard(member.department)}
+                          onClick={() => openExecutiveBoard(member.department, modalTermArg)}
                         />
                       </React.Fragment>
                     );

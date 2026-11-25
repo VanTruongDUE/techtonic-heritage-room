@@ -9,6 +9,9 @@ import {
 } from '../utils/proceduralMaterials';
 
 const CEILING_DOWNLIGHTS: [number, number, number][] = [
+  [0, 6.32, 26],
+  [0, 6.32, 22],
+  [0, 6.32, 18],
   [0, 6.32, 14],
   [0, 6.32, 10],
   [-10, 6.32, -13],
@@ -84,8 +87,8 @@ export const MuseumRoom: React.FC = () => {
           />
         </mesh>
 
-        <mesh position={[0, -0.05, 12]} receiveShadow>
-          <boxGeometry args={[6, 0.1, 10]} />
+        <mesh position={[0, -0.05, 18.5]} receiveShadow>
+          <boxGeometry args={[6, 0.1, 20.4]} />
           <meshStandardMaterial
             map={floorMaps.map}
             roughnessMap={floorMaps.roughnessMap}
@@ -100,8 +103,8 @@ export const MuseumRoom: React.FC = () => {
       </RigidBody>
 
       {/* ================= CEILING, COFFER BEAMS & GIMBAL TRACK LIGHTS ================= */}
-      <mesh position={[0, 6.5, -3]}>
-        <boxGeometry args={[36, 0.2, 40]} />
+      <mesh position={[0, 6.5, 5]}>
+        <boxGeometry args={[36, 0.2, 52]} />
         <meshStandardMaterial color="#0b111d" roughness={0.78} metalness={0.18} />
       </mesh>
 
@@ -124,14 +127,30 @@ export const MuseumRoom: React.FC = () => {
         </group>
       ))}
 
-      {/* Entrance Corridor Ceiling Linear Lights */}
-      <group position={[0, 6.35, 12]}>
+      {/* Extended Entrance Tunnel Architectural Rib Arches & Linear Ceiling Strips */}
+      {[26, 22, 18, 14, 10].map((tz) => (
+        <group key={`tunnel-rib-${tz}`} position={[0, 6.26, tz]}>
+          <RoundedBox args={[4.8, 0.24, 0.34]} radius={0.03} smoothness={4}>
+            <meshStandardMaterial
+              color="#1c2940"
+              roughnessMap={metalMaps.roughnessMap}
+              metalness={0.68}
+              roughness={0.34}
+            />
+          </RoundedBox>
+          <mesh position={[0, -0.13, 0]}>
+            <boxGeometry args={[4.2, 0.02, 0.08]} />
+            <meshBasicMaterial color="#bae6fd" />
+          </mesh>
+        </group>
+      ))}
+      <group position={[0, 6.35, 18.5]}>
         <mesh position={[-1.4, 0, 0]}>
-          <boxGeometry args={[0.14, 0.04, 6.5]} />
+          <boxGeometry args={[0.14, 0.04, 19.2]} />
           <meshBasicMaterial color="#e0f2fe" />
         </mesh>
         <mesh position={[1.4, 0, 0]}>
-          <boxGeometry args={[0.14, 0.04, 6.5]} />
+          <boxGeometry args={[0.14, 0.04, 19.2]} />
           <meshBasicMaterial color="#e0f2fe" />
         </mesh>
       </group>
@@ -248,8 +267,8 @@ export const MuseumRoom: React.FC = () => {
           />
         </mesh>
 
-        <mesh position={[-2.6, 3.25, 12.5]}>
-          <boxGeometry args={[0.4, 6.5, 8]} />
+        <mesh position={[-2.6, 3.25, 18.5]} receiveShadow>
+          <boxGeometry args={[0.4, 6.5, 20.4]} />
           <meshStandardMaterial
             map={wallMaps.map}
             bumpMap={wallMaps.bumpMap}
@@ -260,8 +279,8 @@ export const MuseumRoom: React.FC = () => {
           />
         </mesh>
 
-        <mesh position={[2.6, 3.25, 12.5]}>
-          <boxGeometry args={[0.4, 6.5, 8]} />
+        <mesh position={[2.6, 3.25, 18.5]} receiveShadow>
+          <boxGeometry args={[0.4, 6.5, 20.4]} />
           <meshStandardMaterial
             map={wallMaps.map}
             bumpMap={wallMaps.bumpMap}
@@ -272,7 +291,7 @@ export const MuseumRoom: React.FC = () => {
           />
         </mesh>
 
-        <mesh position={[0, 3.25, 16.5]}>
+        <mesh position={[0, 3.25, 28.7]}>
           <boxGeometry args={[5.6, 6.5, 0.4]} />
           <meshStandardMaterial
             map={wallMaps.map}
@@ -368,17 +387,36 @@ export const MuseumRoom: React.FC = () => {
         />
       </mesh>
 
-      {/* Subtle Corridor Floor Guiding Strips */}
-      <mesh position={[-2.3, 0.015, 12.5]}>
-        <boxGeometry args={[0.05, 0.015, 8]} />
+      {/* Tunnel Brushed Baseboards & Corridor Floor Guiding Strips */}
+      <mesh position={[-2.38, 0.14, 18.5]}>
+        <boxGeometry args={[0.06, 0.28, 20]} />
+        <meshStandardMaterial
+          color="#2b3b5a"
+          roughnessMap={metalMaps.roughnessMap}
+          metalness={0.8}
+          roughness={0.3}
+        />
+      </mesh>
+      <mesh position={[2.38, 0.14, 18.5]}>
+        <boxGeometry args={[0.06, 0.28, 20]} />
+        <meshStandardMaterial
+          color="#2b3b5a"
+          roughnessMap={metalMaps.roughnessMap}
+          metalness={0.8}
+          roughness={0.3}
+        />
+      </mesh>
+
+      <mesh position={[-2.3, 0.015, 18.5]}>
+        <boxGeometry args={[0.05, 0.015, 20]} />
         <meshBasicMaterial color="#38bdf8" />
       </mesh>
-      <mesh position={[2.3, 0.015, 12.5]}>
-        <boxGeometry args={[0.05, 0.015, 8]} />
+      <mesh position={[2.3, 0.015, 18.5]}>
+        <boxGeometry args={[0.05, 0.015, 20]} />
         <meshBasicMaterial color="#38bdf8" />
       </mesh>
 
-      {[12, 10, 8, 5, 2.5].map((z) => (
+      {[25.5, 23, 20.5, 18, 15.5, 13, 10.5, 8, 5, 2.5].map((z) => (
         <mesh key={`guide-${z}`} position={[0, 0.012, z]}>
           <boxGeometry args={[0.68, 0.01, 0.045]} />
           <meshBasicMaterial color="#7dd3fc" transparent opacity={0.42} />
@@ -467,7 +505,7 @@ export const MuseumRoom: React.FC = () => {
       ))}
 
       {/* ================= CHAMFERED ARCHITECTURAL PILASTERS ================= */}
-      {[-14, -9, -4, 1, 6].map((z) => (
+      {[-18.1, -11.9, -4, 1, 6].map((z) => (
         <group key={`left-pillar-${z}`} position={[-16.62, 3.25, z]}>
           <RoundedBox args={[0.18, 5.9, 0.42]} radius={0.03} smoothness={4} castShadow>
             <meshStandardMaterial
@@ -484,7 +522,7 @@ export const MuseumRoom: React.FC = () => {
         </group>
       ))}
 
-      {[-14, -9, -4, 1, 6].map((z) => (
+      {[-18.1, -11.9, -4, 1, 6].map((z) => (
         <group key={`right-pillar-${z}`} position={[16.62, 3.25, z]}>
           <RoundedBox args={[0.18, 5.9, 0.42]} radius={0.03} smoothness={4} castShadow>
             <meshStandardMaterial

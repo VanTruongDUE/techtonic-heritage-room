@@ -111,9 +111,17 @@ export const StudioLights: React.FC = () => {
         shadow-normalBias={0.02}
       />
 
-      {/* 2. Entrance Corridor Ceiling Lights */}
-      <pointLight position={[0, 5.6, 14]} intensity={13} distance={16} decay={1.2} color="#e0f2fe" />
-      <pointLight position={[0, 5.6, 10]} intensity={13} distance={16} decay={1.2} color="#eef6ff" />
+      {/* 2. Extended 20m Entrance Tunnel Ceiling Lights */}
+      {[26, 22, 18, 14, 10].map((tz) => (
+        <pointLight
+          key={`tunnel-light-${tz}`}
+          position={[0, 5.5, tz]}
+          intensity={13}
+          distance={14}
+          decay={1.2}
+          color={tz % 8 === 2 ? '#e0f2fe' : '#eef6ff'}
+        />
+      ))}
 
       {/* 3. Full Main Hall Ceiling Downlight Grid */}
       {HALL_DOWNLIGHT_POSITIONS.map((pos, idx) => (

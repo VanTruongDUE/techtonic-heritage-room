@@ -13,9 +13,16 @@ const DEPARTMENTS: Array<'all' | Department> = [
 ];
 
 export const ExecutiveBoardModal: React.FC = () => {
-  const { activeModal, closeModal, executiveMembers, boardDepartmentFilter, setBoardDepartmentFilter } =
-    useHeritageStore();
-  const [selectedTerm, setSelectedTerm] = useState<string>('all');
+  const {
+    activeModal,
+    closeModal,
+    executiveMembers,
+    boardDepartmentFilter,
+    setBoardDepartmentFilter,
+    boardTermFilter,
+    setBoardTermFilter,
+  } = useHeritageStore();
+  const [selectedTerm, setSelectedTerm] = useState<string>('Nhiệm kỳ 2026 - 2027');
   const [selectedDept, setSelectedDept] = useState<'all' | Department>('all');
   const [onlyFounders, setOnlyFounders] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,19 +32,22 @@ export const ExecutiveBoardModal: React.FC = () => {
     if (activeModal === 'shirt') {
       if (boardDepartmentFilter && boardDepartmentFilter !== 'ALL') {
         setSelectedDept(boardDepartmentFilter as Department);
-        setSelectedTerm('all');
         setOnlyFounders(false);
         setSearchQuery('');
+      }
+      if (boardTermFilter) {
+        setSelectedTerm(boardTermFilter === 'ALL' ? 'all' : boardTermFilter);
       }
       const timer = window.setTimeout(() => {
         searchInputRef.current?.focus();
       }, 40);
       return () => window.clearTimeout(timer);
     }
-  }, [activeModal, boardDepartmentFilter]);
+  }, [activeModal, boardDepartmentFilter, boardTermFilter]);
 
   const handleClose = () => {
     setBoardDepartmentFilter('ALL');
+    setBoardTermFilter('Nhiệm kỳ 2026 - 2027');
     closeModal();
   };
 

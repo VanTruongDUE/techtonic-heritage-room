@@ -65,8 +65,10 @@ interface HeritageState {
   modalData: ExhibitItem | null;
   boardDepartmentFilter: string;
   setBoardDepartmentFilter: (dept: string) => void;
+  boardTermFilter: string;
+  setBoardTermFilter: (term: string) => void;
   openModal: (type: ModalType, data?: ExhibitItem | null) => void;
-  openExecutiveBoard: (department?: string) => void;
+  openExecutiveBoard: (department?: string, term?: string) => void;
   closeModal: () => void;
 
   // Audio state
@@ -155,6 +157,8 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
   modalData: null,
   boardDepartmentFilter: 'ALL',
   setBoardDepartmentFilter: (dept) => set({ boardDepartmentFilter: dept }),
+  boardTermFilter: 'Nhiệm kỳ 2026 - 2027',
+  setBoardTermFilter: (term) => set({ boardTermFilter: term }),
   openModal: (type, data = null) => {
     if (document.pointerLockElement && document.exitPointerLock) {
       try {
@@ -166,7 +170,6 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
     set({
       activeModal: type,
       modalData: data,
-      ...(type === 'shirt' ? {} : {}),
       isLocked: false,
       isDraggingCamera: false,
       isHoveringInteractive: false,
@@ -175,7 +178,7 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
       hoverAction: null,
     });
   },
-  openExecutiveBoard: (department = 'ALL') => {
+  openExecutiveBoard: (department = 'ALL', term = 'Nhiệm kỳ 2026 - 2027') => {
     if (document.pointerLockElement && document.exitPointerLock) {
       try {
         document.exitPointerLock();
@@ -187,6 +190,7 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
       activeModal: 'shirt',
       modalData: null,
       boardDepartmentFilter: department,
+      boardTermFilter: term,
       isLocked: false,
       isDraggingCamera: false,
       isHoveringInteractive: false,

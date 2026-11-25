@@ -38,7 +38,7 @@ export const HallParticleField: React.FC = () => {
     for (let i = 0; i < count; i++) {
       arr[i * 3] = (rand() - 0.5) * 30;
       arr[i * 3 + 1] = 0.8 + rand() * 5.0;
-      arr[i * 3 + 2] = -17 + rand() * 30;
+      arr[i * 3 + 2] = -17 + rand() * 44;
     }
     return arr;
   }, [count]);

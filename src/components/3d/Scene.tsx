@@ -7,6 +7,8 @@ import { PerimeterGallery } from './Exhibits/PerimeterGallery';
 import { CentralIsland } from './Exhibits/CentralIsland';
 import { InteractiveCorner } from './Exhibits/InteractiveCorner';
 import { ExecutiveOrgTree } from './Exhibits/ExecutiveOrgTree';
+import { TunnelGallery } from './Exhibits/TunnelGallery';
+import { MemberPortraitGallery } from './Exhibits/MemberPortraitGallery';
 import { PlayerController } from './PlayerController';
 import { HallParticleField, OrgConstellationOrbit } from './Effects/AmbientMotion';
 
@@ -31,7 +33,9 @@ export const Scene: React.FC = () => {
         <CentralIsland />
         <InteractiveCorner />
         <ExecutiveOrgTree />
-        <PlayerController initialPosition={[0, 1.4, 13.5]} />
+        <TunnelGallery />
+        <MemberPortraitGallery />
+        <PlayerController initialPosition={[0, 1.4, 25.8]} />
       </Physics>
     </Suspense>
   );

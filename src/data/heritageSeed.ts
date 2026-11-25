@@ -159,88 +159,313 @@ export const CLUB_PROFILE = {
 };
 
 export const EXECUTIVE_MEMBERS_SEED: ExecutiveMember[] = [
-  // ─── Nhiệm kỳ 2026 - 2027 ───
+  // ─── Nhiệm kỳ 2026 - 2027 (Nhiệm kỳ hiện tại — 29 thành viên, 5 Ban) ───
   {
     id: 'bcn-2627-1',
     name: 'Đặng Nguyên Quốc Bảo',
     role: 'Chủ nhiệm CLB',
     term: 'Nhiệm kỳ 2026 - 2027',
     department: 'Ban Chủ Nhiệm',
-    bio: 'Điều hành chiến lược phát triển và hoạt động toàn câu lạc bộ nhiệm kỳ 2026 - 2027.',
+    avatar: 'https://res.cloudinary.com/jb6ttotp/image/upload/v1789064855/dang-nguyen-quoc-bao.png',
+    avatarPosition: 'center 38%',
+    bio: 'Điều hành chiến lược phát triển và đại diện toàn câu lạc bộ nhiệm kỳ 2026 - 2027.',
   },
   {
     id: 'bcn-2627-2',
     name: 'Nguyễn Thị Phương Thảo',
-    role: 'Phó Chủ nhiệm CLB',
+    role: 'Phó Chủ nhiệm',
     term: 'Nhiệm kỳ 2026 - 2027',
     department: 'Ban Chủ Nhiệm',
-    bio: 'Phối hợp điều hành hoạt động nội bộ, chương trình học thuật và kết nối thành viên.',
+    avatar:
+      'https://res.cloudinary.com/jb6ttotp/image/upload/v1789064773/Nguy%E1%BB%85n_Th%E1%BB%8B_Ph%C6%B0%C6%A1ng_Th%E1%BA%A3o.png',
+    bio: 'Phó Chủ nhiệm điều hành hoạt động nội bộ, chương trình học thuật và kết nối thành viên.',
   },
   {
     id: 'bcn-2627-3',
     name: 'Ngô Phương Thảo',
-    role: 'Phó Chủ nhiệm CLB',
+    role: 'Phó Chủ nhiệm',
     term: 'Nhiệm kỳ 2026 - 2027',
     department: 'Ban Chủ Nhiệm',
-    bio: 'Phụ trách vận hành, nhân sự và triển khai chuỗi sự kiện nhiệm kỳ 2026 - 2027.',
+    avatar:
+      'https://res.cloudinary.com/jb6ttotp/image/upload/v1789064705/Ng%C3%B4_Ph%C6%B0%C6%A1ng_Th%E1%BA%A3o.png',
+    bio: 'Phó Chủ nhiệm phụ trách vận hành, nhân sự và triển khai chuỗi sự kiện nhiệm kỳ 2026 - 2027.',
   },
+
+  // Ban Chuyên Môn (7 TV)
   {
     id: 'bcn-2627-4',
     name: 'Hồ Văn Trường',
-    role: 'Trưởng Ban Chuyên Môn',
+    role: 'Trưởng ban',
     term: 'Nhiệm kỳ 2026 - 2027',
     department: 'Ban Chuyên Môn',
-    bio: 'Lập lộ trình khóa học, quản lý dự án CNTT nội bộ (FE, BE, AI & Data) và định hướng thi học thuật.',
+    avatar:
+      'https://res.cloudinary.com/dggsvq2tw/image/upload/v1785817600/H%E1%BB%93_V%C4%83n_Tr%C6%B0%E1%BB%9Dng_nlrxqc.png',
+    bio: 'Trưởng Ban Chuyên Môn; lập lộ trình khóa học, quản lý dự án CNTT nội bộ (FE, BE, AI & Data).',
   },
   {
     id: 'bcn-2627-5',
     name: 'Đinh Tấn Khoa',
-    role: 'Phó Ban Chuyên Môn',
+    role: 'Phó ban',
     term: 'Nhiệm kỳ 2026 - 2027',
     department: 'Ban Chuyên Môn',
-    bio: 'Hỗ trợ điều phối học thuật, biên soạn tài liệu và hướng dẫn thành viên nhóm dự án.',
+    avatar:
+      'https://res.cloudinary.com/dggsvq2tw/image/upload/v1786544925/%C4%90inh_T%E1%BA%A5n_Khoa_fg66bg.png',
+    bio: 'Phó Ban Chuyên Môn; hỗ trợ điều phối học thuật, biên soạn tài liệu và hướng dẫn dự án.',
   },
   {
     id: 'bcn-2627-6',
     name: 'Ngô Thị Ngọc Huyền',
-    role: 'Phó Ban Chuyên Môn',
+    role: 'Phó ban',
     term: 'Nhiệm kỳ 2026 - 2027',
     department: 'Ban Chuyên Môn',
-    bio: 'Đồng điều phối chất lượng chuyên môn và kết nối nhóm học tập hằng tuần.',
+    avatar:
+      'https://res.cloudinary.com/dggsvq2tw/image/upload/v1789062492/Ng%C3%B4_Th%E1%BB%8B_Ng%E1%BB%8Dc_Huy%E1%BB%81n_wjuxvh.png',
+    bio: 'Phó Ban Chuyên Môn; đồng điều phối chất lượng chuyên môn và kết nối nhóm học tập hằng tuần.',
   },
   {
     id: 'bcn-2627-7',
     name: 'Trần Thị Thanh Tâm',
-    role: 'Phó Ban Chuyên Môn',
+    role: 'Phó ban',
     term: 'Nhiệm kỳ 2026 - 2027',
     department: 'Ban Chuyên Môn',
-    bio: 'Phụ trách tổ chức hoạt động học thuật và đánh giá tiến độ đầu ra chuyên môn.',
+    avatar:
+      'https://res.cloudinary.com/dggsvq2tw/image/upload/v1786544841/Tr%E1%BA%A7n_Th%E1%BB%8B_Thanh_T%C3%A2m_h3iqu1.png',
+    bio: 'Phó Ban Chuyên Môn; phụ trách tổ chức hoạt động học thuật và đánh giá tiến độ đầu ra chuyên môn.',
   },
+  {
+    id: 'bcn-2627-11',
+    name: 'Nguyễn Lê Anh Hoàng',
+    role: 'Thành viên',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Chuyên Môn',
+    avatar:
+      'https://res.cloudinary.com/dggsvq2tw/image/upload/v1785817600/Nguy%E1%BB%85n_L%C3%AA_Anh_Ho%C3%A0ng_ymbmzl.png',
+    bio: 'Thành viên Ban Chuyên Môn; đồng hành triển khai đào tạo, chia sẻ kiến thức và dự án học thuật.',
+  },
+  {
+    id: 'bcn-2627-12',
+    name: 'Trương Thị Lan',
+    role: 'Thành viên',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Chuyên Môn',
+    avatar:
+      'https://res.cloudinary.com/dggsvq2tw/image/upload/v1785816310/Tr%C6%B0%C6%A1ng_Th%E1%BB%8B_Lan_vvjynt.png',
+    bio: 'Thành viên Ban Chuyên Môn (Cựu Phó Ban 25–26); cố vấn và hỗ trợ chuyên môn thực chiến.',
+  },
+  {
+    id: 'bcn-2627-13',
+    name: 'Lê Thị Nhung Nguyệt',
+    role: 'Thành viên',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Chuyên Môn',
+    avatar:
+      'https://res.cloudinary.com/dggsvq2tw/image/upload/v1785816321/L%C3%AA_Th%E1%BB%8B_Nhung_Nguy%E1%BB%87t_wjtzqq.png',
+    bio: 'Thành viên Ban Chuyên Môn (Cựu Trưởng Ban 25–26); cố vấn chuyên môn FE, BE, AI & Data.',
+  },
+
+  // Ban Sự Kiện (7 TV)
   {
     id: 'bcn-2627-8',
     name: 'Đoàn Ngọc Bảo Trân',
-    role: 'Trưởng Ban Sự Kiện',
+    role: 'Trưởng ban',
     term: 'Nhiệm kỳ 2026 - 2027',
     department: 'Ban Sự Kiện',
-    bio: 'Chủ trì ý tưởng, kịch bản và điều phối các sự kiện lớn: TechXplore, TechWare, Tình nguyện Đông - Xuân.',
+    avatar:
+      'https://res.cloudinary.com/dggsvq2tw/image/upload/v1785833720/%C4%90o%C3%A0n_Ng%E1%BB%8Dc_B%E1%BA%A3o_Tr%C3%A2n_biye8o.png',
+    bio: 'Trưởng Ban Sự Kiện; chủ trì ý tưởng, kịch bản và điều phối TechXplore, TechWare, Tình nguyện.',
   },
+  {
+    id: 'bcn-2627-14',
+    name: 'Nguyễn Ngọc Nhật',
+    role: 'Phó ban',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Sự Kiện',
+    avatar:
+      'https://res.cloudinary.com/dggsvq2tw/image/upload/v1785833720/Nguy%E1%BB%85n_Ng%E1%BB%8Dc_Nh%E1%BA%ADt_wvbxsh.png',
+    bio: 'Phó Ban Sự Kiện; hỗ trợ điều phối vận hành, âm thanh ánh sáng và hậu trường chương trình.',
+  },
+  {
+    id: 'bcn-2627-15',
+    name: 'Tô Nguyễn Quốc Bảo',
+    role: 'Phó ban',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Sự Kiện',
+    avatar:
+      'https://res.cloudinary.com/dggsvq2tw/image/upload/v1786549679/T%C3%B4_Nguy%E1%BB%85n_Qu%E1%BB%91c_B%E1%BA%A3o_ewkhlv.png',
+    bio: 'Phó Ban Sự Kiện; xây dựng timeline kịch bản và kết nối điều phối chuỗi hoạt động gắn kết.',
+  },
+  {
+    id: 'bcn-2627-16',
+    name: 'Phạm Nhật Hạ',
+    role: 'Phó ban',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Sự Kiện',
+    avatar:
+      'https://res.cloudinary.com/dggsvq2tw/image/upload/v1786549680/Ph%E1%BA%A1m_Nh%E1%BA%ADt_H%E1%BA%A1_sdblbc.png',
+    bio: 'Phó Ban Sự Kiện; phụ trách nội dung trải nghiệm, Mentor - Mentee và gắn kết tân sinh viên.',
+  },
+  {
+    id: 'bcn-2627-17',
+    name: 'Phạm Ngọc Yến Nhi',
+    role: 'Phó ban',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Sự Kiện',
+    avatar:
+      'https://res.cloudinary.com/dggsvq2tw/image/upload/v1785833722/Ph%E1%BA%A1m_Ng%E1%BB%8Dc_Y%E1%BA%BFn_Nhi_uhyzbr.png',
+    bio: 'Phó Ban Sự Kiện; điều phối tổ chức sự kiện và kết nối lực lượng cộng tác viên CLB.',
+  },
+  {
+    id: 'bcn-2627-18',
+    name: 'Trần Tôn Phương Thảo',
+    role: 'Thành viên',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Sự Kiện',
+    bio: 'Thành viên Ban Sự Kiện; tham gia lập kế hoạch và triển khai trực tiếp các sự kiện CLB.',
+  },
+  {
+    id: 'bcn-2627-19',
+    name: 'Trần Nguyễn Minh Anh',
+    role: 'Thành viên',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Sự Kiện',
+    avatar:
+      'https://res.cloudinary.com/jb6ttotp/image/upload/v1789137699/ChatGPT_Image_21_41_31_11_thg_9_2026.png',
+    avatarPosition: 'center 13%',
+    bio: 'Thành viên Ban Sự Kiện; hỗ trợ tổ chức, trò chơi kết nối và hậu trường hoạt động CLB.',
+  },
+
+  // Ban Nhân Sự (3 TV)
   {
     id: 'bcn-2627-9',
     name: 'Nguyễn Anh Tú',
-    role: 'Trưởng Ban Nhân Sự (Co-Founder)',
+    role: 'Trưởng ban (Co-Founder)',
     term: 'Nhiệm kỳ 2026 - 2027',
     department: 'Ban Nhân Sự',
-    avatar: '/assets/images/founders/Nguyen_Anh_Tu.jpg',
+    avatar:
+      'https://res.cloudinary.com/dggsvq2tw/image/upload/v1786544985/Nguy%E1%BB%85n_Anh_T%C3%BA_d8rm4i.png',
     isFounder: true,
-    bio: 'Co-Founder CLB; phụ trách gây quỹ, đối ngoại nhà tài trợ, nhân sự và hậu cần minh bạch.',
+    bio: 'Co-Founder & Trưởng Ban Nhân Sự; phụ trách gây quỹ, đối ngoại tài trợ, nhân sự và hậu cần.',
   },
+  {
+    id: 'bcn-2627-20',
+    name: 'Phạm Khánh Ngân',
+    role: 'Phó ban',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Nhân Sự',
+    avatar:
+      'https://res.cloudinary.com/dggsvq2tw/image/upload/v1785839866/Ph%E1%BA%A1m_Kh%C3%A1nh_Ng%C3%A2n_jh0c9p.png',
+    bio: 'Phó Ban Nhân Sự; quản lý hồ sơ thành viên, theo dõi quỹ và điều phối công tác hậu cần.',
+  },
+  {
+    id: 'bcn-2627-21',
+    name: 'Phan Thị Quỳnh Chi',
+    role: 'Thành viên',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Nhân Sự',
+    avatar:
+      'https://res.cloudinary.com/dggsvq2tw/image/upload/v1786549625/Phan_Th%E1%BB%8B_Qu%E1%BB%B3nh_Chi_ikcqha.png',
+    bio: 'Thành viên Ban Nhân Sự; đồng hành quản trị thành viên, hậu cần và chăm sóc nội bộ.',
+  },
+
+  // Ban Truyền Thông (9 TV)
   {
     id: 'bcn-2627-10',
     name: 'Võ Đình Khoa',
-    role: 'Trưởng Ban Truyền Thông',
+    role: 'Trưởng ban',
     term: 'Nhiệm kỳ 2026 - 2027',
     department: 'Ban Truyền Thông',
-    bio: 'Định hướng truyền thông đa kênh, ấn phẩm thiết kế và lan tỏa hình ảnh TechTonic.',
+    avatar:
+      'https://res.cloudinary.com/jb6ttotp/image/upload/v1789085239/%C4%90%C3%ACnh_Khoa.png',
+    avatarPosition: 'center -8px',
+    bio: 'Trưởng Ban Truyền Thông; định hướng chiến dịch đa kênh, thiết kế ấn phẩm và hình ảnh CLB.',
+  },
+  {
+    id: 'bcn-2627-22',
+    name: 'Vũ Thị Huyền Trang',
+    role: 'Phó ban',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Truyền Thông',
+    avatar:
+      'https://res.cloudinary.com/jb6ttotp/image/upload/v1789119871/ChatGPT_Image_16_43_43_11_thg_9_2026.png',
+    avatarPosition: 'center 20%',
+    bio: 'Phó Ban Truyền Thông; điều phối sản xuất nội dung, biên tập bài đăng và chất lượng media.',
+  },
+  {
+    id: 'bcn-2627-23',
+    name: 'Phạm Thị Nhật Uyên',
+    role: 'Thành viên',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Truyền Thông',
+    avatar:
+      'https://res.cloudinary.com/jb6ttotp/image/upload/v1789197005/ChatGPT_Image_14_09_39_12_thg_9_2026.png',
+    avatarPosition: 'center 15%',
+    bio: 'Thành viên Ban Truyền Thông; sáng tạo nội dung, viết bài và truyền thông sự kiện CLB.',
+  },
+  {
+    id: 'bcn-2627-24',
+    name: 'Nguyễn Huỳnh Minh Ánh',
+    role: 'Thành viên',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Truyền Thông',
+    avatar:
+      'https://res.cloudinary.com/jb6ttotp/image/upload/v1789120336/ChatGPT_Image_16_52_06_11_thg_9_2026.png',
+    avatarPosition: 'center 20%',
+    bio: 'Thành viên Ban Truyền Thông; thiết kế ấn phẩm truyền thông và hình ảnh thương hiệu CLB.',
+  },
+  {
+    id: 'bcn-2627-25',
+    name: 'Phan Thị Yến Chi',
+    role: 'Thành viên',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Truyền Thông',
+    avatar:
+      'https://res.cloudinary.com/jb6ttotp/image/upload/v1789122388/ChatGPT_Image_17_26_18_11_thg_9_2026.png',
+    avatarPosition: 'center 20%',
+    bio: 'Thành viên Ban Truyền Thông; phát triển nội dung số và truyền thông hoạt động học thuật.',
+  },
+  {
+    id: 'bcn-2627-26',
+    name: 'Nguyễn Nữ Vũ Hoàng',
+    role: 'Thành viên',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Truyền Thông',
+    avatar:
+      'https://res.cloudinary.com/jb6ttotp/image/upload/v1789125427/ChatGPT_Image_18_16_54_11_thg_9_2026.png',
+    avatarPosition: 'center 13%',
+    bio: 'Thành viên Ban Truyền Thông; chụp ảnh, quay phim recap và sản xuất tư liệu sự kiện.',
+  },
+  {
+    id: 'bcn-2627-27',
+    name: 'Lê Văn Lợi',
+    role: 'Thành viên',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Truyền Thông',
+    avatar:
+      'https://res.cloudinary.com/jb6ttotp/image/upload/v1789132816/ChatGPT_Image_20_19_57_11_thg_9_2026.png',
+    avatarPosition: 'center 15%',
+    bio: 'Thành viên Ban Truyền Thông; dựng video recap và truyền thông đa nền tảng cho CLB.',
+  },
+  {
+    id: 'bcn-2627-28',
+    name: 'Phan Nhật Đài Trang',
+    role: 'Thành viên',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Truyền Thông',
+    avatar:
+      'https://res.cloudinary.com/jb6ttotp/image/upload/v1789137376/ChatGPT_Image_21_35_48_11_thg_9_2026.png',
+    avatarPosition: 'center 15%',
+    bio: 'Thành viên Ban Truyền Thông; thiết kế đồ họa và truyền tải câu chuyện thành viên CLB.',
+  },
+  {
+    id: 'bcn-2627-29',
+    name: 'Phan Trần Hạ Giang',
+    role: 'Thành viên',
+    term: 'Nhiệm kỳ 2026 - 2027',
+    department: 'Ban Truyền Thông',
+    avatar:
+      'https://res.cloudinary.com/jb6ttotp/image/upload/v1789125187/ChatGPT_Image_18_12_59_11_thg_9_2026.png',
+    avatarPosition: 'center 20%',
+    bio: 'Thành viên Ban Truyền Thông; vận hành kênh mạng xã hội và lan tỏa giá trị TechTonic.',
   },
 
   // ─── Nhiệm kỳ 2025 - 2026 ───
@@ -606,9 +831,9 @@ export const TELEPORT_ZONES: TeleportZone[] = [
     id: 'entrance',
     label: 'Hành Lang Lối Vào',
     shortLabel: 'Lối vào',
-    description: 'Điểm khởi đầu bước vào phòng truyền thống TechTonic Club (DUE Đà Nẵng).',
-    position: [0, 1.4, 13.5],
-    lookAt: [0, 2.2, -18],
+    description: 'Đường hầm triển lãm dẫn vào phòng truyền thống TechTonic Club (DUE Đà Nẵng).',
+    position: [0, 1.4, 25.8],
+    lookAt: [0, 2.2, 8.0],
   },
   {
     id: 'center-wall',
