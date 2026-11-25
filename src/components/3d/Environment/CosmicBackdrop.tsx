@@ -413,14 +413,14 @@ export const CosmicBackdrop: React.FC = () => {
         />
       </points>
 
-      {/* 4. Distant, Natural Countryside Full Moon (serene realistic scale high in the night sky) */}
-      <group position={[42, 50, -155]}>
+      {/* 4. Distant Full Moon (positioned high & bold inside the open skylight sky band) */}
+      <group position={[42, 118, -155]}>
         {/* Gentle Silvery-Warm Countryside Moonlight Corona Halo */}
-        <sprite scale={[30, 30, 1]}>
+        <sprite scale={[60, 60, 1]}>
           <spriteMaterial
             map={moonHaloTex}
             transparent
-            opacity={0.62}
+            opacity={0.66}
             depthWrite={false}
             blending={THREE.AdditiveBlending}
             fog={false}
@@ -430,7 +430,7 @@ export const CosmicBackdrop: React.FC = () => {
 
         {/* Sculpted Distant Cratered Full Moon */}
         <mesh ref={moonRef} rotation={[0.15, -0.75, 0.08]}>
-          <sphereGeometry args={[6.5, 48, 36]} />
+          <sphereGeometry args={[14, 48, 36]} />
           <meshStandardMaterial
             map={moonMaps.map}
             bumpMap={moonMaps.bumpMap}
