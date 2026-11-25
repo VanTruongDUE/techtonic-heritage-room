@@ -73,11 +73,9 @@ export const MuseumRoom: React.FC = () => {
   const tunnelRibHaloRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const tunnelRibLeftRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const tunnelRibRightRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
-  const tunnelConeRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const tunnelDownlightRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const tunnelSideStripRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const portalGlowMatRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
-  const portalConeRef = useRef<THREE.MeshBasicMaterial>(null);
   const ribGlowLevels = useRef<number[]>([0.25, 0.04, 0.04, 0.04, 0.04]);
   const portalLevelRef = useRef<number>(0.1);
 
@@ -147,8 +145,6 @@ export const MuseumRoom: React.FC = () => {
       if (leftMat) leftMat.opacity = lvl * 0.92;
       const rightMat = tunnelRibRightRefs.current[idx];
       if (rightMat) rightMat.opacity = lvl * 0.92;
-      const coneMat = tunnelConeRefs.current[idx];
-      if (coneMat) coneMat.opacity = Math.max(0, (lvl - 0.12) * 0.135);
       const dlMat = tunnelDownlightRefs.current[idx];
       if (dlMat) dlMat.opacity = 0.06 + lvl * 0.94;
     });
@@ -161,7 +157,7 @@ export const MuseumRoom: React.FC = () => {
       }
     });
 
-    // 4. Grand Entrance Threshold Portal & Light Curtain ignite powerfully at z <= 12.6
+    // 4. Grand Entrance Threshold Portal ignites cleanly at z <= 12.6
     const targetPortal = playerZ <= 12.6 ? 0.82 + Math.sin(t * 2.2) * 0.18 : 0.1;
     portalLevelRef.current = THREE.MathUtils.lerp(
       portalLevelRef.current,
@@ -171,9 +167,6 @@ export const MuseumRoom: React.FC = () => {
     portalGlowMatRefs.current.forEach((mat) => {
       if (mat) mat.opacity = portalLevelRef.current;
     });
-    if (portalConeRef.current) {
-      portalConeRef.current.opacity = Math.max(0, (portalLevelRef.current - 0.15) * 0.11);
-    }
   });
 
   useEffect(() => {
@@ -451,21 +444,6 @@ export const MuseumRoom: React.FC = () => {
                 side={THREE.DoubleSide}
               />
             </mesh>
-            {/* Powerful Volumetric Stadium Floodlight Beam Cone descending onto the glossy runway */}
-            <mesh position={[0, -3.15, 0]}>
-              <coneGeometry args={[2.25, 5.95, 28, 1, true]} />
-              <meshBasicMaterial
-                ref={(el) => {
-                  tunnelConeRefs.current[i] = el;
-                }}
-                color={ribColor}
-                transparent
-                opacity={0}
-                blending={THREE.AdditiveBlending}
-                depthWrite={false}
-                side={THREE.DoubleSide}
-              />
-            </mesh>
             {/* Side wall vertical neon arch continuations (wider vivid tubes) */}
             <mesh position={[-2.38, -3.1, 0]}>
               <boxGeometry args={[0.042, 5.95, 0.068]} />
@@ -734,19 +712,6 @@ export const MuseumRoom: React.FC = () => {
             transparent
             opacity={0.12}
             toneMapped={false}
-          />
-        </mesh>
-        {/* Dramatic Entrance Threshold Portal Light Curtain Cone */}
-        <mesh position={[0, 2.7, 0]}>
-          <coneGeometry args={[2.8, 5.35, 32, 1, true]} />
-          <meshBasicMaterial
-            ref={portalConeRef}
-            color="#00F0FF"
-            transparent
-            opacity={0}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-            side={THREE.DoubleSide}
           />
         </mesh>
       </group>
