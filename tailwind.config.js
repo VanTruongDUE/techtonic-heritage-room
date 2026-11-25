@@ -19,18 +19,28 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'Outfit', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'glow': 'glow 2s ease-in-out infinite alternate',
+        'fade-in': 'fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'panel-in': 'panelIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards',
       },
       keyframes: {
         glow: {
           '0%': { boxShadow: '0 0 5px rgba(0, 240, 255, 0.3)' },
           '100%': { boxShadow: '0 0 20px rgba(0, 240, 255, 0.8), 0 0 35px rgba(0, 102, 255, 0.4)' },
-        }
+        },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        panelIn: {
+          '0%': { opacity: '0', transform: 'translateY(10px) scale(0.98)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
       }
     },
   },

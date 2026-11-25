@@ -1,169 +1,454 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { RoundedBox } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { useHeritageStore } from '../../../store/useHeritageStore';
+import {
+  createBrushedMetalMaps,
+  createLeatherMaps,
+  createMarbleMaps,
+  createOpenBookPageTexture,
+} from '../utils/proceduralMaterials';
 
 export const InteractiveCorner: React.FC = () => {
-  const { setHoveringInteractive, openModal } = useHeritageStore();
-  const bookRef = useRef<THREE.Group>(null);
+  const { setHoveringInteractive, openModal, guestbookEntries } = useHeritageStore();
+  const bookGroupRef = useRef<THREE.Group>(null);
+  const penGroupRef = useRef<THREE.Group>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const textureRef = useRef<THREE.CanvasTexture | null>(null);
+  const lastDrawTimeRef = useRef(0);
+  const [isBookHovered, setIsBookHovered] = useState(false);
+  const [isScreenPaused, setIsScreenPaused] = useState(false);
 
-  // Floating animation for guestbook hologram
+  const marbleMaps = useMemo(() => createMarbleMaps(), []);
+  const metalMaps = useMemo(() => createBrushedMetalMaps(), []);
+  const leatherMaps = useMemo(() => createLeatherMaps(), []);
+  const leftPageTex = useMemo(() => createOpenBookPageTexture('left'), []);
+  const rightPageTex = useMemo(() => createOpenBookPageTexture('right'), []);
+
+  const { leftPageGeom, rightPageGeom, penBodyGeom } = useMemo(() => {
+    const buildPage = (isLeft: boolean) => {
+      const shape = new THREE.Shape();
+      const dir = isLeft ? -1 : 1;
+      shape.moveTo(0, 0);
+      shape.bezierCurveTo(dir * 0.08, 0.032, dir * 0.24, 0.036, dir * 0.34, 0.008);
+      shape.lineTo(dir * 0.34, -0.018);
+      shape.bezierCurveTo(dir * 0.24, 0.004, dir * 0.08, 0.004, 0, -0.022);
+      shape.closePath();
+
+      const geom = new THREE.ExtrudeGeometry(shape, {
+        depth: 0.44,
+        bevelEnabled: false,
+        curveSegments: 24,
+      });
+      geom.translate(0, 0, -0.22);
+      geom.computeVertexNormals();
+      return geom;
+    };
+
+    const penPts = [
+      new THREE.Vector2(0.0, 0.0),
+      new THREE.Vector2(0.004, 0.02),
+      new THREE.Vector2(0.011, 0.05),
+      new THREE.Vector2(0.012, 0.24),
+      new THREE.Vector2(0.01, 0.27),
+      new THREE.Vector2(0.0, 0.275),
+    ];
+    const pen = new THREE.LatheGeometry(penPts, 24);
+    pen.computeVertexNormals();
+
+    return {
+      leftPageGeom: buildPage(true),
+      rightPageGeom: buildPage(false),
+      penBodyGeom: pen,
+    };
+  }, []);
+
+  const videoTexture = useMemo(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1536;
+    canvas.height = 864;
+    const initCtx = canvas.getContext('2d');
+    if (initCtx) {
+      initCtx.scale(1.5, 1.5);
+      initCtx.imageSmoothingEnabled = true;
+      initCtx.imageSmoothingQuality = 'high';
+    }
+    canvasRef.current = canvas;
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.anisotropy = 16;
+    textureRef.current = tex;
+    return tex;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      marbleMaps.map.dispose();
+      marbleMaps.roughnessMap.dispose();
+      marbleMaps.bumpMap.dispose();
+      metalMaps.roughnessMap.dispose();
+      metalMaps.bumpMap.dispose();
+      leatherMaps.roughnessMap.dispose();
+      leatherMaps.bumpMap.dispose();
+      leftPageTex.dispose();
+      rightPageTex.dispose();
+      leftPageGeom.dispose();
+      rightPageGeom.dispose();
+      penBodyGeom.dispose();
+      videoTexture.dispose();
+    };
+  }, [
+    marbleMaps,
+    metalMaps,
+    leatherMaps,
+    leftPageTex,
+    rightPageTex,
+    leftPageGeom,
+    rightPageGeom,
+    penBodyGeom,
+    videoTexture,
+  ]);
+
   useFrame((state) => {
-    if (bookRef.current) {
-      bookRef.current.position.y = 1.35 + Math.sin(state.clock.elapsedTime * 2) * 0.03;
-      bookRef.current.rotation.y = Math.sin(state.clock.elapsedTime) * 0.1;
+    if (penGroupRef.current) {
+      const lift = isBookHovered ? 0.08 : 0;
+      penGroupRef.current.position.y =
+        0.11 + lift + Math.sin(state.clock.elapsedTime * 2.2) * 0.012;
+      penGroupRef.current.rotation.z =
+        -Math.PI / 3.2 + Math.sin(state.clock.elapsedTime * 1.4) * 0.04;
     }
 
-    // Dynamic Video/Screen Canvas Animation Loop
-    if (canvasRef.current && textureRef.current) {
+    const elapsed = state.clock.elapsedTime;
+    if (
+      canvasRef.current &&
+      textureRef.current &&
+      (!isScreenPaused || lastDrawTimeRef.current === 0) &&
+      elapsed - lastDrawTimeRef.current >= 0.045
+    ) {
+      lastDrawTimeRef.current = elapsed;
       const ctx = canvasRef.current.getContext('2d');
       if (ctx) {
-        const time = state.clock.elapsedTime;
         const w = 1024;
         const h = 576;
 
-        // Dark background
-        ctx.fillStyle = '#060a12';
+        ctx.fillStyle = '#080e1a';
         ctx.fillRect(0, 0, w, h);
 
-        // Tech grid scanline
-        ctx.fillStyle = 'rgba(0, 240, 255, 0.03)';
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.04)';
         for (let y = 0; y < h; y += 8) {
           ctx.fillRect(0, y, w, 1);
         }
 
-        // Animated sine audio/energy waves
         ctx.lineWidth = 3;
         for (let wave = 0; wave < 3; wave++) {
           ctx.beginPath();
-          ctx.strokeStyle = wave === 0 ? '#00F0FF' : wave === 1 ? '#0066FF' : '#FF0055';
+          ctx.strokeStyle = wave === 0 ? '#00F0FF' : wave === 1 ? '#3b82f6' : '#93c5fd';
           for (let x = 0; x < w; x += 10) {
-            const freq = 0.015 + wave * 0.005;
-            const y = h / 2 + Math.sin(x * freq + time * 3 + wave) * (40 + wave * 25);
+            const freq = 0.014 + wave * 0.005;
+            const y = h / 2 + Math.sin(x * freq + elapsed * 2.6 + wave) * (36 + wave * 20);
             if (x === 0) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
           }
           ctx.stroke();
         }
 
-        // Glowing center text
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 36px Outfit, sans-serif';
+        const slideIndex = Math.floor(elapsed / 5.5) % 3;
+        const slideTitles = [
+          'CHUỖI SỰ KIỆN • TECHXPLORE • TECHWARE',
+          'MENTOR - MENTEE • TÌNH NGUYỆN ĐÔNG - XUÂN',
+          'CHUYÊN MÔN HẰNG TUẦN • PRODUCT TEAM',
+        ];
+        const slideSubtitles = [
+          'Đón tân sinh viên DUE  •  Trải nghiệm công nghệ  •  Tuyển thành viên không thu phí',
+          'From Us To You  •  Tech Threads  •  Happy Hour & Du lịch gắn kết nội bộ',
+          'Đào tạo CSLT/CSDL  •  Front-End  •  Back-End  •  AI & Data  •  Thi đấu ICPC-OLP',
+        ];
+
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 34px Inter, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('TECHTONIC PROMO REEL • VIRTUAL EXHIBIT', w / 2, 80);
+        ctx.fillText(slideTitles[slideIndex], w / 2, 82);
 
-        ctx.fillStyle = '#00F0FF';
-        ctx.font = '600 20px JetBrains Mono, monospace';
-        ctx.fillText(`SYSTEM RUNTIME: ${time.toFixed(1)}s • 60 FPS STREAM`, w / 2, 120);
+        ctx.fillStyle = isScreenPaused ? '#fbbf24' : '#38bdf8';
+        ctx.font = '600 20px "JetBrains Mono", monospace';
+        ctx.fillText(
+          isScreenPaused
+            ? 'TRẠNG THÁI: TẠM DỪNG • NHẤP ĐỂ TIẾP TỤC'
+            : `SLIDE 0${slideIndex + 1}/03  •  RUNTIME ${elapsed.toFixed(1)}s`,
+          w / 2,
+          122
+        );
 
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '300 18px Inter, sans-serif';
-        ctx.fillText('Pioneering the Next Generation of Digital Builders', w / 2, h - 60);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '500 21px Inter, sans-serif';
+        ctx.fillText(slideSubtitles[slideIndex], w / 2, h - 56);
 
-        // Notify Three.js texture to re-render frame
         textureRef.current.needsUpdate = true;
       }
     }
   });
 
-  // Initialize Canvas Texture for Video Screen
-  const videoTexture = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1024;
-    canvas.height = 576;
-    canvasRef.current = canvas;
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.minFilter = THREE.LinearFilter;
-    tex.magFilter = THREE.LinearFilter;
-    textureRef.current = tex;
-    return tex;
-  }, []);
+  const openGuestbook = () => openModal('guestbook');
+  const toggleScreen = () => {
+    lastDrawTimeRef.current = 0;
+    setIsScreenPaused((prev) => !prev);
+  };
 
   return (
-    <group position={[9.5, 0, -16]}>
-      {/* ================= 1. VIDEO SCREEN (LOOSE CINEMA DISPLAY) ================= */}
-      {/* Screen Frame Stand */}
-      <mesh position={[0, 3, -1.8]}>
-        <boxGeometry args={[7.2, 4.2, 0.2]} />
-        <meshStandardMaterial color="#0b0e17" metalness={0.9} roughness={0.1} />
+    <group position={[-11.75, 0, -16]}>
+      {/* ================= 1. FRAMED ARCHITECTURAL LED EVENTS DISPLAY (Left Wing of Dream It - Code It) ================= */}
+      <RoundedBox position={[0, 3.25, -1.84]} args={[7.0, 4.2, 0.2]} radius={0.05} smoothness={6} castShadow>
+        <meshStandardMaterial
+          color="#1b263b"
+          roughnessMap={metalMaps.roughnessMap}
+          bumpMap={metalMaps.bumpMap}
+          bumpScale={0.004}
+          metalness={0.8}
+          roughness={0.25}
+        />
+      </RoundedBox>
+      {/* Neon wall wash ambient rail behind screen */}
+      <mesh position={[0, 3.25, -1.96]}>
+        <planeGeometry args={[7.35, 4.5]} />
+        <meshBasicMaterial color="#00F0FF" transparent opacity={0.22} toneMapped={false} />
+      </mesh>
+      <RoundedBox position={[0, 3.25, -1.73]} args={[6.72, 3.9, 0.04]} radius={0.02} smoothness={4}>
+        <meshStandardMaterial color="#0b101b" roughness={0.5} metalness={0.3} />
+      </RoundedBox>
+
+      {/* Architectural Soundbar Module beneath Display */}
+      <RoundedBox position={[0, 0.96, -1.75]} args={[4.2, 0.2, 0.24]} radius={0.03} smoothness={4} castShadow>
+        <meshStandardMaterial color="#182235" metalness={0.75} roughness={0.3} />
+      </RoundedBox>
+      <mesh position={[0, 0.96, -1.62]}>
+        <boxGeometry args={[3.8, 0.11, 0.015]} />
+        <meshStandardMaterial color="#0a0f18" roughness={0.85} metalness={0.2} />
       </mesh>
 
-      {/* Screen Display Area (Playing Dynamic Video Canvas) */}
       <mesh
-        position={[0, 3, -1.69]}
-        onPointerOver={() => setHoveringInteractive(true, 'Màn hình trình chiếu TechTonic')}
+        position={[0, 3.25, -1.7]}
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleScreen();
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setHoveringInteractive(
+            true,
+            isScreenPaused ? 'Tiếp tục trình chiếu LED' : 'Tạm dừng màn hình LED',
+            toggleScreen,
+            {
+              title: 'Màn Hình Động Sự Kiện CLB',
+              badge: isScreenPaused ? 'ĐANG TẠM DỪNG' : 'ĐANG PHÁT TRỰC TIẾP',
+              summary:
+                'Mô hình trình chiếu động các chuỗi sự kiện TechXplore, Mentor - Mentee, TechWare, Tình nguyện Đông - Xuân và sinh hoạt chuyên môn.',
+              bullets: [
+                'Slide 01: Chuỗi Sự Kiện • TechXplore • TechWare',
+                'Slide 02: Mentor - Mentee • Tình nguyện Đông - Xuân',
+                'Slide 03: Chuyên môn hằng tuần & Product Team',
+              ],
+              actionLabel: isScreenPaused ? 'Tiếp tục trình chiếu' : 'Tạm dừng màn hình',
+            }
+          );
+        }}
         onPointerOut={() => setHoveringInteractive(false)}
       >
-        <planeGeometry args={[6.8, 3.8]} />
+        <planeGeometry args={[6.52, 3.68]} />
         <meshBasicMaterial map={videoTexture} />
       </mesh>
 
-      {/* Frame Glowing Accent */}
-      <mesh position={[0, 5.05, -1.68]}>
-        <planeGeometry args={[7, 0.04]} />
-        <meshBasicMaterial color="#00F0FF" />
-      </mesh>
-      <mesh position={[0, 0.95, -1.68]}>
-        <planeGeometry args={[7, 0.04]} />
-        <meshBasicMaterial color="#0066FF" />
-      </mesh>
-
-      {/* ================= 2. GUESTBOOK INTERACTIVE KIOSK ================= */}
-      {/* Kiosk Pedestal with Physics */}
-      <RigidBody type="fixed" position={[-4, 0.55, 1.5]}>
-        <mesh castShadow receiveShadow>
-          <boxGeometry args={[1.2, 1.1, 0.9]} />
-          <meshStandardMaterial color="#0e1320" metalness={0.8} roughness={0.2} />
+      {[-2.0, 2.0].map((mx) => (
+        <mesh key={`mount-${mx}`} position={[mx, 3.25, -2.1]}>
+          <boxGeometry args={[0.2, 1.6, 0.45]} />
+          <meshStandardMaterial color="#1e293b" metalness={0.75} roughness={0.32} />
         </mesh>
-        {/* Kiosk Angled Top Surface */}
-        <mesh position={[0, 0.55, 0]} rotation={[-Math.PI / 6, 0, 0]}>
-          <boxGeometry args={[1.3, 0.05, 1.0]} />
-          <meshStandardMaterial color="#141a29" metalness={0.9} roughness={0.1} />
-        </mesh>
-      </RigidBody>
+      ))}
 
-      {/* 3D Holographic Guestbook Object (Interactive Target) */}
-      <group
-        ref={bookRef}
-        position={[-4, 1.35, 1.5]}
-        onClick={() => openModal('guestbook')}
-        onPointerOver={() => setHoveringInteractive(true, 'Nhấp để ghi Lời chúc Sổ lưu bút')}
-        onPointerOut={() => setHoveringInteractive(false)}
-      >
-        {/* Left Book Cover */}
-        <mesh position={[-0.22, 0, 0]} rotation={[0, 0.2, 0]} castShadow>
-          <boxGeometry args={[0.42, 0.04, 0.55]} />
-          <meshStandardMaterial color="#0066FF" metalness={0.6} roughness={0.3} />
-        </mesh>
-
-        {/* Right Book Cover */}
-        <mesh position={[0.22, 0, 0]} rotation={[0, -0.2, 0]} castShadow>
-          <boxGeometry args={[0.42, 0.04, 0.55]} />
-          <meshStandardMaterial color="#0066FF" metalness={0.6} roughness={0.3} />
-        </mesh>
-
-        {/* Book Pages with glowing cyan text */}
-        <mesh position={[0, 0.02, 0]}>
-          <boxGeometry args={[0.78, 0.02, 0.5]} />
+      {/* ================= 2. MUSEUM GUESTBOOK LECTERN & OPEN HARDCOVER BOOK ================= */}
+      <RigidBody type="fixed" position={[1.75, 0.46, 1.4]}>
+        <RoundedBox position={[0, -0.4, 0]} args={[1.38, 0.1, 1.08]} radius={0.03} smoothness={4} receiveShadow>
           <meshStandardMaterial
-            color="#ffffff"
-            emissive="#00F0FF"
-            emissiveIntensity={0.5}
-            roughness={0.2}
+            color="#475569"
+            roughnessMap={metalMaps.roughnessMap}
+            metalness={0.85}
+            roughness={0.24}
+          />
+        </RoundedBox>
+
+        <RoundedBox position={[0, -0.1, 0]} args={[1.08, 0.54, 0.78]} radius={0.04} smoothness={6} castShadow receiveShadow>
+          <meshStandardMaterial
+            map={marbleMaps.map}
+            roughnessMap={marbleMaps.roughnessMap}
+            bumpMap={marbleMaps.bumpMap}
+            bumpScale={0.008}
+            color="#d8e3f4"
+            roughness={0.34}
+            metalness={0.3}
+          />
+        </RoundedBox>
+        {/* Brushed steel pedestal neck column supporting the angled tray cleanly with zero intersection */}
+        <mesh position={[0, 0.27, 0]} castShadow>
+          <cylinderGeometry args={[0.2, 0.24, 0.28, 24]} />
+          <meshStandardMaterial
+            color="#475569"
+            roughnessMap={metalMaps.roughnessMap}
+            metalness={0.86}
+            roughness={0.22}
           />
         </mesh>
 
-        {/* Floating holographic quill / pen */}
-        <mesh position={[0.3, 0.2, 0]} rotation={[0, 0, -Math.PI / 4]}>
-          <cylinderGeometry args={[0.015, 0.015, 0.35, 12]} />
-          <meshBasicMaterial color="#00F0FF" />
+        <group position={[0, 0.44, 0.02]} rotation={[0.46, 0, 0]}>
+          <RoundedBox args={[1.36, 0.06, 1.04]} radius={0.02} smoothness={4} castShadow>
+            <meshStandardMaterial
+              color="#273654"
+              roughnessMap={metalMaps.roughnessMap}
+              roughness={0.28}
+              metalness={0.72}
+            />
+          </RoundedBox>
+          <RoundedBox position={[0, 0.04, 0.48]} args={[1.28, 0.04, 0.04]} radius={0.01} smoothness={4}>
+            <meshStandardMaterial color="#94a3b8" metalness={0.88} roughness={0.2} />
+          </RoundedBox>
+        </group>
+      </RigidBody>
+
+      {/* Open Hardcover Leather Guestbook resting clearly angled toward standing visitor */}
+      <group
+        ref={bookGroupRef}
+        position={[1.75, 0.96, 1.44]}
+        rotation={[0.46, 0, 0]}
+        onClick={(e) => {
+          e.stopPropagation();
+          openGuestbook();
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setIsBookHovered(true);
+          const latest = guestbookEntries[0];
+          setHoveringInteractive(true, 'Ghi Lời chúc Sổ lưu bút', openGuestbook, {
+            title: 'Sổ Lưu Bút Danh Dự TechTonic',
+            badge: `${guestbookEntries.length} LỜI CHÚC ĐÃ LƯU`,
+            summary:
+              'Ghi lại dấu ấn và lời chúc gửi tới các thế hệ thành viên CLB TechTonic — dữ liệu được đồng bộ qua máy chủ API.',
+            bullets: latest
+              ? [
+                  `Mới nhất (${latest.author}): "${latest.message.slice(0, 90)}${
+                    latest.message.length > 90 ? '…' : ''
+                  }"`,
+                  `Đơn vị: ${latest.roleOrAffiliation}`,
+                ]
+              : ['Hãy là người đầu tiên viết lời chúc vào sổ lưu bút!'],
+            actionLabel: 'Mở Sổ Lưu Bút để viết lời chúc',
+          });
+        }}
+        onPointerOut={() => {
+          setIsBookHovered(false);
+          setHoveringInteractive(false);
+        }}
+      >
+        <mesh position={[0, -0.015, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.03, 0.03, 0.48, 24]} />
+          <meshStandardMaterial
+            color="#1e3a8a"
+            roughnessMap={leatherMaps.roughnessMap}
+            bumpMap={leatherMaps.bumpMap}
+            bumpScale={0.012}
+            roughness={0.58}
+            metalness={0.18}
+          />
         </mesh>
 
-        {/* Soft Pointlight around Guestbook */}
-        <pointLight position={[0, 0.3, 0]} intensity={1.5} distance={3} color="#00F0FF" />
+        <RoundedBox position={[-0.19, -0.025, 0]} args={[0.38, 0.024, 0.49]} radius={0.008} smoothness={4} castShadow>
+          <meshStandardMaterial
+            color="#1e3a8a"
+            roughnessMap={leatherMaps.roughnessMap}
+            bumpMap={leatherMaps.bumpMap}
+            bumpScale={0.012}
+            roughness={0.58}
+            metalness={0.18}
+          />
+        </RoundedBox>
+        <RoundedBox position={[0.19, -0.025, 0]} args={[0.38, 0.024, 0.49]} radius={0.008} smoothness={4} castShadow>
+          <meshStandardMaterial
+            color="#1e3a8a"
+            roughnessMap={leatherMaps.roughnessMap}
+            bumpMap={leatherMaps.bumpMap}
+            bumpScale={0.012}
+            roughness={0.58}
+            metalness={0.18}
+          />
+        </RoundedBox>
+
+        {/* 4 Brass Bookbinding Corner Guards */}
+        {[
+          [-0.365, -0.23],
+          [-0.365, 0.23],
+          [0.365, -0.23],
+          [0.365, 0.23],
+        ].map(([cx, cz], i) => (
+          <mesh key={`book-corner-${i}`} position={[cx, -0.024, cz]}>
+            <boxGeometry args={[0.035, 0.028, 0.035]} />
+            <meshStandardMaterial color="#d4af37" metalness={0.9} roughness={0.2} />
+          </mesh>
+        ))}
+
+        <mesh geometry={leftPageGeom} position={[0, 0.008, 0]}>
+          <meshStandardMaterial color="#e2e8f0" roughness={0.85} />
+        </mesh>
+        <mesh geometry={rightPageGeom} position={[0, 0.008, 0]}>
+          <meshStandardMaterial color="#e2e8f0" roughness={0.85} />
+        </mesh>
+
+        <mesh position={[-0.175, 0.036, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[0.31, 0.42]} />
+          <meshStandardMaterial map={leftPageTex} roughness={0.85} />
+        </mesh>
+        <mesh position={[0.175, 0.036, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[0.31, 0.42]} />
+          <meshStandardMaterial map={rightPageTex} roughness={0.85} />
+        </mesh>
+
+        <mesh position={[0.02, 0.004, 0.27]} rotation={[0.25, 0, 0]}>
+          <boxGeometry args={[0.018, 0.004, 0.14]} />
+          <meshStandardMaterial color="#38bdf8" roughness={0.5} />
+        </mesh>
+
+        <group ref={penGroupRef} position={[0.46, 0.11, 0.05]}>
+          <mesh geometry={penBodyGeom} castShadow>
+            <meshStandardMaterial
+              color="#cbd5e1"
+              metalness={0.9}
+              roughness={0.16}
+              emissive="#38bdf8"
+              emissiveIntensity={isBookHovered ? 0.35 : 0.08}
+            />
+          </mesh>
+          {/* Gold fountain nib collar & pocket clip */}
+          <mesh position={[0, 0.048, 0]}>
+            <cylinderGeometry args={[0.012, 0.012, 0.012, 16]} />
+            <meshStandardMaterial color="#d4af37" metalness={0.92} roughness={0.18} />
+          </mesh>
+          <mesh position={[0.014, 0.19, 0]}>
+            <boxGeometry args={[0.004, 0.08, 0.004]} />
+            <meshStandardMaterial color="#d4af37" metalness={0.92} roughness={0.18} />
+          </mesh>
+          <mesh position={[0, 0.25, 0]}>
+            <cylinderGeometry args={[0.013, 0.013, 0.025, 16]} />
+            <meshBasicMaterial color="#38bdf8" />
+          </mesh>
+        </group>
+
+        <pointLight
+          position={[0, 0.55, 0.2]}
+          intensity={isBookHovered ? 7.5 : 4.8}
+          distance={4.2}
+          decay={2}
+          color="#38bdf8"
+        />
       </group>
     </group>
   );
