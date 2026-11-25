@@ -32,9 +32,9 @@ export const HallParticleField: React.FC = () => {
     const arr = new Float32Array(count * 3);
     const colArr = new Float32Array(count * 3);
     const palette = [
-      new THREE.Color('#00F0FF'),
-      new THREE.Color('#38bdf8'),
-      new THREE.Color('#c084fc'),
+      new THREE.Color('#00F5FF'),
+      new THREE.Color('#38e8ff'),
+      new THREE.Color('#c864ff'),
     ];
     let seed = 20250409;
     const rand = () => {

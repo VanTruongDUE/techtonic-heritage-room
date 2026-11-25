@@ -375,11 +375,11 @@ const PortraitCard: React.FC<{
         <planeGeometry args={[innerW, photoH]} />
         <meshStandardMaterial
           map={photoTex ?? fallbackTex}
-          color="#c8d4e6"
+          color="#d8e4f5"
           emissive="#ffffff"
           emissiveMap={photoTex ?? fallbackTex}
-          emissiveIntensity={hovered ? 0.56 : 0.44}
-          roughness={0.96}
+          emissiveIntensity={hovered ? 0.66 : 0.54}
+          roughness={0.94}
           metalness={0}
         />
       </mesh>
@@ -388,11 +388,11 @@ const PortraitCard: React.FC<{
         <planeGeometry args={[innerW, labelH]} />
         <meshStandardMaterial
           map={labelTex}
-          color="#d2deee"
+          color="#dce8f8"
           emissive="#ffffff"
           emissiveMap={labelTex}
-          emissiveIntensity={hovered ? 0.56 : 0.45}
-          roughness={0.94}
+          emissiveIntensity={hovered ? 0.66 : 0.54}
+          roughness={0.92}
           metalness={0}
         />
       </mesh>
@@ -537,7 +537,7 @@ const DepartmentPortraitTree: React.FC<{
       {/* Architectural Stage Backdrop Bay + Neon Vertical Side Blades so each Dept Pops */}
       <mesh position={[0, 2.66, -0.045]}>
         <boxGeometry args={[config.bannerWidth + 0.36, 4.58, 0.04]} />
-        <meshStandardMaterial color="#0b1322" roughness={0.62} metalness={0.35} />
+        <meshStandardMaterial color="#060b16" roughness={0.56} metalness={0.42} />
       </mesh>
       {[-(config.bannerWidth + 0.36) / 2, (config.bannerWidth + 0.36) / 2].map((bx) => (
         <mesh key={`stage-blade-${bx}`} position={[bx, 2.66, -0.015]}>

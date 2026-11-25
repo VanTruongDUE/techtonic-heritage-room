@@ -13,10 +13,10 @@ import {
 import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
 import type { ExhibitItem } from '../../../types/heritage';
 
-const CHAMPAGNE_GOLD = '#e4bc5c';
-const DEEP_GOLD = '#c49838';
-const OBSIDIAN = '#0c1322';
-const DARK_MARBLE = '#162238';
+const CHAMPAGNE_GOLD = '#f0ca6a';
+const DEEP_GOLD = '#c99b38';
+const OBSIDIAN = '#070c18';
+const DARK_MARBLE = '#0d1629';
 
 const PEDESTAL_SLOTS: Array<{
   position: [number, number, number];

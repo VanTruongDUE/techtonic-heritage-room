@@ -46,11 +46,11 @@ export function createFloorMaps(): MaterialMapSet {
   const bCtx = bCanvas.getContext('2d');
 
   if (dCtx && rCtx && bCtx) {
-    dCtx.fillStyle = '#0c1320';
+    dCtx.fillStyle = '#070c17';
     dCtx.fillRect(0, 0, size, size);
 
-    // Honed obsidian terrazzo sheen (~0.18 - 0.30 roughness) to reflect neon pools cleanly
-    rCtx.fillStyle = '#363636';
+    // Sleek honed dark-tech obsidian terrazzo (~0.15 - 0.25 roughness) to mirror neon strips vividly
+    rCtx.fillStyle = '#2c2c2c';
     rCtx.fillRect(0, 0, size, size);
 
     bCtx.fillStyle = '#8a8a8a';
@@ -451,18 +451,18 @@ export function createPedestalPlaqueTexture(
 
   if (ctx) {
     const grad = ctx.createLinearGradient(0, 0, 768, 224);
-    grad.addColorStop(0, '#141d2e');
-    grad.addColorStop(0.5, '#1e2c45');
-    grad.addColorStop(1, '#121b2b');
+    grad.addColorStop(0, '#09101f');
+    grad.addColorStop(0.5, '#111d34');
+    grad.addColorStop(1, '#080e1c');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 768, 224);
 
-    // Double metallic border
-    ctx.strokeStyle = 'rgba(186, 230, 253, 0.55)';
+    // Double crisp neon-cyan & chrome metallic border
+    ctx.strokeStyle = 'rgba(0, 245, 255, 0.72)';
     ctx.lineWidth = 4;
     ctx.strokeRect(10, 10, 748, 204);
 
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+    ctx.strokeStyle = 'rgba(184, 77, 255, 0.38)';
     ctx.lineWidth = 1.5;
     ctx.strokeRect(18, 18, 732, 188);
 

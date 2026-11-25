@@ -135,7 +135,7 @@ export const MiniMap: React.FC = () => {
         </div>
       </div>
 
-      <div className="rounded-xl bg-[#070d18]/90 border border-white/10 p-1.5 overflow-hidden">
+      <div className="rounded-xl bg-[#040812]/95 border border-tech-cyan/20 p-1.5 overflow-hidden">
         <svg
           viewBox={`0 0 ${MAP_W} ${MAP_H}`}
           className="w-full h-auto block"
@@ -144,8 +144,8 @@ export const MiniMap: React.FC = () => {
         >
           <defs>
             <radialGradient id="fovConeGrad" cx="50%" cy="100%" r="100%">
-              <stop offset="0%" stopColor="#00F0FF" stopOpacity="0.42" />
-              <stop offset="100%" stopColor="#00F0FF" stopOpacity="0.02" />
+              <stop offset="0%" stopColor="#00F5FF" stopOpacity="0.48" />
+              <stop offset="100%" stopColor="#00F5FF" stopOpacity="0.02" />
             </radialGradient>
           </defs>
 
@@ -156,9 +156,9 @@ export const MiniMap: React.FC = () => {
             width={hallW}
             height={hallH}
             rx={5}
-            fill="#0d1729"
-            stroke="#2a4368"
-            strokeWidth={1.2}
+            fill="#070e1c"
+            stroke="#1e3b64"
+            strokeWidth={1.25}
           />
 
           {/* Entrance Tunnel */}
@@ -168,8 +168,8 @@ export const MiniMap: React.FC = () => {
             width={tunnelW}
             height={tunnelH}
             rx={3}
-            fill="#0b1424"
-            stroke="#263c5e"
+            fill="#060c18"
+            stroke="#1a3459"
             strokeWidth={1.1}
           />
 
@@ -179,8 +179,8 @@ export const MiniMap: React.FC = () => {
             y1={toSvgY(-18.6)}
             x2={toSvgX(7.5)}
             y2={toSvgY(-18.6)}
-            stroke="#00F0FF"
-            strokeWidth={2.2}
+            stroke="#00F5FF"
+            strokeWidth={2.5}
             strokeLinecap="round"
           />
 

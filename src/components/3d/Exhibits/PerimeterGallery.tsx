@@ -46,12 +46,12 @@ const MuseumWallBoard: React.FC<MuseumWallBoardProps> = ({
     <group position={position} rotation={rotation}>
       <RoundedBox position={[0, 0, -0.05]} args={frameArgs} radius={0.04} smoothness={4} castShadow>
         <meshStandardMaterial
-          color="#334155"
+          color="#121c2e"
           roughnessMap={metalMaps.roughnessMap}
           bumpMap={metalMaps.bumpMap}
           bumpScale={0.004}
-          metalness={0.86}
-          roughness={0.22}
+          metalness={0.88}
+          roughness={0.2}
         />
       </RoundedBox>
       {/* 4 Brushed Titanium Corner Standoff Bolts */}
@@ -70,15 +70,15 @@ const MuseumWallBoard: React.FC<MuseumWallBoardProps> = ({
       <group position={[0, fh / 2 + 0.06, 0.24]}>
         <mesh position={[0, 0, -0.14]}>
           <boxGeometry args={[0.06, 0.03, 0.28]} />
-          <meshStandardMaterial color="#475569" metalness={0.85} roughness={0.22} />
+          <meshStandardMaterial color="#334155" metalness={0.86} roughness={0.22} />
         </mesh>
         <mesh rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[0.026, 0.026, Math.min(fw * 0.45, 2.8), 16]} />
-          <meshStandardMaterial color="#64748b" metalness={0.88} roughness={0.2} />
+          <meshStandardMaterial color="#475569" metalness={0.88} roughness={0.2} />
         </mesh>
         <mesh position={[0, -0.024, 0]}>
-          <boxGeometry args={[Math.min(fw * 0.42, 2.65), 0.008, 0.024]} />
-          <meshBasicMaterial color="#00F0FF" toneMapped={false} />
+          <boxGeometry args={[Math.min(fw * 0.42, 2.65), 0.01, 0.028]} />
+          <meshBasicMaterial color="#00F5FF" toneMapped={false} />
         </mesh>
       </group>
       <mesh
@@ -98,8 +98,8 @@ const MuseumWallBoard: React.FC<MuseumWallBoardProps> = ({
           map={texture}
           emissive="#ffffff"
           emissiveMap={texture}
-          emissiveIntensity={0.34}
-          roughness={0.44}
+          emissiveIntensity={0.48}
+          roughness={0.42}
           metalness={0.04}
         />
       </mesh>
@@ -158,10 +158,10 @@ export const PerimeterGallery: React.FC = () => {
   const timelineTexture = useMemo(() => {
     const { canvas, ctx } = createHiResCanvas(2048, 1024, 1.5);
     if (ctx) {
-      ctx.fillStyle = '#0c1322';
+      ctx.fillStyle = '#070d1b';
       ctx.fillRect(0, 0, 2048, 1024);
 
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.32)';
+      ctx.strokeStyle = 'rgba(0, 245, 255, 0.5)';
       ctx.lineWidth = 4;
       ctx.strokeRect(24, 24, 2000, 976);
 
@@ -240,7 +240,7 @@ export const PerimeterGallery: React.FC = () => {
   const coreValuesTexture = useMemo(() => {
     const { canvas, ctx } = createHiResCanvas(1680, 1024, 1.75);
     if (ctx) {
-      ctx.fillStyle = '#0c1322';
+      ctx.fillStyle = '#070d1b';
       ctx.fillRect(0, 0, 1680, 1024);
 
       ctx.strokeStyle = 'rgba(192, 132, 252, 0.35)';
@@ -323,10 +323,10 @@ export const PerimeterGallery: React.FC = () => {
   const shirtPlaqueTexture = useMemo(() => {
     const { canvas, ctx } = createHiResCanvas(1440, 760, 2);
     if (ctx) {
-      ctx.fillStyle = '#0c1322';
+      ctx.fillStyle = '#070d1b';
       ctx.fillRect(0, 0, 1440, 760);
 
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.32)';
+      ctx.strokeStyle = 'rgba(0, 245, 255, 0.5)';
       ctx.lineWidth = 4;
       ctx.strokeRect(20, 20, 1400, 720);
 
@@ -389,10 +389,10 @@ export const PerimeterGallery: React.FC = () => {
   const academicTexture = useMemo(() => {
     const { canvas, ctx } = createHiResCanvas(1440, 800, 2);
     if (ctx) {
-      ctx.fillStyle = '#0c1322';
+      ctx.fillStyle = '#070d1b';
       ctx.fillRect(0, 0, 1440, 800);
 
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.32)';
+      ctx.strokeStyle = 'rgba(0, 245, 255, 0.5)';
       ctx.lineWidth = 4;
       ctx.strokeRect(20, 20, 1400, 760);
 
@@ -442,10 +442,10 @@ export const PerimeterGallery: React.FC = () => {
   const partnersContactTexture = useMemo(() => {
     const { canvas, ctx } = createHiResCanvas(1440, 760, 2);
     if (ctx) {
-      ctx.fillStyle = '#0c1322';
+      ctx.fillStyle = '#070d1b';
       ctx.fillRect(0, 0, 1440, 760);
 
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.32)';
+      ctx.strokeStyle = 'rgba(0, 245, 255, 0.5)';
       ctx.lineWidth = 4;
       ctx.strokeRect(20, 20, 1400, 720);
 
@@ -537,10 +537,10 @@ export const PerimeterGallery: React.FC = () => {
   const testimonialsTexture = useMemo(() => {
     const { canvas, ctx } = createHiResCanvas(1440, 760, 2);
     if (ctx) {
-      ctx.fillStyle = '#0c1322';
+      ctx.fillStyle = '#070d1b';
       ctx.fillRect(0, 0, 1440, 760);
 
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.32)';
+      ctx.strokeStyle = 'rgba(0, 245, 255, 0.5)';
       ctx.lineWidth = 4;
       ctx.strokeRect(20, 20, 1400, 720);
 

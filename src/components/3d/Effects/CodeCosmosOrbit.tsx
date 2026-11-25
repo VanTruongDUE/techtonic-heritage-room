@@ -80,13 +80,13 @@ const ORBIT_RINGS: OrbitRingDef[] = [
 function createBadgeSpriteTexture(item: TechBadgeDef): THREE.CanvasTexture {
   const { canvas, ctx } = createHiResCanvas(256, 86, 2);
   if (ctx) {
-    ctx.fillStyle = 'rgba(8, 15, 30, 0.94)';
+    ctx.fillStyle = 'rgba(4, 9, 20, 0.96)';
     ctx.beginPath();
     ctx.roundRect(6, 6, 244, 74, 37);
     ctx.fill();
 
     ctx.strokeStyle = item.color;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 3.2;
     ctx.beginPath();
     ctx.roundRect(6, 6, 244, 74, 37);
     ctx.stroke();

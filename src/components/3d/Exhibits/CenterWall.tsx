@@ -83,17 +83,17 @@ function buildPlayConsoleTexture(isPlaying: boolean, isHovered: boolean): THREE.
     // Sleek dark-obsidian glass pill body (exact rounded capsule silhouette, zero boxy overflow)
     const bgGrad = ctx.createLinearGradient(0, 0, 1280, 148);
     if (isPlaying) {
-      bgGrad.addColorStop(0, '#180d22');
-      bgGrad.addColorStop(0.5, '#251133');
-      bgGrad.addColorStop(1, '#180d22');
+      bgGrad.addColorStop(0, '#160920');
+      bgGrad.addColorStop(0.5, '#240d34');
+      bgGrad.addColorStop(1, '#160920');
     } else if (isHovered) {
-      bgGrad.addColorStop(0, '#0a1f36');
-      bgGrad.addColorStop(0.5, '#0f2f4f');
-      bgGrad.addColorStop(1, '#0a1f36');
+      bgGrad.addColorStop(0, '#061a30');
+      bgGrad.addColorStop(0.5, '#0b2c4c');
+      bgGrad.addColorStop(1, '#061a30');
     } else {
-      bgGrad.addColorStop(0, '#081223');
-      bgGrad.addColorStop(0.5, '#0d1b31');
-      bgGrad.addColorStop(1, '#081223');
+      bgGrad.addColorStop(0, '#040a16');
+      bgGrad.addColorStop(0.5, '#081529');
+      bgGrad.addColorStop(1, '#040a16');
     }
 
     ctx.fillStyle = bgGrad;
@@ -103,26 +103,26 @@ function buildPlayConsoleTexture(isPlaying: boolean, isHovered: boolean): THREE.
 
     // Subtle top specular glass sheen
     const sheen = ctx.createLinearGradient(0, 10, 0, 74);
-    sheen.addColorStop(0, 'rgba(255, 255, 255, 0.14)');
+    sheen.addColorStop(0, 'rgba(255, 255, 255, 0.16)');
     sheen.addColorStop(1, 'rgba(255, 255, 255, 0)');
     ctx.fillStyle = sheen;
     ctx.beginPath();
     ctx.roundRect(14, 12, 1252, 62, 60);
     ctx.fill();
 
-    // Hair-thin silky luminous rim border
+    // Hair-thin silky luminous neon rim border
     const rimGrad = ctx.createLinearGradient(0, 0, 1280, 0);
     if (isPlaying) {
-      rimGrad.addColorStop(0, 'rgba(244, 114, 182, 0.55)');
+      rimGrad.addColorStop(0, 'rgba(244, 114, 182, 0.65)');
       rimGrad.addColorStop(0.5, '#fb7185');
-      rimGrad.addColorStop(1, 'rgba(244, 114, 182, 0.55)');
+      rimGrad.addColorStop(1, 'rgba(244, 114, 182, 0.65)');
     } else {
-      rimGrad.addColorStop(0, 'rgba(56, 189, 248, 0.5)');
-      rimGrad.addColorStop(0.5, isHovered ? '#67f9ff' : '#00F0FF');
-      rimGrad.addColorStop(1, 'rgba(56, 189, 248, 0.5)');
+      rimGrad.addColorStop(0, 'rgba(0, 245, 255, 0.65)');
+      rimGrad.addColorStop(0.5, isHovered ? '#80fbff' : '#00F5FF');
+      rimGrad.addColorStop(1, 'rgba(184, 77, 255, 0.65)');
     }
     ctx.strokeStyle = rimGrad;
-    ctx.lineWidth = isHovered ? 4 : 2.8;
+    ctx.lineWidth = isHovered ? 4.4 : 3.2;
     ctx.beginPath();
     ctx.roundRect(10, 10, 1260, 128, 64);
     ctx.stroke();
@@ -393,18 +393,18 @@ export const CenterWall: React.FC = () => {
     if (ctx) {
       ctx.clearRect(0, 0, 2048, 1024);
 
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 52px Inter, sans-serif';
+      ctx.fillStyle = '#00F5FF';
+      ctx.font = 'bold 54px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.letterSpacing = '8px';
       ctx.fillText('DREAM IT - CODE IT', 1024, 298);
 
-      ctx.fillStyle = '#f1f5f9';
+      ctx.fillStyle = '#f8fafc';
       ctx.font = '600 30px Inter, sans-serif';
       ctx.letterSpacing = '2px';
       ctx.fillText('KHƠI NGUỒN ĐAM MÊ • KIẾN TẠO TƯƠNG LAI CÔNG NGHỆ', 1024, 348);
 
-      ctx.fillStyle = '#93c5fd';
+      ctx.fillStyle = '#7dd3fc';
       ctx.font = '600 20px "JetBrains Mono", monospace';
       ctx.fillText(
         'HỘI SINH VIÊN TRƯỜNG ĐẠI HỌC KINH TẾ - ĐẠI HỌC ĐÀ NẴNG  •  RA MẮT 09/04/2025',
@@ -414,39 +414,43 @@ export const CenterWall: React.FC = () => {
 
       ctx.textAlign = 'left';
 
-      // Left box: TẦM NHÌN
-      ctx.fillStyle = 'rgba(19, 29, 50, 0.85)';
+      // Left box: TẦM NHÌN (Dark-tech obsidian glass + electric cyan neon trim)
+      ctx.fillStyle = 'rgba(7, 13, 27, 0.92)';
       ctx.fillRect(140, 424, 840, 250);
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(0, 245, 255, 0.58)';
+      ctx.lineWidth = 2.5;
       ctx.strokeRect(140, 424, 840, 250);
+      ctx.fillStyle = '#00F5FF';
+      ctx.fillRect(140, 424, 840, 4);
 
-      ctx.fillStyle = '#38bdf8';
+      ctx.fillStyle = '#00F5FF';
       ctx.font = '700 22px "JetBrains Mono", monospace';
-      ctx.fillText('TẦM NHÌN (VISION)', 174, 466);
+      ctx.fillText('TẦM NHÌN (VISION)', 174, 468);
 
-      ctx.fillStyle = '#e2e8f0';
+      ctx.fillStyle = '#eef6ff';
       ctx.font = '400 23px Inter, sans-serif';
-      drawWrappedText(ctx, CLUB_PROFILE.vision, 174, 512, 772, 34);
+      drawWrappedText(ctx, CLUB_PROFILE.vision, 174, 514, 772, 34);
 
-      // Right box: SỨ MỆNH
-      ctx.fillStyle = 'rgba(19, 29, 50, 0.85)';
+      // Right box: SỨ MỆNH (Dark-tech obsidian glass + electric cyber-violet trim)
+      ctx.fillStyle = 'rgba(7, 13, 27, 0.92)';
       ctx.fillRect(1068, 424, 840, 250);
-      ctx.strokeStyle = 'rgba(96, 165, 250, 0.4)';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(184, 77, 255, 0.58)';
+      ctx.lineWidth = 2.5;
       ctx.strokeRect(1068, 424, 840, 250);
+      ctx.fillStyle = '#b84dff';
+      ctx.fillRect(1068, 424, 840, 4);
 
-      ctx.fillStyle = '#60a5fa';
+      ctx.fillStyle = '#d896ff';
       ctx.font = '700 22px "JetBrains Mono", monospace';
-      ctx.fillText('SỨ MỆNH (OUR MISSION)', 1102, 466);
+      ctx.fillText('SỨ MỆNH (OUR MISSION)', 1102, 468);
 
-      ctx.fillStyle = '#e2e8f0';
+      ctx.fillStyle = '#eef6ff';
       ctx.font = '400 21px Inter, sans-serif';
-      drawWrappedText(ctx, CLUB_PROFILE.mission, 1102, 508, 772, 31);
+      drawWrappedText(ctx, CLUB_PROFILE.mission, 1102, 510, 772, 31);
 
       // Bottom keywords bar
       ctx.textAlign = 'center';
-      ctx.fillStyle = '#7dd3fc';
+      ctx.fillStyle = '#67f9ff';
       ctx.font = '600 22px "JetBrains Mono", monospace';
       ctx.fillText(
         'STUDY HARD - PLAY HARDER   •   HỌC THUẬT  •  KẾT NỐI  •  PHÁT TRIỂN  •  TRẢI NGHIỆM  •  CHÂN THÀNH',
@@ -655,20 +659,20 @@ export const CenterWall: React.FC = () => {
 
       {/* Top & Bottom Neon Bezel Bars (shift to royal cinema glow while TV is on) */}
       <mesh position={[0, 6.08, 0.04]}>
-        <boxGeometry args={[14.4, 0.06, 0.08]} />
+        <boxGeometry args={[14.4, 0.064, 0.085]} />
         <meshStandardMaterial
-          color={isCenterWallCinemaActive ? '#fbbf24' : '#00F0FF'}
-          emissive={isCenterWallCinemaActive ? '#f59e0b' : '#00F0FF'}
-          emissiveIntensity={1.6}
+          color={isCenterWallCinemaActive ? '#fbbf24' : '#00F5FF'}
+          emissive={isCenterWallCinemaActive ? '#f59e0b' : '#00F5FF'}
+          emissiveIntensity={1.9}
           toneMapped={false}
         />
       </mesh>
       <mesh position={[0, 0.62, 0.04]}>
-        <boxGeometry args={[14.4, 0.06, 0.08]} />
+        <boxGeometry args={[14.4, 0.064, 0.085]} />
         <meshStandardMaterial
-          color={isCenterWallCinemaActive ? '#00F0FF' : '#38bdf8'}
-          emissive={isCenterWallCinemaActive ? '#00F0FF' : '#0ea5e9'}
-          emissiveIntensity={1.25}
+          color={isCenterWallCinemaActive ? '#00F5FF' : '#00e5ff'}
+          emissive={isCenterWallCinemaActive ? '#00F5FF' : '#00e5ff'}
+          emissiveIntensity={1.55}
           toneMapped={false}
         />
       </mesh>
@@ -797,7 +801,7 @@ export const CenterWall: React.FC = () => {
               transparent
               emissive="#ffffff"
               emissiveMap={textTexture}
-              emissiveIntensity={0.42}
+              emissiveIntensity={0.58}
               roughness={0.42}
               metalness={0.05}
             />

@@ -6,15 +6,15 @@ import { soundFx } from '../../../hooks/useAudio';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 
 const HALL_DOWNLIGHTS: Array<{ pos: [number, number, number]; color: string; baseIntensity: number }> = [
-  { pos: [-10, 6.15, -13], color: '#00F0FF', baseIntensity: 4.8 },
-  { pos: [0, 6.15, -13], color: '#7dd3fc', baseIntensity: 4.4 },
-  { pos: [10, 6.15, -13], color: '#a855f7', baseIntensity: 4.8 },
-  { pos: [-10, 6.15, -5], color: '#a855f7', baseIntensity: 4.6 },
-  { pos: [0, 6.15, -5], color: '#fde68a', baseIntensity: 5.2 },
-  { pos: [10, 6.15, -5], color: '#00F0FF', baseIntensity: 4.6 },
-  { pos: [-10, 6.15, 3], color: '#38bdf8', baseIntensity: 4.4 },
-  { pos: [0, 6.15, 3], color: '#818cf8', baseIntensity: 4.2 },
-  { pos: [10, 6.15, 3], color: '#00F0FF', baseIntensity: 4.4 },
+  { pos: [-10, 6.15, -13], color: '#00F5FF', baseIntensity: 6.2 },
+  { pos: [0, 6.15, -13], color: '#38e8ff', baseIntensity: 5.8 },
+  { pos: [10, 6.15, -13], color: '#b84dff', baseIntensity: 6.2 },
+  { pos: [-10, 6.15, -5], color: '#b84dff', baseIntensity: 6.0 },
+  { pos: [0, 6.15, -5], color: '#ffe394', baseIntensity: 6.8 },
+  { pos: [10, 6.15, -5], color: '#00F5FF', baseIntensity: 6.0 },
+  { pos: [-10, 6.15, 3], color: '#00e5ff', baseIntensity: 5.8 },
+  { pos: [0, 6.15, 3], color: '#a855f7', baseIntensity: 5.6 },
+  { pos: [10, 6.15, 3], color: '#00F5FF', baseIntensity: 5.8 },
 ];
 
 const TUNNEL_STATIONS: Array<{
@@ -23,10 +23,10 @@ const TUNNEL_STATIONS: Array<{
   maxSpotIntensity: number;
   maxFillIntensity: number;
 }> = [
-  { z: 24.5, color: '#00F0FF', maxSpotIntensity: 56, maxFillIntensity: 18 },
-  { z: 20.5, color: '#a855f7', maxSpotIntensity: 58, maxFillIntensity: 19 },
-  { z: 16.5, color: '#00F0FF', maxSpotIntensity: 62, maxFillIntensity: 20 },
-  { z: 12.5, color: '#c084fc', maxSpotIntensity: 66, maxFillIntensity: 22 },
+  { z: 24.5, color: '#00F5FF', maxSpotIntensity: 62, maxFillIntensity: 20 },
+  { z: 20.5, color: '#b84dff', maxSpotIntensity: 64, maxFillIntensity: 21 },
+  { z: 16.5, color: '#00F5FF', maxSpotIntensity: 68, maxFillIntensity: 22 },
+  { z: 12.5, color: '#c864ff', maxSpotIntensity: 72, maxFillIntensity: 24 },
 ];
 
 export const StudioLights: React.FC = () => {
@@ -168,45 +168,45 @@ export const StudioLights: React.FC = () => {
     });
 
     if (centerWallSpotRef.current) {
-      centerWallSpotRef.current.intensity = isCinemaActive ? 6 : 62 * hr;
+      centerWallSpotRef.current.intensity = isCinemaActive ? 6 : 72 * hr;
     }
     if (centerCyanWashRef.current) {
       const wave = 1 + Math.sin(t * 1.15) * 0.16;
-      centerCyanWashRef.current.intensity = (isCinemaActive ? 8 : 36 * wave) * hr;
+      centerCyanWashRef.current.intensity = (isCinemaActive ? 8 : 44 * wave) * hr;
     }
     if (centerVioletWashRef.current) {
       const wave = 1 + Math.cos(t * 1.05 + 0.7) * 0.16;
-      centerVioletWashRef.current.intensity = (isCinemaActive ? 8 : 34 * wave) * hr;
+      centerVioletWashRef.current.intensity = (isCinemaActive ? 8 : 42 * wave) * hr;
     }
     if (islandGoldSpotRef.current) {
-      islandGoldSpotRef.current.intensity = (76 + Math.sin(t * 0.9) * 5) * hr;
+      islandGoldSpotRef.current.intensity = (88 + Math.sin(t * 0.9) * 5.5) * hr;
     }
     if (islandRimSpotRef.current) {
-      islandRimSpotRef.current.intensity = (42 + Math.cos(t * 1.1) * 4) * hr;
+      islandRimSpotRef.current.intensity = (50 + Math.cos(t * 1.1) * 4.5) * hr;
     }
     if (islandCrownGlowRef.current) {
-      islandCrownGlowRef.current.intensity = (16 + Math.sin(t * 1.35) * 3.2) * hr;
+      islandCrownGlowRef.current.intensity = (19 + Math.sin(t * 1.35) * 3.5) * hr;
     }
     if (islandCyanPulseRef.current) {
-      islandCyanPulseRef.current.intensity = (12.5 + Math.sin(t * 1.65 + 0.4) * 3.8) * hr;
+      islandCyanPulseRef.current.intensity = (16 + Math.sin(t * 1.65 + 0.4) * 4.2) * hr;
     }
     if (screenGlowRef.current) {
-      screenGlowRef.current.intensity = (14.5 + Math.sin(t * 1.7 + 0.5) * 3.5) * hr;
+      screenGlowRef.current.intensity = (17 + Math.sin(t * 1.7 + 0.5) * 3.8) * hr;
     }
     if (shirtRimRef.current) {
-      shirtRimRef.current.intensity = (13.5 + Math.sin(t * 1.45 + 2.0) * 3.4) * hr;
+      shirtRimRef.current.intensity = (16 + Math.sin(t * 1.45 + 2.0) * 3.6) * hr;
     }
   });
 
   return (
     <group>
       {/* Crisp Overhead Neon & Royal Gold Gallery Reflection Rig (no harsh wall-level slabs) */}
-      <Environment resolution={256} frames={1} environmentIntensity={0.78}>
+      <Environment resolution={256} frames={1} environmentIntensity={0.94}>
         {/* Primary overhead cool-cyan skylight reflection */}
         <Lightformer
           form="circle"
-          intensity={1.6}
-          color="#bae6fd"
+          intensity={1.9}
+          color="#ccf9ff"
           position={[0, 11, -5]}
           rotation={[Math.PI / 2, 0, 0]}
           scale={[15, 15, 1]}
@@ -214,48 +214,48 @@ export const StudioLights: React.FC = () => {
         {/* Royal gold halo reflection directly over Central Island */}
         <Lightformer
           form="ring"
-          intensity={2.6}
-          color="#ffe49e"
+          intensity={3.1}
+          color="#ffe6a0"
           position={[0, 8.8, -5]}
           rotation={[Math.PI / 2, 0, 0]}
           scale={[5.8, 5.8, 1]}
         />
-        {/* Vivid Cyan & Violet Overhead Neon Reflection Strips (give metals & glass authentic neon sheen!) */}
+        {/* Vivid Electric Cyan & Cyber-Violet Overhead Neon Reflection Strips */}
         <Lightformer
           form="rect"
-          intensity={2.4}
-          color="#00F0FF"
+          intensity={3.0}
+          color="#00F5FF"
           position={[0, 9.2, -12]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[22, 0.7, 1]}
+          scale={[22, 0.72, 1]}
         />
         <Lightformer
           form="rect"
-          intensity={2.2}
-          color="#a855f7"
+          intensity={2.8}
+          color="#b84dff"
           position={[0, 9.2, -7]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[22, 0.7, 1]}
+          scale={[22, 0.72, 1]}
         />
         <Lightformer
           form="rect"
-          intensity={2.2}
-          color="#00F0FF"
+          intensity={2.8}
+          color="#00F5FF"
           position={[0, 9.2, -2]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[22, 0.7, 1]}
+          scale={[22, 0.72, 1]}
         />
         <Lightformer
           form="rect"
-          intensity={2.0}
-          color="#a855f7"
+          intensity={2.6}
+          color="#b84dff"
           position={[0, 9.2, 3]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[22, 0.7, 1]}
+          scale={[22, 0.72, 1]}
         />
         <Lightformer
           form="circle"
-          intensity={1.2}
+          intensity={1.5}
           color="#7dd3fc"
           position={[0, 10, 16]}
           rotation={[Math.PI / 2, 0, 0]}
@@ -263,8 +263,8 @@ export const StudioLights: React.FC = () => {
         />
         <Lightformer
           form="rect"
-          intensity={0.22}
-          color="#060c1a"
+          intensity={0.14}
+          color="#030712"
           position={[0, -5, -4]}
           rotation={[-Math.PI / 2, 0, 0]}
           scale={[34, 34, 1]}
@@ -286,13 +286,13 @@ export const StudioLights: React.FC = () => {
         <primitive key={`tunnel-target-${st.z}`} object={tunnelTargets.current[idx]} position={[0, 0.2, st.z]} />
       ))}
 
-      {/* 1. Smooth Velvety Architectural Ambient Bounce so transitions between lit zones stay silky */}
-      <hemisphereLight color="#60a5fa" groundColor="#071022" intensity={0.34} />
-      <ambientLight color="#0c172b" intensity={0.14} />
+      {/* 1. Bright Luminous Interior Fill balanced with Dark-Tech Obsidian Ground Bounce */}
+      <hemisphereLight color="#7ce3ff" groundColor="#050a16" intensity={0.44} />
+      <ambientLight color="#0a1529" intensity={0.18} />
       <directionalLight
         position={[4, 14, 8]}
-        intensity={0.24}
-        color="#e2eeff"
+        intensity={0.32}
+        color="#e8f5ff"
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0005}
@@ -382,46 +382,46 @@ export const StudioLights: React.FC = () => {
         ref={centerCyanWashRef}
         position={[-7.2, 5.8, -11.8]}
         target={centerWallTarget.current}
-        intensity={32}
-        distance={20}
-        decay={1.65}
-        angle={0.76}
+        intensity={40}
+        distance={21}
+        decay={1.6}
+        angle={0.78}
         penumbra={0.88}
-        color="#00F0FF"
+        color="#00F5FF"
       />
       <spotLight
         ref={centerVioletWashRef}
         position={[7.2, 5.8, -11.8]}
         target={centerWallTarget.current}
-        intensity={30}
-        distance={20}
-        decay={1.65}
-        angle={0.76}
+        intensity={38}
+        distance={21}
+        decay={1.6}
+        angle={0.78}
         penumbra={0.88}
-        color="#a855f7"
+        color="#b84dff"
       />
       <spotLight
         position={[11.75, 5.8, -12.4]}
         target={valuesTarget.current}
-        intensity={44}
-        distance={18}
-        decay={1.7}
-        angle={0.76}
+        intensity={54}
+        distance={19}
+        decay={1.65}
+        angle={0.78}
         penumbra={0.86}
-        color="#c084fc"
+        color="#c864ff"
       />
 
-      {/* 5. Central Sovereign Island 360°: Silky Champagne-Gold Key + Soft Sky Counter-Rim */}
+      {/* 5. Central Sovereign Island 360°: Silky Champagne-Gold Key + Electric Cyan Counter-Rim */}
       <spotLight
         ref={islandGoldSpotRef}
         position={[0, 6.25, -4.4]}
         target={centralIslandTarget.current}
-        intensity={74}
+        intensity={86}
         distance={18}
-        decay={1.55}
+        decay={1.5}
         angle={0.78}
         penumbra={0.84}
-        color="#ffe6ad"
+        color="#ffe8b0"
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.00035}
@@ -431,40 +431,40 @@ export const StudioLights: React.FC = () => {
         ref={islandRimSpotRef}
         position={[-3.4, 5.85, -8.6]}
         target={centralIslandTarget.current}
-        intensity={40}
+        intensity={48}
         distance={17}
-        decay={1.65}
-        angle={0.72}
+        decay={1.6}
+        angle={0.74}
         penumbra={0.86}
-        color="#93c5fd"
+        color="#38e8ff"
       />
       <pointLight
         ref={islandCrownGlowRef}
         position={[0, 2.55, -5]}
-        intensity={15}
-        distance={11}
+        intensity={18}
+        distance={11.5}
         decay={2}
         color="#fbbf24"
       />
       <pointLight
         ref={islandCyanPulseRef}
         position={[0, 1.05, -5]}
-        intensity={11.5}
-        distance={10.5}
+        intensity={15}
+        distance={11}
         decay={2}
-        color="#00F0FF"
+        color="#00F5FF"
       />
 
-      {/* 6. Left Wall Exhibits: Silky High-Penumbra Cyan (Timeline) + Soft Violet-Magenta (Core Values) */}
+      {/* 6. Left Wall Exhibits: Silky High-Penumbra Electric Cyan (Timeline) + Cyber-Violet (Core Values) */}
       <spotLight
         position={[-9.5, 5.9, -5.9]}
         target={timelineTarget.current}
-        intensity={48}
-        distance={18}
-        decay={1.65}
-        angle={0.78}
+        intensity={58}
+        distance={19}
+        decay={1.6}
+        angle={0.8}
         penumbra={0.86}
-        color="#38bdf8"
+        color="#00e5ff"
         castShadow
         shadow-bias={-0.0004}
         shadow-normalBias={0.02}
@@ -472,24 +472,24 @@ export const StudioLights: React.FC = () => {
       <spotLight
         position={[-9.5, 5.9, 4.1]}
         target={activitiesTarget.current}
-        intensity={46}
-        distance={18}
-        decay={1.65}
-        angle={0.78}
+        intensity={56}
+        distance={19}
+        decay={1.6}
+        angle={0.8}
         penumbra={0.88}
-        color="#c084fc"
+        color="#c864ff"
       />
 
-      {/* 7. Right Wall Exhibits: Boutique Neutral-Cool Key (Club Shirt) + Cobalt-Sky Academic Washes */}
+      {/* 7. Right Wall Exhibits: Bright Boutique Studio Key (Club Shirt) + Neon Cyan-Azure Academic Washes */}
       <spotLight
         position={[9.2, 6.0, -9.2]}
         target={shirtTarget.current}
-        intensity={50}
-        distance={17}
-        decay={1.65}
-        angle={0.68}
+        intensity={60}
+        distance={18}
+        decay={1.6}
+        angle={0.7}
         penumbra={0.82}
-        color="#eef8ff"
+        color="#f2faff"
         castShadow
         shadow-bias={-0.0004}
         shadow-normalBias={0.02}
@@ -497,52 +497,52 @@ export const StudioLights: React.FC = () => {
       <pointLight
         ref={shirtRimRef}
         position={[14.8, 3.2, -10.4]}
-        intensity={12.5}
-        distance={9.0}
+        intensity={16}
+        distance={9.5}
         decay={2}
-        color="#00F0FF"
+        color="#00F5FF"
       />
-      <pointLight position={[14.0, 3.6, -4.2]} intensity={16} distance={11} decay={2} color="#38bdf8" />
-      <pointLight position={[14.0, 3.6, 3.8]} intensity={16} distance={11} decay={2} color="#60a5fa" />
+      <pointLight position={[14.0, 3.6, -4.2]} intensity={20} distance={11.5} decay={2} color="#00e5ff" />
+      <pointLight position={[14.0, 3.6, 3.8]} intensity={20} distance={11.5} decay={2} color="#38bdf8" />
 
-      {/* 8. Interactive Corner (Left Wing): Smooth Cyan Wash over Dynamic Events LED & Guestbook */}
+      {/* 8. Interactive Corner (Left Wing): Vivid Electric Cyan Wash over Dynamic Events LED & Guestbook */}
       <spotLight
         position={[-11.75, 5.9, -12.2]}
         target={interactiveTarget.current}
-        intensity={40}
-        distance={17}
-        decay={1.7}
-        angle={0.76}
+        intensity={50}
+        distance={18}
+        decay={1.65}
+        angle={0.78}
         penumbra={0.86}
-        color="#38bdf8"
+        color="#00e5ff"
       />
       <pointLight
         ref={screenGlowRef}
         position={[-11.75, 3.2, -14.6]}
-        intensity={13.5}
-        distance={10.5}
+        intensity={16.5}
+        distance={11}
         decay={2}
-        color="#00F0FF"
+        color="#00F5FF"
       />
 
-      {/* 9. Front Inner Wall Boards: Smooth Feathered Sky-Cyan (Partners) & Soft Cobalt (Testimonials) */}
+      {/* 9. Front Inner Wall Boards: Bright Feathered Electric Cyan (Partners) & Neon Indigo-Blue (Testimonials) */}
       <spotLight
         position={[-12.6, 5.6, 2.2]}
         target={partnersTarget.current}
-        intensity={38}
-        distance={16}
-        decay={1.7}
-        angle={0.76}
+        intensity={48}
+        distance={17}
+        decay={1.65}
+        angle={0.78}
         penumbra={0.88}
-        color="#38bdf8"
+        color="#00e5ff"
       />
       <spotLight
         position={[9.6, 5.6, 2.2]}
         target={testimonialsTarget.current}
-        intensity={38}
-        distance={16}
-        decay={1.7}
-        angle={0.76}
+        intensity={48}
+        distance={17}
+        decay={1.65}
+        angle={0.78}
         penumbra={0.88}
         color="#60a5fa"
       />

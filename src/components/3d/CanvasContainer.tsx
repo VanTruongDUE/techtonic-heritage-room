@@ -25,7 +25,7 @@ export const CanvasContainer: React.FC = () => {
   const dpr: [number, number] = graphicsQuality === 'high' ? [1.5, 2] : [1, 1.5];
 
   return (
-    <div className={`absolute inset-0 w-full h-full bg-[#050811] ${cursorClass}`}>
+    <div className={`absolute inset-0 w-full h-full bg-[#010207] ${cursorClass}`}>
       <Canvas
         shadows="soft"
         camera={{
@@ -38,7 +38,7 @@ export const CanvasContainer: React.FC = () => {
           antialias: true,
           powerPreference: 'high-performance',
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.15,
+          toneMappingExposure: 1.18,
         }}
         dpr={dpr}
         onCreated={({ gl }) => {

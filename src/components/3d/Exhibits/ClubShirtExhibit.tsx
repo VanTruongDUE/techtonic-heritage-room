@@ -529,11 +529,11 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
       <group position={[17.22, 2.32, -4]} rotation={[0, -Math.PI / 2, 0]}>
         <RoundedBox args={[3.5, 4.18, 0.14]} radius={0.04} smoothness={4} castShadow>
           <meshPhysicalMaterial
-            color="#0b1324"
+            color="#070d1b"
             roughnessMap={metalMaps.roughnessMap}
-            metalness={0.68}
-            roughness={0.32}
-            clearcoat={0.45}
+            metalness={0.74}
+            roughness={0.28}
+            clearcoat={0.55}
           />
         </RoundedBox>
         {/* Brushed champagne-gold inner architectural border */}
@@ -543,10 +543,10 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
               <boxGeometry args={[0.04, 3.85, 0.035]} />
               <meshPhysicalMaterial color={CHAMPAGNE_GOLD} metalness={0.95} roughness={0.18} clearcoat={0.8} />
             </mesh>
-            {/* Slim boutique side showcase LED light tube */}
+            {/* Slim boutique side showcase electric-cyan LED light tube */}
             <mesh position={[rx > 0 ? -0.045 : 0.045, 0, 0.01]}>
-              <boxGeometry args={[0.018, 3.55, 0.02]} />
-              <meshBasicMaterial color="#e0f7ff" toneMapped={false} />
+              <boxGeometry args={[0.02, 3.55, 0.022]} />
+              <meshBasicMaterial color="#ccf9ff" toneMapped={false} />
             </mesh>
           </group>
         ))}

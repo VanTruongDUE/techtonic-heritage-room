@@ -83,14 +83,14 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#050811]/95 loading-grid-bg backdrop-blur-xl transition-all duration-300 select-none ${
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#02050c]/96 loading-grid-bg backdrop-blur-xl transition-all duration-300 select-none ${
         isExiting ? 'opacity-0 scale-[1.02] pointer-events-none' : 'opacity-100 scale-100'
       }`}
     >
-      {/* Subtle architectural ambient glow */}
+      {/* Dual dark-tech cyan & cyber-violet ambient neon glow */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgba(0,240,255,0.12),transparent_56%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_45%_36%,rgba(0,245,255,0.13),transparent_52%),radial-gradient(circle_at_62%_64%,rgba(184,77,255,0.09),transparent_50%)]"
       />
 
       <div className="relative z-10 flex flex-col items-center max-w-2xl mx-auto px-6 text-center animate-panel-in">
@@ -155,10 +155,10 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={roundedProgress}
-          className="w-full max-w-md bg-slate-900/90 rounded-full h-2.5 p-0.5 border border-white/15 mb-2.5 overflow-hidden"
+          className="w-full max-w-md bg-[#040914]/95 rounded-full h-2.5 p-0.5 border border-tech-cyan/25 mb-2.5 overflow-hidden"
         >
           <div
-            className="relative h-full rounded-full bg-tech-cyan transition-all duration-200 ease-out overflow-hidden progress-shimmer"
+            className="relative h-full rounded-full bg-gradient-to-r from-[#00F5FF] via-[#38bdf8] to-[#b84dff] transition-all duration-200 ease-out overflow-hidden progress-shimmer shadow-[0_0_12px_rgba(0,245,255,0.55)]"
             style={{ width: `${roundedProgress}%` }}
           />
         </div>

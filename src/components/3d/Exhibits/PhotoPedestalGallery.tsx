@@ -345,14 +345,14 @@ const PhotoPedestalStand: React.FC<{
 
   return (
     <group position={item.position} rotation={[0, item.rotationY, 0]}>
-      {/* Compact Low-Profile Gallery Plinth (0.48m tall so wall boards behind start well above it) */}
+      {/* Compact Low-Profile Gallery Plinth (dark-tech obsidian marble + crisp neon collar) */}
       <RigidBody type="fixed" position={[0, 0.24, 0]}>
         <RoundedBox position={[0, -0.21, 0]} args={[0.88, 0.06, 0.54]} radius={0.018} smoothness={4} receiveShadow>
           <meshStandardMaterial
-            color="#334155"
+            color="#121b2e"
             roughnessMap={metalMaps.roughnessMap}
-            metalness={0.86}
-            roughness={0.24}
+            metalness={0.88}
+            roughness={0.22}
           />
         </RoundedBox>
         <RoundedBox args={[0.76, 0.42, 0.44]} radius={0.024} smoothness={4} castShadow receiveShadow>
@@ -361,16 +361,16 @@ const PhotoPedestalStand: React.FC<{
             roughnessMap={marbleMaps.roughnessMap}
             bumpMap={marbleMaps.bumpMap}
             bumpScale={0.008}
-            color="#cad8ee"
-            roughness={0.34}
-            metalness={0.28}
+            color="#20304e"
+            roughness={0.28}
+            metalness={0.38}
           />
         </RoundedBox>
         <RoundedBox position={[0, 0.22, 0]} args={[0.82, 0.03, 0.48]} radius={0.01} smoothness={4}>
-          <meshStandardMaterial color="#475569" metalness={0.88} roughness={0.22} />
+          <meshStandardMaterial color="#1a2740" metalness={0.88} roughness={0.2} />
         </RoundedBox>
         <mesh position={[0, 0.195, 0]}>
-          <boxGeometry args={[0.78, 0.012, 0.45]} />
+          <boxGeometry args={[0.78, 0.014, 0.45]} />
           <meshBasicMaterial color={item.accent} toneMapped={false} />
         </mesh>
       </RigidBody>
@@ -427,11 +427,11 @@ const PhotoPedestalStand: React.FC<{
           {photoTex ? (
             <meshStandardMaterial
               map={photoTex}
-              color="#d6e2f0"
+              color="#e2ecf8"
               emissive="#ffffff"
               emissiveMap={photoTex}
-              emissiveIntensity={hovered ? 0.52 : 0.38}
-              roughness={0.9}
+              emissiveIntensity={hovered ? 0.62 : 0.48}
+              roughness={0.86}
               metalness={0}
             />
           ) : (

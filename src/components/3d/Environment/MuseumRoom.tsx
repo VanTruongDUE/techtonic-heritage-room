@@ -53,10 +53,10 @@ const BENCH_POSITIONS: Array<{ pos: [number, number, number]; rotY: number }> = 
 
 const GUIDE_Z_POSITIONS = [25.5, 23, 20.5, 18, 15.5, 13, 10.5, 8, 5, 2.5];
 const HALL_BEAM_CONFIG = [
-  { z: -12, color: '#00F0FF' },
-  { z: -7, color: '#a855f7' },
-  { z: -2, color: '#00F0FF' },
-  { z: 3, color: '#a855f7' },
+  { z: -12, color: '#00F5FF' },
+  { z: -7, color: '#b84dff' },
+  { z: -2, color: '#00F5FF' },
+  { z: 3, color: '#b84dff' },
 ];
 const TUNNEL_RIB_Z = [26, 22, 18, 14, 10];
 // Strictly placed at room corners (never intersecting or obstructing side-wall exhibit boards)
@@ -113,7 +113,7 @@ export const MuseumRoom: React.FC = () => {
     // 0. Organic breathing neon halo waves across the 4 Main Hall overhead ceiling beams
     hallBeamHaloRefs.current.forEach((mat, idx) => {
       if (!mat) return;
-      const pulse = 0.22 + (Math.sin(t * 1.45 - idx * 0.9) * 0.5 + 0.5) * 0.14;
+      const pulse = 0.3 + (Math.sin(t * 1.45 - idx * 0.9) * 0.5 + 0.5) * 0.16;
       mat.opacity = pulse;
     });
 
@@ -237,22 +237,22 @@ export const MuseumRoom: React.FC = () => {
         </mesh>
       </RigidBody>
 
-      {/* Main Hall Planar Real-Time Space-Mirror Reflector Floor (silky smooth blurred neon reflections) */}
+      {/* Main Hall Planar Real-Time Space-Mirror Reflector Floor (dark-tech obsidian with vivid neon reflections) */}
       <mesh position={[0, 0.002, -5]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[31.8, 25.8]} />
         <MeshReflectorMaterial
           key={`floor-reflector-${graphicsQuality}`}
-          blur={graphicsQuality === 'high' ? [280, 95] : [180, 70]}
+          blur={graphicsQuality === 'high' ? [260, 88] : [170, 65]}
           resolution={graphicsQuality === 'high' ? 512 : 256}
-          mixBlur={0.9}
-          mixStrength={graphicsQuality === 'high' ? 0.72 : 0.56}
-          roughness={0.38}
-          depthScale={0.82}
+          mixBlur={0.86}
+          mixStrength={graphicsQuality === 'high' ? 0.92 : 0.72}
+          roughness={0.3}
+          depthScale={0.85}
           minDepthThreshold={0.38}
           maxDepthThreshold={1.4}
-          color="#0d162a"
-          metalness={0.38}
-          mirror={0.64}
+          color="#070d1c"
+          metalness={0.46}
+          mirror={0.72}
           map={floorMaps.map}
           roughnessMap={floorMaps.roughnessMap}
           bumpMap={floorMaps.bumpMap}
@@ -265,17 +265,17 @@ export const MuseumRoom: React.FC = () => {
         <planeGeometry args={[4.75, 20.1]} />
         <MeshReflectorMaterial
           key={`tunnel-reflector-${graphicsQuality}`}
-          blur={[160, 50]}
+          blur={[150, 48]}
           resolution={graphicsQuality === 'high' ? 384 : 256}
-          mixBlur={0.8}
-          mixStrength={0.92}
-          roughness={0.26}
+          mixBlur={0.78}
+          mixStrength={1.08}
+          roughness={0.22}
           depthScale={0.6}
           minDepthThreshold={0.35}
           maxDepthThreshold={1.35}
-          color="#0a1324"
-          metalness={0.48}
-          mirror={0.75}
+          color="#060b18"
+          metalness={0.54}
+          mirror={0.82}
         />
       </mesh>
 
@@ -310,12 +310,12 @@ export const MuseumRoom: React.FC = () => {
       <mesh position={[0, 6.52, -5]} rotation={[Math.PI / 2, 0, 0]}>
         <planeGeometry args={[33.2, 27.2]} />
         <meshPhysicalMaterial
-          color="#0a1933"
+          color="#040917"
           transparent
-          opacity={0.12}
-          roughness={0.06}
-          metalness={0.18}
-          clearcoat={0.85}
+          opacity={0.08}
+          roughness={0.05}
+          metalness={0.2}
+          clearcoat={0.9}
           depthWrite={false}
           side={THREE.DoubleSide}
         />
@@ -323,7 +323,7 @@ export const MuseumRoom: React.FC = () => {
       {/* Solid enclosed ceiling over Entrance Tunnel (stars only revealed when entering Main Hall!) */}
       <mesh position={[0, 6.5, 18.5]}>
         <boxGeometry args={[5.6, 0.24, 20.6]} />
-        <meshStandardMaterial color="#070c17" roughness={0.8} metalness={0.22} />
+        <meshStandardMaterial color="#050912" roughness={0.76} metalness={0.28} />
       </mesh>
 
       {/* Architectural Titanium Roof Perimeter Fascia & Longitudinal Skylight Girders */}
@@ -356,30 +356,30 @@ export const MuseumRoom: React.FC = () => {
         <group key={`beam-${beam.z}`} position={[0, 6.32, beam.z]}>
           <RoundedBox args={[32, 0.28, 0.44]} radius={0.04} smoothness={4}>
             <meshStandardMaterial
-              color="#141e32"
+              color="#0c1424"
               roughnessMap={metalMaps.roughnessMap}
               bumpMap={metalMaps.bumpMap}
               bumpScale={0.004}
-              metalness={0.72}
-              roughness={0.3}
+              metalness={0.82}
+              roughness={0.24}
             />
           </RoundedBox>
           {/* Saturated outer neon bar */}
           <mesh position={[0, -0.15, 0]}>
-            <boxGeometry args={[28.4, 0.034, 0.14]} />
+            <boxGeometry args={[28.4, 0.036, 0.145]} />
             <meshBasicMaterial color={beam.color} toneMapped={false} />
           </mesh>
           {/* Hot bright inner neon filament for crisp realistic glass-tube glow */}
-          <mesh position={[0, -0.168, 0]}>
-            <boxGeometry args={[28.2, 0.012, 0.045]} />
+          <mesh position={[0, -0.17, 0]}>
+            <boxGeometry args={[28.2, 0.013, 0.048]} />
             <meshBasicMaterial
-              color={beam.color === '#00F0FF' ? '#e0fbff' : '#f5e8ff'}
+              color={beam.color === '#00F5FF' ? '#ebfeff' : '#fae8ff'}
               toneMapped={false}
             />
           </mesh>
           {/* Feathered Gaussian optical neon ceiling halo (silky soft edges) */}
-          <mesh position={[0, -0.18, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[28.8, 1.05]} />
+          <mesh position={[0, -0.182, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[28.8, 1.15]} />
             <meshBasicMaterial
               ref={(el) => {
                 hallBeamHaloRefs.current[bIdx] = el;
@@ -387,7 +387,7 @@ export const MuseumRoom: React.FC = () => {
               map={softGlowTex}
               color={beam.color}
               transparent
-              opacity={0.34}
+              opacity={0.4}
               blending={THREE.AdditiveBlending}
               depthWrite={false}
               side={THREE.DoubleSide}
@@ -648,13 +648,13 @@ export const MuseumRoom: React.FC = () => {
         <mesh key={`obs-glass-${idx}`} position={pane.pos} rotation={pane.rot}>
           <planeGeometry args={pane.args} />
           <meshPhysicalMaterial
-            color="#071329"
+            color="#030815"
             transparent
-            opacity={0.26}
-            roughness={0.08}
-            metalness={0.24}
-            clearcoat={0.9}
-            clearcoatRoughness={0.06}
+            opacity={0.18}
+            roughness={0.06}
+            metalness={0.26}
+            clearcoat={0.95}
+            clearcoatRoughness={0.05}
             depthWrite={false}
             side={THREE.DoubleSide}
           />
@@ -725,54 +725,54 @@ export const MuseumRoom: React.FC = () => {
 
       {/* ================= PERIMETER NEON COVE LIGHTING (FEATHERED GAUSSIAN HALO + FLOOR SKIRTING) ================= */}
       <mesh position={[0, 6.22, -18.55]}>
-        <boxGeometry args={[32.8, 0.055, 0.075]} />
-        <meshBasicMaterial color="#00F0FF" toneMapped={false} />
+        <boxGeometry args={[32.8, 0.058, 0.08]} />
+        <meshBasicMaterial color="#00F5FF" toneMapped={false} />
       </mesh>
       <mesh position={[0, 6.18, -18.48]} rotation={[Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[32.8, 0.68]} />
-        <meshBasicMaterial map={softGlowTex} color="#00F0FF" transparent opacity={0.28} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
+        <planeGeometry args={[32.8, 0.78]} />
+        <meshBasicMaterial map={softGlowTex} color="#00F5FF" transparent opacity={0.36} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
       <mesh position={[-16.55, 6.22, -5]}>
-        <boxGeometry args={[0.075, 0.055, 26.8]} />
-        <meshBasicMaterial color="#a855f7" toneMapped={false} />
+        <boxGeometry args={[0.08, 0.058, 26.8]} />
+        <meshBasicMaterial color="#b84dff" toneMapped={false} />
       </mesh>
       <mesh position={[-16.48, 6.18, -5]} rotation={[Math.PI / 2, 0, Math.PI / 2]}>
-        <planeGeometry args={[26.8, 0.68]} />
-        <meshBasicMaterial map={softGlowTex} color="#a855f7" transparent opacity={0.28} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
+        <planeGeometry args={[26.8, 0.78]} />
+        <meshBasicMaterial map={softGlowTex} color="#b84dff" transparent opacity={0.36} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
       <mesh position={[16.55, 6.22, -5]}>
-        <boxGeometry args={[0.075, 0.055, 26.8]} />
-        <meshBasicMaterial color="#38bdf8" toneMapped={false} />
+        <boxGeometry args={[0.08, 0.058, 26.8]} />
+        <meshBasicMaterial color="#00e5ff" toneMapped={false} />
       </mesh>
       <mesh position={[16.48, 6.18, -5]} rotation={[Math.PI / 2, 0, Math.PI / 2]}>
-        <planeGeometry args={[26.8, 0.68]} />
-        <meshBasicMaterial map={softGlowTex} color="#38bdf8" transparent opacity={0.28} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
+        <planeGeometry args={[26.8, 0.78]} />
+        <meshBasicMaterial map={softGlowTex} color="#00e5ff" transparent opacity={0.36} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
       <mesh position={[-9.75, 6.22, 8.05]}>
-        <boxGeometry args={[13.2, 0.065, 0.085]} />
-        <meshBasicMaterial color="#00F0FF" toneMapped={false} />
+        <boxGeometry args={[13.2, 0.068, 0.088]} />
+        <meshBasicMaterial color="#00F5FF" toneMapped={false} />
       </mesh>
       <mesh position={[9.75, 6.22, 8.05]}>
-        <boxGeometry args={[13.2, 0.065, 0.085]} />
-        <meshBasicMaterial color="#a855f7" toneMapped={false} />
+        <boxGeometry args={[13.2, 0.068, 0.088]} />
+        <meshBasicMaterial color="#b84dff" toneMapped={false} />
       </mesh>
 
       {/* Matching Floor-Edge Perimeter Neon Skirting Lines (cast crisp reflections into mirror floor) */}
       <mesh position={[-16.48, 0.02, -5]}>
-        <boxGeometry args={[0.055, 0.018, 26.8]} />
-        <meshBasicMaterial color="#a855f7" toneMapped={false} />
+        <boxGeometry args={[0.058, 0.02, 26.8]} />
+        <meshBasicMaterial color="#b84dff" toneMapped={false} />
       </mesh>
       <mesh position={[16.48, 0.02, -5]}>
-        <boxGeometry args={[0.055, 0.018, 26.8]} />
-        <meshBasicMaterial color="#38bdf8" toneMapped={false} />
+        <boxGeometry args={[0.058, 0.02, 26.8]} />
+        <meshBasicMaterial color="#00e5ff" toneMapped={false} />
       </mesh>
       <mesh position={[-9.75, 0.02, 7.98]}>
-        <boxGeometry args={[13.4, 0.018, 0.055]} />
-        <meshBasicMaterial color="#00F0FF" toneMapped={false} />
+        <boxGeometry args={[13.4, 0.02, 0.058]} />
+        <meshBasicMaterial color="#00F5FF" toneMapped={false} />
       </mesh>
       <mesh position={[9.75, 0.02, 7.98]}>
-        <boxGeometry args={[13.4, 0.018, 0.055]} />
-        <meshBasicMaterial color="#a855f7" toneMapped={false} />
+        <boxGeometry args={[13.4, 0.02, 0.058]} />
+        <meshBasicMaterial color="#b84dff" toneMapped={false} />
       </mesh>
 
       {/* Brushed Metallic Architectural Baseboards across All Hall Walls */}
@@ -892,10 +892,10 @@ export const MuseumRoom: React.FC = () => {
             <sphereGeometry args={[0.042, 20, 16]} />
             <meshStandardMaterial color="#e2e8f0" metalness={0.92} roughness={0.16} />
           </mesh>
-          {/* Subtle cyan collar accent */}
+          {/* Subtle electric cyan collar accent */}
           <mesh position={[0, 0.8, 0]}>
-            <cylinderGeometry args={[0.032, 0.032, 0.02, 20]} />
-            <meshBasicMaterial color="#38bdf8" />
+            <cylinderGeometry args={[0.033, 0.033, 0.024, 20]} />
+            <meshBasicMaterial color="#00F5FF" toneMapped={false} />
           </mesh>
         </group>
       ))}
@@ -913,28 +913,32 @@ export const MuseumRoom: React.FC = () => {
             <group key={`bench-leg-${lx}`} position={[lx, 0.21, 0]}>
               <RoundedBox args={[0.08, 0.42, 0.62]} radius={0.015} smoothness={4} castShadow receiveShadow>
                 <meshStandardMaterial
-                  color="#64748b"
+                  color="#475569"
                   roughnessMap={metalMaps.roughnessMap}
-                  metalness={0.86}
-                  roughness={0.24}
+                  metalness={0.88}
+                  roughness={0.22}
                 />
               </RoundedBox>
             </group>
           ))}
-          {/* Center Under-frame Spine */}
+          {/* Center Under-frame Spine + Subtle Recessed Tech Neon Under-Glow */}
           <mesh position={[0, 0.34, 0]}>
             <boxGeometry args={[1.9, 0.06, 0.22]} />
-            <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.3} />
+            <meshStandardMaterial color="#1e293b" metalness={0.82} roughness={0.26} />
           </mesh>
-          {/* Tufted Leather Seat Cushion */}
+          <mesh position={[0, 0.305, 0]}>
+            <boxGeometry args={[1.76, 0.012, 0.036]} />
+            <meshBasicMaterial color={idx === 0 ? '#00F5FF' : '#b84dff'} toneMapped={false} />
+          </mesh>
+          {/* Tufted Dark-Obsidian Leather Seat Cushion */}
           <RoundedBox position={[0, 0.47, 0]} args={[2.28, 0.13, 0.7]} radius={0.045} smoothness={6} castShadow receiveShadow>
             <meshStandardMaterial
-              color="#192842"
+              color="#0e172a"
               roughnessMap={leatherMaps.roughnessMap}
               bumpMap={leatherMaps.bumpMap}
               bumpScale={0.01}
-              roughness={0.62}
-              metalness={0.12}
+              roughness={0.58}
+              metalness={0.14}
             />
           </RoundedBox>
           {/* Decorative Center Seam Stitch */}

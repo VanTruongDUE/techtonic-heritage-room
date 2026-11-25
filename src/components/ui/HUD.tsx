@@ -444,7 +444,10 @@ export const HUD: React.FC = () => {
           aria-live="polite"
           className="glass-panel px-4 py-2.5 rounded-xl flex items-center space-x-3 min-w-[230px]"
         >
-          <span className="w-2.5 h-2.5 rounded-full bg-tech-cyan shrink-0" aria-hidden="true" />
+          <span
+            className="w-2.5 h-2.5 rounded-full bg-tech-cyan shrink-0 shadow-[0_0_10px_rgba(0,245,255,0.85)]"
+            aria-hidden="true"
+          />
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-3 text-[11px] text-slate-300">
               <span>Vị trí hiện tại</span>
@@ -455,7 +458,7 @@ export const HUD: React.FC = () => {
             <div className="text-xs md:text-sm font-bold text-white truncate">{currentZone}</div>
             <div className="mt-1 h-1 w-full rounded-full bg-white/10 overflow-hidden">
               <div
-                className="h-full rounded-full bg-tech-cyan transition-all duration-300"
+                className="h-full rounded-full bg-gradient-to-r from-[#00F5FF] to-[#b84dff] shadow-[0_0_8px_rgba(0,245,255,0.6)] transition-all duration-300"
                 style={{ width: `${visitedPct}%` }}
               />
             </div>

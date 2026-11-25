@@ -135,18 +135,22 @@ export const InteractiveCorner: React.FC = () => {
         const w = 1024;
         const h = 576;
 
-        ctx.fillStyle = '#080e1a';
+        ctx.fillStyle = '#040812';
         ctx.fillRect(0, 0, w, h);
 
-        ctx.fillStyle = 'rgba(56, 189, 248, 0.04)';
+        ctx.fillStyle = 'rgba(0, 245, 255, 0.045)';
         for (let y = 0; y < h; y += 8) {
           ctx.fillRect(0, y, w, 1);
         }
 
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 3.2;
         for (let wave = 0; wave < 3; wave++) {
+          ctx.save();
+          const strokeCol = wave === 0 ? '#00F5FF' : wave === 1 ? '#b84dff' : '#38bdf8';
+          ctx.strokeStyle = strokeCol;
+          ctx.shadowColor = strokeCol;
+          ctx.shadowBlur = 12;
           ctx.beginPath();
-          ctx.strokeStyle = wave === 0 ? '#00F0FF' : wave === 1 ? '#3b82f6' : '#93c5fd';
           for (let x = 0; x < w; x += 10) {
             const freq = 0.014 + wave * 0.005;
             const y = h / 2 + Math.sin(x * freq + elapsed * 2.6 + wave) * (36 + wave * 20);
@@ -154,6 +158,7 @@ export const InteractiveCorner: React.FC = () => {
             else ctx.lineTo(x, y);
           }
           ctx.stroke();
+          ctx.restore();
         }
 
         const slideIndex = Math.floor(elapsed / 5.5) % 3;
@@ -213,8 +218,8 @@ export const InteractiveCorner: React.FC = () => {
       </RoundedBox>
       {/* Neon wall wash ambient rail behind screen */}
       <mesh position={[0, 3.25, -1.96]}>
-        <planeGeometry args={[7.35, 4.5]} />
-        <meshBasicMaterial color="#00F0FF" transparent opacity={0.22} toneMapped={false} />
+        <planeGeometry args={[7.42, 4.56]} />
+        <meshBasicMaterial color="#00F5FF" transparent opacity={0.32} toneMapped={false} />
       </mesh>
       <RoundedBox position={[0, 3.25, -1.73]} args={[6.72, 3.9, 0.04]} radius={0.02} smoothness={4}>
         <meshStandardMaterial color="#0b101b" roughness={0.5} metalness={0.3} />
@@ -285,9 +290,9 @@ export const InteractiveCorner: React.FC = () => {
             roughnessMap={marbleMaps.roughnessMap}
             bumpMap={marbleMaps.bumpMap}
             bumpScale={0.008}
-            color="#d8e3f4"
-            roughness={0.34}
-            metalness={0.3}
+            color="#223250"
+            roughness={0.28}
+            metalness={0.38}
           />
         </RoundedBox>
         {/* Brushed steel pedestal neck column supporting the angled tray cleanly with zero intersection */}

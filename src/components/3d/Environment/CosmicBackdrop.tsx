@@ -135,57 +135,57 @@ function createMoonMaps(): { map: THREE.CanvasTexture; bumpMap: THREE.CanvasText
   };
 }
 
-/** Deep-space panoramic sky dome texture with subtle Milky Way & indigo cosmic dust */
+/** Deep-space panoramic sky dome texture: ultra-dark obsidian cosmos with whispered deep nebula */
 function createCosmicDomeTexture(): THREE.CanvasTexture {
   const { canvas, ctx } = createHiResCanvas(2048, 1024, 1);
   if (ctx) {
     const bg = ctx.createLinearGradient(0, 0, 0, 1024);
-    bg.addColorStop(0, '#01030a');
-    bg.addColorStop(0.35, '#030817');
-    bg.addColorStop(0.65, '#050b1d');
-    bg.addColorStop(1, '#02040c');
+    bg.addColorStop(0, '#000104');
+    bg.addColorStop(0.35, '#010309');
+    bg.addColorStop(0.65, '#020510');
+    bg.addColorStop(1, '#000104');
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, 2048, 1024);
 
-    // Subtle sweeping Milky Way nebula band across the cosmos
+    // Whisper-subtle deep-space cosmic dust bands (keeps sky dark and high-contrast)
     const clouds: Array<[number, number, number, string]> = [
-      [340, 320, 420, 'rgba(29, 78, 216, 0.14)'],
-      [680, 280, 460, 'rgba(56, 189, 248, 0.11)'],
-      [1040, 360, 520, 'rgba(99, 102, 241, 0.13)'],
-      [1380, 440, 440, 'rgba(139, 92, 246, 0.11)'],
-      [1720, 350, 420, 'rgba(14, 165, 233, 0.1)'],
-      [960, 660, 480, 'rgba(30, 58, 138, 0.11)'],
-      [1520, 690, 380, 'rgba(88, 28, 135, 0.08)'],
+      [340, 320, 420, 'rgba(20, 48, 130, 0.055)'],
+      [680, 280, 460, 'rgba(14, 116, 164, 0.045)'],
+      [1040, 360, 520, 'rgba(67, 56, 202, 0.052)'],
+      [1380, 440, 440, 'rgba(109, 40, 217, 0.05)'],
+      [1720, 350, 420, 'rgba(8, 105, 165, 0.042)'],
+      [960, 660, 480, 'rgba(18, 36, 92, 0.048)'],
+      [1520, 690, 380, 'rgba(76, 20, 118, 0.04)'],
     ];
 
     clouds.forEach(([cx, cy, r, color]) => {
       const g = ctx.createRadialGradient(cx, cy, r * 0.06, cx, cy, r);
       g.addColorStop(0, color);
-      g.addColorStop(0.55, color.replace(/0\.\d+\)$/, '0.04)'));
-      g.addColorStop(1, 'rgba(2, 6, 20, 0)');
+      g.addColorStop(0.55, color.replace(/0\.\d+\)$/, '0.015)'));
+      g.addColorStop(1, 'rgba(1, 2, 8, 0)');
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fill();
     });
 
-    // Ultra-fine distant background star dust baked into the dome
+    // Ultra-fine distant background star dust baked into the dark dome
     let seed = 88231;
     const rand = () => {
       seed = (seed * 16807) % 2147483647;
       return (seed - 1) / 2147483646;
     };
-    for (let i = 0; i < 2400; i++) {
+    for (let i = 0; i < 2200; i++) {
       const x = rand() * 2048;
       const y = rand() * 1024;
-      const alpha = 0.18 + rand() * 0.65;
-      const size = rand() > 0.92 ? 1.8 : 1.0;
+      const alpha = 0.14 + rand() * 0.56;
+      const size = rand() > 0.93 ? 1.6 : 1.0;
       ctx.fillStyle =
         rand() > 0.72
           ? `rgba(186, 230, 253, ${alpha})`
           : rand() > 0.45
           ? `rgba(255, 255, 255, ${alpha})`
-          : `rgba(254, 243, 199, ${alpha * 0.9})`;
+          : `rgba(254, 243, 199, ${alpha * 0.85})`;
       ctx.fillRect(x, y, size, size);
     }
   }
@@ -212,18 +212,18 @@ function createStarGlowTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-/** Soft radial lunar corona halo texture */
+/** Soft radial lunar corona halo texture (crisp against dark void) */
 function createMoonHaloTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
   if (ctx) {
-    const g = ctx.createRadialGradient(128, 128, 32, 128, 128, 128);
-    g.addColorStop(0, 'rgba(224, 242, 254, 0.48)');
-    g.addColorStop(0.35, 'rgba(147, 197, 253, 0.24)');
-    g.addColorStop(0.7, 'rgba(56, 189, 248, 0.06)');
-    g.addColorStop(1, 'rgba(2, 6, 23, 0)');
+    const g = ctx.createRadialGradient(128, 128, 34, 128, 128, 128);
+    g.addColorStop(0, 'rgba(224, 242, 254, 0.38)');
+    g.addColorStop(0.32, 'rgba(147, 197, 253, 0.16)');
+    g.addColorStop(0.68, 'rgba(56, 189, 248, 0.035)');
+    g.addColorStop(1, 'rgba(1, 3, 10, 0)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, 256, 256);
   }
