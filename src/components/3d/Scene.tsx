@@ -11,6 +11,7 @@ import { InteractiveCorner } from './Exhibits/InteractiveCorner';
 import { TunnelGallery } from './Exhibits/TunnelGallery';
 import { MemberPortraitGallery } from './Exhibits/MemberPortraitGallery';
 import { PhotoPedestalGallery } from './Exhibits/PhotoPedestalGallery';
+import { DigitalEcosystemVitrines } from './Exhibits/DigitalEcosystemVitrines';
 import { PlayerController } from './PlayerController';
 import { HallParticleField, OrgConstellationOrbit } from './Effects/AmbientMotion';
 import { CodeCosmosOrbit } from './Effects/CodeCosmosOrbit';
@@ -70,6 +71,7 @@ export const Scene: React.FC = () => {
         <TunnelGallery />
         <MemberPortraitGallery />
         <PhotoPedestalGallery />
+        <DigitalEcosystemVitrines />
         <PlayerController initialPosition={[0, 1.4, 25.8]} />
       </Physics>
     </Suspense>
