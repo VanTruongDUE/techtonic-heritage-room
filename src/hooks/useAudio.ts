@@ -205,6 +205,72 @@ class MuseumAudioEngine {
       // Ignore
     }
   }
+
+  /** Stadium floodlight relay thump + ascending harmonic shimmer as each tunnel arch ignites */
+  playLightIgnite(stepIndex = 0) {
+    const scale = this.getSfxScale();
+    if (!this.ctx || scale <= 0) return;
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      const now = this.ctx.currentTime;
+      const pentatonic = [261.63, 293.66, 329.63, 392.0, 523.25];
+      const baseFreq = pentatonic[Math.min(stepIndex, pentatonic.length - 1)];
+
+      // Low stadium relay thump
+      const sub = this.ctx.createOscillator();
+      const subGain = this.ctx.createGain();
+      sub.type = 'sine';
+      sub.frequency.setValueAtTime(92, now);
+      sub.frequency.exponentialRampToValueAtTime(44, now + 0.16);
+      subGain.gain.setValueAtTime(0.055 * scale, now);
+      subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+      sub.connect(subGain);
+      subGain.connect(this.ctx.destination);
+      sub.start(now);
+      sub.stop(now + 0.22);
+
+      // Rising shimmer chord
+      const shimmer = this.ctx.createOscillator();
+      const shimmerGain = this.ctx.createGain();
+      shimmer.type = 'triangle';
+      shimmer.frequency.setValueAtTime(baseFreq, now);
+      shimmer.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, now + 0.18);
+      shimmerGain.gain.setValueAtTime(0.024 * scale, now);
+      shimmerGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.34);
+      shimmer.connect(shimmerGain);
+      shimmerGain.connect(this.ctx.destination);
+      shimmer.start(now);
+      shimmer.stop(now + 0.36);
+    } catch {
+      // Ignore
+    }
+  }
+
+  /** Grand arena reveal swell when stepping through the threshold portal into the Main Hall */
+  playHallReveal() {
+    const scale = this.getSfxScale();
+    if (!this.ctx || scale <= 0) return;
+    const notes = [220.0, 329.63, 440.0, 554.37, 659.25];
+    notes.forEach((freq, idx) => {
+      if (!this.ctx) return;
+      try {
+        const now = this.ctx.currentTime + idx * 0.045;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = idx < 2 ? 'sine' : 'triangle';
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(0.024 * scale, now + 0.16);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.95);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 1.0);
+      } catch {
+        // Ignore
+      }
+    });
+  }
 }
 
 export const soundFx = new MuseumAudioEngine();

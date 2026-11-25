@@ -55,6 +55,25 @@ export const App: React.FC = () => {
     void recordVisit();
   };
 
+  // Blur HUD buttons immediately after pointer click so Spacebar never re-triggers them while exploring 3D
+  useEffect(() => {
+    const handlePointerClick = (e: MouseEvent) => {
+      if (useHeritageStore.getState().activeModal) return;
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+      const btn = target.closest('button, a');
+      if (btn instanceof HTMLElement && !btn.closest('[role="dialog"]')) {
+        window.setTimeout(() => {
+          if (document.activeElement === btn) {
+            btn.blur();
+          }
+        }, 0);
+      }
+    };
+    window.addEventListener('click', handlePointerClick);
+    return () => window.removeEventListener('click', handlePointerClick);
+  }, []);
+
   // Global keyboard shortcuts: ESC, H, M, T, and 1–8 zone glides
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { useHeritageStore } from '../../../store/useHeritageStore';
@@ -245,6 +246,48 @@ const TunnelFrame: React.FC<{
 }> = ({ item, metalMaps }) => {
   const { openModal, setHoveringInteractive } = useHeritageStore();
   const [photoTex, setPhotoTex] = useState<THREE.CanvasTexture | null>(null);
+  const neonTrimRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
+  const picLightRef = useRef<THREE.MeshBasicMaterial>(null);
+  const mainMatRef = useRef<THREE.MeshStandardMaterial>(null);
+  const capMatRef = useRef<THREE.MeshStandardMaterial>(null);
+  const revealLevelRef = useRef(item.z >= 24 ? 0.3 : 0.04);
+
+  useFrame((state, delta) => {
+    const dt = Math.min(delta, 0.05);
+    const playerZ = state.camera.position.z;
+    const triggerZ = item.z >= 24 ? 25.35 : item.z + 3.2;
+    const trailZ = item.z - 7.0;
+
+    let target = 0.04;
+    if (item.z >= 24 && playerZ > triggerZ) {
+      target = 0.28;
+    } else if (playerZ <= triggerZ && playerZ >= trailZ) {
+      target = 1.0;
+    } else if (playerZ < trailZ) {
+      target = 0.32;
+    }
+
+    const speed = target > revealLevelRef.current ? 5.6 : 2.5;
+    revealLevelRef.current = THREE.MathUtils.lerp(
+      revealLevelRef.current,
+      target,
+      1 - Math.exp(-speed * dt)
+    );
+    const lvl = revealLevelRef.current;
+
+    neonTrimRefs.current.forEach((m) => {
+      if (m) m.opacity = 0.06 + lvl * 0.94;
+    });
+    if (picLightRef.current) {
+      picLightRef.current.opacity = 0.05 + lvl * 0.95;
+    }
+    if (mainMatRef.current) {
+      mainMatRef.current.emissiveIntensity = 0.03 + lvl * (item.kind === 'photo' ? 0.3 : 0.34);
+    }
+    if (capMatRef.current) {
+      capMatRef.current.emissiveIntensity = 0.03 + lvl * 0.34;
+    }
+  });
 
   const infoTex = useMemo(
     () => (item.kind === 'info' ? buildInfoPlaqueTexture(item) : null),
@@ -344,11 +387,19 @@ const TunnelFrame: React.FC<{
         />
       </RoundedBox>
 
-      {/* Neon side accent edge trim */}
-      {[-1.22, 1.22].map((nx) => (
+      {/* Neon side accent edge trim (ignites on superstar approach) */}
+      {[-1.22, 1.22].map((nx, trimIdx) => (
         <mesh key={`frame-neon-${nx}`} position={[nx, 0, 0]}>
           <boxGeometry args={[0.018, item.kind === 'photo' ? 1.72 : 1.44, 0.025]} />
-          <meshBasicMaterial color={item.accent} toneMapped={false} />
+          <meshBasicMaterial
+            ref={(el) => {
+              neonTrimRefs.current[trimIdx] = el;
+            }}
+            color={item.accent}
+            transparent
+            opacity={0.08}
+            toneMapped={false}
+          />
         </mesh>
       ))}
 
@@ -360,7 +411,13 @@ const TunnelFrame: React.FC<{
         </mesh>
         <mesh position={[0, -0.018, 0]}>
           <boxGeometry args={[1.25, 0.008, 0.02]} />
-          <meshBasicMaterial color={item.accent} toneMapped={false} />
+          <meshBasicMaterial
+            ref={picLightRef}
+            color={item.accent}
+            transparent
+            opacity={0.08}
+            toneMapped={false}
+          />
         </mesh>
       </group>
 
@@ -380,19 +437,21 @@ const TunnelFrame: React.FC<{
         <planeGeometry args={[2.24, 1.4]} />
         {item.kind === 'photo' && photoTex ? (
           <meshStandardMaterial
+            ref={mainMatRef}
             map={photoTex}
             emissive="#ffffff"
             emissiveMap={photoTex}
-            emissiveIntensity={0.28}
+            emissiveIntensity={0.04}
             roughness={0.38}
             metalness={0.05}
           />
         ) : (
           <meshStandardMaterial
+            ref={mainMatRef}
             map={infoTex ?? captionTex}
             emissive="#ffffff"
             emissiveMap={infoTex ?? captionTex}
-            emissiveIntensity={0.32}
+            emissiveIntensity={0.04}
             roughness={0.42}
             metalness={0.04}
           />
@@ -410,10 +469,11 @@ const TunnelFrame: React.FC<{
         >
           <planeGeometry args={[2.24, 0.32]} />
           <meshStandardMaterial
+            ref={capMatRef}
             map={captionTex}
             emissive="#ffffff"
             emissiveMap={captionTex}
-            emissiveIntensity={0.32}
+            emissiveIntensity={0.04}
             roughness={0.42}
             metalness={0.04}
           />

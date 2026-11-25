@@ -19,6 +19,17 @@ const INITIAL_MOVEMENT: MovementKeys = {
   jump: false,
 };
 
+function isEditableElement(el: Element | null): boolean {
+  if (!el) return false;
+  const tag = el.tagName;
+  return (
+    tag === 'INPUT' ||
+    tag === 'TEXTAREA' ||
+    tag === 'SELECT' ||
+    (el instanceof HTMLElement && el.isContentEditable)
+  );
+}
+
 export const useKeyboardControls = () => {
   const [movement, setMovement] = useState<MovementKeys>(INITIAL_MOVEMENT);
   const { hasEntered, controlMode, isLocked, activeModal } = useHeritageStore();
@@ -33,11 +44,25 @@ export const useKeyboardControls = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        document.activeElement?.tagName === 'INPUT' ||
-        document.activeElement?.tagName === 'TEXTAREA' ||
-        document.activeElement?.tagName === 'SELECT'
-      ) {
+      const state = useHeritageStore.getState();
+      if (!state.hasEntered || state.activeModal) {
+        return;
+      }
+
+      if (isEditableElement(document.activeElement)) {
+        return;
+      }
+
+      // Prevent Spacebar from re-clicking any previously focused HUD button or scrolling
+      if (e.code === 'Space' || e.key === ' ') {
+        e.preventDefault();
+        if (
+          document.activeElement instanceof HTMLElement &&
+          (document.activeElement.tagName === 'BUTTON' || document.activeElement.tagName === 'A')
+        ) {
+          document.activeElement.blur();
+        }
+        setMovement((m) => (m.jump ? m : { ...m, jump: true }));
         return;
       }
 
@@ -62,15 +87,29 @@ export const useKeyboardControls = () => {
         case 'ShiftRight':
           setMovement((m) => (m.shift ? m : { ...m, shift: true }));
           break;
-        case 'Space':
-          setMovement((m) => (m.jump ? m : { ...m, jump: true }));
-          break;
         default:
           break;
       }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
+      const state = useHeritageStore.getState();
+      if (
+        (e.code === 'Space' || e.key === ' ') &&
+        state.hasEntered &&
+        !state.activeModal &&
+        !isEditableElement(document.activeElement)
+      ) {
+        // Buttons activate on Space keyup in browsers — block default activation cleanly
+        e.preventDefault();
+        if (
+          document.activeElement instanceof HTMLElement &&
+          (document.activeElement.tagName === 'BUTTON' || document.activeElement.tagName === 'A')
+        ) {
+          document.activeElement.blur();
+        }
+      }
+
       switch (e.code) {
         case 'KeyW':
         case 'ArrowUp':
@@ -104,13 +143,13 @@ export const useKeyboardControls = () => {
       setMovement(INITIAL_MOVEMENT);
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    window.addEventListener('keyup', handleKeyUp, { capture: true });
     window.addEventListener('blur', handleBlur);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
+      window.removeEventListener('keyup', handleKeyUp, { capture: true });
       window.removeEventListener('blur', handleBlur);
     };
   }, []);
