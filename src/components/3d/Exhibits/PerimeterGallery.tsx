@@ -762,7 +762,7 @@ export const PerimeterGallery: React.FC = () => {
     <group>
       {/* ================= LEFT WALL: TIMELINE + 6 TERM ACTIVITIES ================= */}
       <MuseumWallBoard
-        position={[-16.52, 3.2, -6]}
+        position={[-16.52, 3.2, -5.9]}
         rotation={[0, Math.PI / 2, 0]}
         frameArgs={[11.32, 4.52, 0.1]}
         planeArgs={[11, 4.2]}
@@ -775,7 +775,7 @@ export const PerimeterGallery: React.FC = () => {
       />
 
       <MuseumWallBoard
-        position={[-16.52, 3.2, 3.6]}
+        position={[-16.52, 3.2, 4.1]}
         rotation={[0, Math.PI / 2, 0]}
         frameArgs={[7.42, 4.52, 0.1]}
         planeArgs={[7.1, 4.2]}
@@ -796,7 +796,7 @@ export const PerimeterGallery: React.FC = () => {
       />
 
       <MuseumWallBoard
-        position={[16.52, 3.2, -4.2]}
+        position={[16.52, 3.2, -4.0]}
         rotation={[0, -Math.PI / 2, 0]}
         frameArgs={[7.52, 4.12, 0.1]}
         planeArgs={[7.2, 3.8]}
@@ -809,10 +809,10 @@ export const PerimeterGallery: React.FC = () => {
       />
 
       <MuseumWallBoard
-        position={[16.52, 3.2, 3.8]}
+        position={[16.52, 3.2, 4.0]}
         rotation={[0, -Math.PI / 2, 0]}
-        frameArgs={[7.12, 4.12, 0.1]}
-        planeArgs={[6.8, 3.8]}
+        frameArgs={[7.42, 4.12, 0.1]}
+        planeArgs={[7.1, 3.8]}
         texture={academicTexture}
         metalMaps={metalMaps}
         tooltip="Xem Chuyên môn hằng tuần"

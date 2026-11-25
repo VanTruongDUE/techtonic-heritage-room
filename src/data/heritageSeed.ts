@@ -839,8 +839,8 @@ export const TELEPORT_ZONES: TeleportZone[] = [
     id: 'center-wall',
     label: 'Vách Tâm Điểm',
     shortLabel: 'Sứ mệnh',
-    description: 'Slogan "Dream it - Code it", Tầm nhìn, Sứ mệnh, Chuỗi sự kiện & Vũ trụ công nghệ.',
-    position: [0, 1.4, -9.2],
+    description: 'Slogan "Dream it - Code it", Tầm nhìn, Sứ mệnh, 6 Sự kiện & Vũ trụ công nghệ.',
+    position: [0, 1.4, -8.8],
     lookAt: [0, 3.3, -18.4],
   },
   {
@@ -869,11 +869,11 @@ export const TELEPORT_ZONES: TeleportZone[] = [
   },
   {
     id: 'interactive-corner',
-    label: 'Góc Chuyên Môn & Lưu Bút',
+    label: 'Sự Kiện Động & Lưu Bút',
     shortLabel: 'Lưu bút',
-    description: 'Màn hình trình chiếu Chuyên môn hằng tuần và Sổ lưu bút mở trên bục đọc.',
-    position: [8.4, 1.55, -11.6],
-    lookAt: [10.6, 1.8, -15.8],
+    description: 'Mô hình trình chiếu động Sự kiện CLB (trái Dream it - Code it) và Sổ lưu bút.',
+    position: [-8.4, 1.55, -11.4],
+    lookAt: [-10.8, 1.8, -15.8],
   },
   {
     id: 'partners-wall',

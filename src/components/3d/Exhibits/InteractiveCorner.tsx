@@ -158,14 +158,14 @@ export const InteractiveCorner: React.FC = () => {
 
         const slideIndex = Math.floor(elapsed / 5.5) % 3;
         const slideTitles = [
-          'CHUYÊN MÔN HẰNG TUẦN • FE • BE • AI & DATA',
-          'TECHTONIC CLUB • DREAM IT - CODE IT',
-          'PRODUCT TEAM • NGHIÊN CỨU KHOA HỌC & ICPC-OLP',
+          'CHUỖI SỰ KIỆN • TECHXPLORE • TECHWARE',
+          'MENTOR - MENTEE • TÌNH NGUYỆN ĐÔNG - XUÂN',
+          'CHUYÊN MÔN HẰNG TUẦN • PRODUCT TEAM',
         ];
         const slideSubtitles = [
-          'Đào tạo thực chiến CSLT/CSDL  •  Front-End  •  Back-End  •  AI & Data mỗi tuần',
-          '10+ Giải thưởng  •  100+ Thành viên  •  20+ Dự án  •  ĐH Kinh Tế - ĐH Đà Nẵng',
-          'Mentor định hướng trực tiếp  •  Báo cáo dự án định kỳ  •  Thi đấu Tin học SV',
+          'Đón tân sinh viên DUE  •  Trải nghiệm công nghệ  •  Tuyển thành viên không thu phí',
+          'From Us To You  •  Tech Threads  •  Happy Hour & Du lịch gắn kết nội bộ',
+          'Đào tạo CSLT/CSDL  •  Front-End  •  Back-End  •  AI & Data  •  Thi đấu ICPC-OLP',
         ];
 
         ctx.fillStyle = '#f8fafc';
@@ -199,9 +199,9 @@ export const InteractiveCorner: React.FC = () => {
   };
 
   return (
-    <group position={[11.4, 0, -16]}>
-      {/* ================= 1. FRAMED ARCHITECTURAL LED CINEMA DISPLAY & SOUNDBAR (right of Dream It - Code It) ================= */}
-      <RoundedBox position={[0, 3.25, -1.84]} args={[5.76, 3.85, 0.2]} radius={0.05} smoothness={6} castShadow>
+    <group position={[-11.75, 0, -16]}>
+      {/* ================= 1. FRAMED ARCHITECTURAL LED EVENTS DISPLAY (Left Wing of Dream It - Code It) ================= */}
+      <RoundedBox position={[0, 3.25, -1.84]} args={[7.0, 4.2, 0.2]} radius={0.05} smoothness={6} castShadow>
         <meshStandardMaterial
           color="#1b263b"
           roughnessMap={metalMaps.roughnessMap}
@@ -213,19 +213,19 @@ export const InteractiveCorner: React.FC = () => {
       </RoundedBox>
       {/* Neon wall wash ambient rail behind screen */}
       <mesh position={[0, 3.25, -1.96]}>
-        <planeGeometry args={[6.1, 4.15]} />
+        <planeGeometry args={[7.35, 4.5]} />
         <meshBasicMaterial color="#00F0FF" transparent opacity={0.22} toneMapped={false} />
       </mesh>
-      <RoundedBox position={[0, 3.25, -1.73]} args={[5.52, 3.55, 0.04]} radius={0.02} smoothness={4}>
+      <RoundedBox position={[0, 3.25, -1.73]} args={[6.72, 3.9, 0.04]} radius={0.02} smoothness={4}>
         <meshStandardMaterial color="#0b101b" roughness={0.5} metalness={0.3} />
       </RoundedBox>
 
       {/* Architectural Soundbar Module beneath Display */}
-      <RoundedBox position={[0, 1.12, -1.75]} args={[3.6, 0.2, 0.24]} radius={0.03} smoothness={4} castShadow>
+      <RoundedBox position={[0, 0.96, -1.75]} args={[4.2, 0.2, 0.24]} radius={0.03} smoothness={4} castShadow>
         <meshStandardMaterial color="#182235" metalness={0.75} roughness={0.3} />
       </RoundedBox>
-      <mesh position={[0, 1.12, -1.62]}>
-        <boxGeometry args={[3.25, 0.11, 0.015]} />
+      <mesh position={[0, 0.96, -1.62]}>
+        <boxGeometry args={[3.8, 0.11, 0.015]} />
         <meshStandardMaterial color="#0a0f18" roughness={0.85} metalness={0.2} />
       </mesh>
 
@@ -242,14 +242,14 @@ export const InteractiveCorner: React.FC = () => {
             isScreenPaused ? 'Tiếp tục trình chiếu LED' : 'Tạm dừng màn hình LED',
             toggleScreen,
             {
-              title: 'Màn Hình Chuyên Môn Hằng Tuần',
+              title: 'Màn Hình Động Sự Kiện CLB',
               badge: isScreenPaused ? 'ĐANG TẠM DỪNG' : 'ĐANG PHÁT TRỰC TIẾP',
               summary:
-                'Trình chiếu lộ trình sinh hoạt chuyên môn hằng tuần FE/BE/AI & Data, Product Team và tổng quan TechTonic Club.',
+                'Mô hình trình chiếu động các chuỗi sự kiện TechXplore, Mentor - Mentee, TechWare, Tình nguyện Đông - Xuân và sinh hoạt chuyên môn.',
               bullets: [
-                'Slide 01: Chuyên môn hằng tuần FE, BE, AI & Data, CSLT & CSDL',
-                'Slide 02: Tổng quan 10+ Giải thưởng • 100+ Thành viên • 20+ Dự án',
-                'Slide 03: Đội Product Team & thi đấu NCKH / ICPC-OLP',
+                'Slide 01: Chuỗi Sự Kiện • TechXplore • TechWare',
+                'Slide 02: Mentor - Mentee • Tình nguyện Đông - Xuân',
+                'Slide 03: Chuyên môn hằng tuần & Product Team',
               ],
               actionLabel: isScreenPaused ? 'Tiếp tục trình chiếu' : 'Tạm dừng màn hình',
             }
@@ -257,11 +257,11 @@ export const InteractiveCorner: React.FC = () => {
         }}
         onPointerOut={() => setHoveringInteractive(false)}
       >
-        <planeGeometry args={[5.32, 3.25]} />
+        <planeGeometry args={[6.52, 3.68]} />
         <meshBasicMaterial map={videoTexture} />
       </mesh>
 
-      {[-1.7, 1.7].map((mx) => (
+      {[-2.0, 2.0].map((mx) => (
         <mesh key={`mount-${mx}`} position={[mx, 3.25, -2.1]}>
           <boxGeometry args={[0.2, 1.6, 0.45]} />
           <meshStandardMaterial color="#1e293b" metalness={0.75} roughness={0.32} />
@@ -269,7 +269,7 @@ export const InteractiveCorner: React.FC = () => {
       ))}
 
       {/* ================= 2. MUSEUM GUESTBOOK LECTERN & OPEN HARDCOVER BOOK ================= */}
-      <RigidBody type="fixed" position={[-1.0, 0.46, 1.5]}>
+      <RigidBody type="fixed" position={[1.75, 0.46, 1.4]}>
         <RoundedBox position={[0, -0.4, 0]} args={[1.38, 0.1, 1.08]} radius={0.03} smoothness={4} receiveShadow>
           <meshStandardMaterial
             color="#475569"
@@ -319,7 +319,7 @@ export const InteractiveCorner: React.FC = () => {
       {/* Open Hardcover Leather Guestbook resting clearly angled toward standing visitor */}
       <group
         ref={bookGroupRef}
-        position={[-1.0, 0.96, 1.54]}
+        position={[1.75, 0.96, 1.44]}
         rotation={[0.46, 0, 0]}
         onClick={(e) => {
           e.stopPropagation();

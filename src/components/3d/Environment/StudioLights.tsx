@@ -95,12 +95,12 @@ export const StudioLights: React.FC = () => {
 
       {/* Aimed Spotlight Targets */}
       <primitive object={centerWallTarget.current} position={[0, 3.2, -18.4]} />
-      <primitive object={valuesTarget.current} position={[-11.3, 3.25, -18.4]} />
+      <primitive object={valuesTarget.current} position={[11.75, 3.25, -18.4]} />
       <primitive object={centralIslandTarget.current} position={[0, 1.0, -5]} />
       <primitive object={shirtTarget.current} position={[13.8, 2.0, -10.4]} />
-      <primitive object={timelineTarget.current} position={[-16.4, 3.2, -6]} />
-      <primitive object={activitiesTarget.current} position={[-16.4, 3.2, 3.6]} />
-      <primitive object={interactiveTarget.current} position={[11.4, 3.2, -17.8]} />
+      <primitive object={timelineTarget.current} position={[-16.4, 3.2, -5.9]} />
+      <primitive object={activitiesTarget.current} position={[-16.4, 3.2, 4.1]} />
+      <primitive object={interactiveTarget.current} position={[-11.75, 3.25, -17.8]} />
       <primitive object={partnersTarget.current} position={[-12.6, 3.1, 8.05]} />
       <primitive object={testimonialsTarget.current} position={[9.6, 3.1, 8.05]} />
 
@@ -185,12 +185,12 @@ export const StudioLights: React.FC = () => {
         color="#a855f7"
       />
       <spotLight
-        position={[-11.3, 5.8, -12.5]}
+        position={[11.75, 5.8, -12.5]}
         target={valuesTarget.current}
-        intensity={38}
+        intensity={42}
         distance={16}
         decay={1.8}
-        angle={0.62}
+        angle={0.66}
         penumbra={0.62}
         color="#c084fc"
       />
@@ -270,20 +270,20 @@ export const StudioLights: React.FC = () => {
       <pointLight position={[14.2, 3.6, -4.2]} intensity={14} distance={9} decay={2} color="#38bdf8" />
       <pointLight position={[14.2, 3.6, 3.8]} intensity={14} distance={9} decay={2} color="#60a5fa" />
 
-      {/* 8. Interactive Corner: Dynamic Neon Display Wash + Focused Guestbook Pool */}
+      {/* 8. Interactive Corner (Left Wing): Dynamic Neon Events Display + Guestbook Pool */}
       <spotLight
-        position={[11.4, 5.9, -12.2]}
+        position={[-11.75, 5.9, -12.2]}
         target={interactiveTarget.current}
-        intensity={34}
+        intensity={36}
         distance={16}
         decay={1.8}
-        angle={0.62}
+        angle={0.66}
         penumbra={0.58}
         color="#7dd3fc"
       />
       <pointLight
         ref={screenGlowRef}
-        position={[11.4, 3.2, -14.6]}
+        position={[-11.75, 3.2, -14.6]}
         intensity={11}
         distance={9}
         decay={2}

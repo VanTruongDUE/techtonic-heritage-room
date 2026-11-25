@@ -203,50 +203,100 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
     []
   );
 
-  // Chest hexagon crest + back "TECHTONIC" print textures
-  const chestBadgeTex = useMemo(() => {
-    const { canvas, ctx } = createHiResCanvas(256, 256, 2);
+  // Tailored TechTonic Polo Shirt diffuse texture: deep navy-indigo body with crisp sky-blue left side panel + knit micro-texture
+  const shirtDiffuseTex = useMemo(() => {
+    const { canvas, ctx } = createHiResCanvas(1024, 512, 1);
     if (ctx) {
-      ctx.clearRect(0, 0, 256, 256);
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 10;
-      ctx.beginPath();
-      for (let i = 0; i < 6; i++) {
-        const angle = (Math.PI / 3) * i - Math.PI / 2;
-        const x = 128 + 92 * Math.cos(angle);
-        const y = 128 + 92 * Math.sin(angle);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-      ctx.fillStyle = '#0c182c';
-      ctx.fill();
-      ctx.stroke();
+      // Base deep navy-indigo fabric (#1f305c matching official polo reference)
+      ctx.fillStyle = '#1f305c';
+      ctx.fillRect(0, 0, 1024, 512);
 
-      ctx.strokeStyle = '#00F0FF';
-      ctx.lineWidth = 12;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(86, 94);
-      ctx.lineTo(170, 94);
-      ctx.moveTo(128, 94);
-      ctx.lineTo(128, 174);
-      ctx.stroke();
+      // Subtle micro-knit pique texture across torso
+      const step = 4;
+      for (let y = 0; y < 512; y += step) {
+        for (let x = 0; x < 1024; x += step) {
+          if (((x + y) / step) % 2 === 0) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.fillRect(x, y, step - 1, step - 1);
+          } else {
+            ctx.fillStyle = 'rgba(8, 15, 34, 0.14)';
+            ctx.fillRect(x, y, step - 1, step - 1);
+          }
+        }
+      }
+
+      // Distinctive sky-blue vertical side panel on wearer's left flank (theta near 0 => u near 0 and 1)
+      // Taper cleanly from underarm (y ≈ 118 in flipped canvas -> top 34%) down to bottom hem
+      const drawSideStripe = (cx: number) => {
+        const grad = ctx.createLinearGradient(cx - 56, 0, cx + 56, 0);
+        grad.addColorStop(0, '#7ebde8');
+        grad.addColorStop(0.5, '#9cd1f2');
+        grad.addColorStop(1, '#7ebde8');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(cx - 52, 512);
+        ctx.lineTo(cx - 38, 178);
+        ctx.quadraticCurveTo(cx, 152, cx + 38, 178);
+        ctx.lineTo(cx + 52, 512);
+        ctx.closePath();
+        ctx.fill();
+      };
+      drawSideStripe(0);
+      drawSideStripe(1024);
     }
     return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, []);
 
-  const backPrintTex = useMemo(() => {
-    const { canvas, ctx } = createHiResCanvas(512, 160, 2);
+  // Official Left Chest Gear-C + "TECH TONIC" white emblem matching reference shirt
+  const chestBadgeTex = useMemo(() => {
+    const { canvas, ctx } = createHiResCanvas(320, 160, 2);
     if (ctx) {
-      ctx.clearRect(0, 0, 512, 160);
+      ctx.clearRect(0, 0, 320, 160);
+
+      // Gear C icon on left
+      const gx = 74;
+      const gy = 80;
+      ctx.save();
+      ctx.translate(gx, gy);
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 8; i++) {
+        const angle = (Math.PI / 4) * i;
+        if (angle > -0.45 && angle < 0.45) continue; // open C gap on right
+        ctx.save();
+        ctx.rotate(angle);
+        ctx.fillRect(-6, -34, 12, 11);
+        ctx.restore();
+      }
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 10;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(0, 0, 22, 0.55, Math.PI * 2 - 0.55);
+      ctx.stroke();
+      ctx.restore();
+
+      // Stacked bold "TECH" / "TONIC" typography
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 40px Inter, sans-serif';
+      ctx.fillText('TECH', 112, 74);
+      ctx.fillText('TONIC', 112, 114);
+    }
+    return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
+  }, []);
+
+  // Official Back Print: Bold white "TECHTONIC" + sky-blue "Dream it - Code it"
+  const backPrintTex = useMemo(() => {
+    const { canvas, ctx } = createHiResCanvas(512, 180, 2);
+    if (ctx) {
+      ctx.clearRect(0, 0, 512, 180);
       ctx.textAlign = 'center';
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = '800 58px Inter, sans-serif';
-      ctx.fillText('TECHTONIC', 256, 84);
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = '600 22px "JetBrains Mono", monospace';
-      ctx.fillText('DREAM IT • CODE IT', 256, 126);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 54px Inter, sans-serif';
+      ctx.fillText('TECHTONIC', 256, 78);
+      ctx.fillStyle = '#8ac8ef';
+      ctx.font = '700 30px Inter, sans-serif';
+      ctx.fillText('Dream it - Code it', 256, 126);
     }
     return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, []);
@@ -266,6 +316,7 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
       rightSleeveGeom.dispose();
       chestBadgeTex.dispose();
       backPrintTex.dispose();
+      shirtDiffuseTex.dispose();
     };
   }, [
     fabricMaps,
@@ -277,6 +328,7 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
     rightSleeveGeom,
     chestBadgeTex,
     backPrintTex,
+    shirtDiffuseTex,
   ]);
 
   useFrame((state) => {
@@ -456,21 +508,21 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
           <meshStandardMaterial color="#cbd5e1" metalness={0.9} roughness={0.2} />
         </mesh>
 
-        {/* Sculpted Soft Cotton Polo Torso & Raglan Sleeves with PBR Cloth Sheen */}
+        {/* Sculpted Soft Cotton Polo Torso & Raglan Sleeves with Official Navy + Sky-Blue Side Panel */}
         <group position={[0, 1.26, 0]}>
           <mesh geometry={torsoGeometry} castShadow receiveShadow>
             <meshPhysicalMaterial
-              map={fabricMaps.map}
+              map={shirtDiffuseTex}
               bumpMap={fabricMaps.bumpMap}
-              bumpScale={0.016}
-              color="#1b3563"
+              bumpScale={0.015}
+              color="#ffffff"
               roughness={0.86}
-              metalness={0.03}
-              sheen={0.82}
-              sheenRoughness={0.68}
-              sheenColor="#7dd3fc"
-              emissive="#0b2247"
-              emissiveIntensity={hovered ? 0.3 : 0.08}
+              metalness={0.02}
+              sheen={0.72}
+              sheenRoughness={0.7}
+              sheenColor="#93c5fd"
+              emissive="#0f1d3d"
+              emissiveIntensity={hovered ? 0.25 : 0.06}
             />
           </mesh>
 
@@ -478,13 +530,13 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
             <meshPhysicalMaterial
               map={fabricMaps.map}
               bumpMap={fabricMaps.bumpMap}
-              bumpScale={0.016}
-              color="#1b3563"
+              bumpScale={0.015}
+              color="#1f305c"
               roughness={0.86}
-              metalness={0.03}
-              sheen={0.82}
-              sheenRoughness={0.68}
-              sheenColor="#7dd3fc"
+              metalness={0.02}
+              sheen={0.72}
+              sheenRoughness={0.7}
+              sheenColor="#93c5fd"
               side={THREE.DoubleSide}
             />
           </mesh>
@@ -493,18 +545,18 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
             <meshPhysicalMaterial
               map={fabricMaps.map}
               bumpMap={fabricMaps.bumpMap}
-              bumpScale={0.016}
-              color="#1b3563"
+              bumpScale={0.015}
+              color="#1f305c"
               roughness={0.86}
-              metalness={0.03}
-              sheen={0.82}
-              sheenRoughness={0.68}
-              sheenColor="#7dd3fc"
+              metalness={0.02}
+              sheen={0.72}
+              sheenRoughness={0.7}
+              sheenColor="#93c5fd"
               side={THREE.DoubleSide}
             />
           </mesh>
 
-          {/* Left & Right Ribbed Sleeve Cuff Rings aligned smoothly with sleeve tips */}
+          {/* Left & Right Ribbed Sleeve Cuff Rings with Crisp White Pinstripe */}
           {[-1, 1].map((side) => (
             <group
               key={`cuff-${side}`}
@@ -513,68 +565,72 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
             >
               <mesh>
                 <torusGeometry args={[0.128, 0.013, 16, 40]} />
-                <meshPhysicalMaterial color="#10203d" roughness={0.78} sheen={0.5} sheenColor="#7dd3fc" />
+                <meshPhysicalMaterial color="#182548" roughness={0.78} sheen={0.5} sheenColor="#93c5fd" />
               </mesh>
               <mesh position={[0, 0, 0.004]}>
-                <torusGeometry args={[0.132, 0.005, 12, 40]} />
-                <meshStandardMaterial color="#38bdf8" roughness={0.45} metalness={0.2} />
+                <torusGeometry args={[0.132, 0.0045, 12, 40]} />
+                <meshStandardMaterial color="#f8fafc" roughness={0.5} metalness={0.05} />
               </mesh>
             </group>
           ))}
 
-          {/* Ribbed Polo Collar Band + Tailored Folded Collar Wings */}
+          {/* Ribbed Polo Collar Band + Tailored Folded Collar Wings with White Outer Edge Trim */}
           <mesh position={[0, 0.56, -0.005]} rotation={[Math.PI / 2 - 0.12, 0, 0]}>
             <torusGeometry args={[0.158, 0.036, 24, 56]} />
             <meshPhysicalMaterial
-              color="#102140"
+              color="#182548"
               roughness={0.78}
-              sheen={0.65}
-              sheenColor="#7dd3fc"
+              sheen={0.6}
+              sheenColor="#93c5fd"
             />
           </mesh>
           <mesh position={[0, 0.578, -0.005]} rotation={[Math.PI / 2 - 0.12, 0, 0]}>
-            <torusGeometry args={[0.162, 0.008, 16, 56]} />
-            <meshStandardMaterial color="#38bdf8" roughness={0.4} metalness={0.25} />
+            <torusGeometry args={[0.164, 0.006, 16, 56]} />
+            <meshStandardMaterial color="#f8fafc" roughness={0.5} metalness={0.05} />
           </mesh>
           {[-0.082, 0.082].map((cx) => (
-            <RoundedBox
+            <group
               key={`collar-wing-${cx}`}
               position={[cx, 0.51, 0.155]}
               rotation={[0.36, cx > 0 ? -0.26 : 0.26, cx > 0 ? 0.34 : -0.34]}
-              args={[0.125, 0.088, 0.022]}
-              radius={0.01}
-              smoothness={6}
             >
-              <meshPhysicalMaterial
-                color="#102140"
-                roughness={0.76}
-                sheen={0.6}
-                sheenColor="#7dd3fc"
-              />
-            </RoundedBox>
+              <RoundedBox args={[0.125, 0.088, 0.022]} radius={0.01} smoothness={6}>
+                <meshPhysicalMaterial
+                  color="#182548"
+                  roughness={0.76}
+                  sheen={0.55}
+                  sheenColor="#93c5fd"
+                />
+              </RoundedBox>
+              {/* Crisp white collar tip trim matching official shirt */}
+              <mesh position={[0, -0.038, 0.008]}>
+                <boxGeometry args={[0.118, 0.011, 0.01]} />
+                <meshStandardMaterial color="#f8fafc" roughness={0.48} />
+              </mesh>
+            </group>
           ))}
 
           {/* Contoured Front Polo Placket & Mother-of-Pearl Buttons */}
           <RoundedBox position={[0, 0.38, 0.205]} rotation={[-0.14, 0, 0]} args={[0.068, 0.25, 0.02]} radius={0.008} smoothness={4}>
-            <meshPhysicalMaterial color="#101f3a" roughness={0.76} sheen={0.5} sheenColor="#7dd3fc" />
+            <meshPhysicalMaterial color="#182548" roughness={0.76} sheen={0.5} sheenColor="#93c5fd" />
           </RoundedBox>
           {[0.44, 0.35].map((btnY, i) => (
             <mesh key={`btn-${i}`} position={[0, btnY, 0.214 - i * 0.01]} rotation={[Math.PI / 2 - 0.14, 0, 0]}>
               <cylinderGeometry args={[0.013, 0.013, 0.008, 20]} />
-              <meshPhysicalMaterial color="#e2e8f0" metalness={0.45} roughness={0.16} clearcoat={1} />
+              <meshPhysicalMaterial color="#f8fafc" metalness={0.25} roughness={0.18} clearcoat={1} />
             </mesh>
           ))}
 
-          {/* Chest Embroidered Club Crest curved cleanly onto chest */}
-          <mesh position={[0.21, 0.21, 0.228]} rotation={[-0.08, 0.28, 0]}>
-            <planeGeometry args={[0.155, 0.155]} />
-            <meshStandardMaterial map={chestBadgeTex} transparent roughness={0.55} />
+          {/* Chest Embroidered "TECH TONIC" White Crest on Left Chest */}
+          <mesh position={[0.205, 0.215, 0.23]} rotation={[-0.08, 0.28, 0]}>
+            <planeGeometry args={[0.21, 0.105]} />
+            <meshStandardMaterial map={chestBadgeTex} transparent roughness={0.62} />
           </mesh>
 
-          {/* Upper Back Printed Typography */}
+          {/* Upper Back Printed "TECHTONIC / Dream it - Code it" */}
           <mesh position={[0, 0.24, -0.208]} rotation={[0.06, Math.PI, 0]}>
-            <planeGeometry args={[0.6, 0.18]} />
-            <meshStandardMaterial map={backPrintTex} transparent roughness={0.62} />
+            <planeGeometry args={[0.6, 0.21]} />
+            <meshStandardMaterial map={backPrintTex} transparent roughness={0.65} />
           </mesh>
         </group>
       </group>

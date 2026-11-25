@@ -60,7 +60,7 @@ const VALUES_PREVIEW: HoverPreview = {
   actionLabel: 'Xem chi tiết 7 giá trị cốt lõi',
 };
 
-const SLAT_POSITIONS = [-6.25, -5.9, -5.55, 5.55, 5.9, 6.25];
+const SLAT_POSITIONS = [-6.95, -6.55, -6.15, 6.15, 6.55, 6.95];
 
 function drawWrappedText(
   ctx: CanvasRenderingContext2D,
@@ -324,7 +324,7 @@ export const CenterWall: React.FC = () => {
     <group position={[0, 0, -18.42]}>
       <RoundedBox
         position={[0, 3.35, -0.05]}
-        args={[13.2, 5.5, 0.14]}
+        args={[14.6, 5.5, 0.14]}
         radius={0.04}
         smoothness={4}
         receiveShadow
@@ -346,11 +346,11 @@ export const CenterWall: React.FC = () => {
       ))}
 
       <mesh position={[0, 6.08, 0.04]}>
-        <boxGeometry args={[13.0, 0.06, 0.08]} />
+        <boxGeometry args={[14.4, 0.06, 0.08]} />
         <meshStandardMaterial color="#00F0FF" emissive="#00F0FF" emissiveIntensity={1.6} toneMapped={false} />
       </mesh>
       <mesh position={[0, 0.62, 0.04]}>
-        <boxGeometry args={[13.0, 0.06, 0.08]} />
+        <boxGeometry args={[14.4, 0.06, 0.08]} />
         <meshStandardMaterial color="#38bdf8" emissive="#0ea5e9" emissiveIntensity={1.1} toneMapped={false} />
       </mesh>
 
@@ -439,7 +439,7 @@ export const CenterWall: React.FC = () => {
         }}
         onPointerOut={() => setHoveringInteractive(false)}
       >
-        <planeGeometry args={[12.8, 6.4]} />
+        <planeGeometry args={[13.6, 6.6]} />
         <meshStandardMaterial
           map={textTexture}
           transparent
@@ -451,20 +451,20 @@ export const CenterWall: React.FC = () => {
         />
       </mesh>
 
-      {/* Back-Left Wing: Framed Chuỗi Sự Kiện Trọng Tâm Board cleanly left of Dream It - Code It */}
-      <group position={[-11.3, 3.25, 0.04]}>
-        <RoundedBox position={[0, 0, -0.05]} args={[5.72, 4.22, 0.1]} radius={0.04} smoothness={4} castShadow>
+      {/* Back-Right Wing: Framed 6 Chương Trình & Sự Kiện CLB cleanly to the right of Dream It - Code It */}
+      <group position={[11.75, 3.25, 0.04]}>
+        <RoundedBox position={[0, 0, -0.05]} args={[7.0, 4.35, 0.1]} radius={0.04} smoothness={4} castShadow>
           <meshStandardMaterial color="#334155" metalness={0.86} roughness={0.22} />
         </RoundedBox>
-        <mesh position={[0, 2.09, 0.005]}>
-          <boxGeometry args={[5.5, 0.024, 0.02]} />
+        <mesh position={[0, 2.15, 0.005]}>
+          <boxGeometry args={[6.75, 0.024, 0.02]} />
           <meshBasicMaterial color="#c084fc" toneMapped={false} />
         </mesh>
         {[
-          [-2.74, 1.98],
-          [2.74, 1.98],
-          [-2.74, -1.98],
-          [2.74, -1.98],
+          [-3.36, 2.04],
+          [3.36, 2.04],
+          [-3.36, -2.04],
+          [3.36, -2.04],
         ].map(([bx, by], i) => (
           <mesh key={`ev-bolt-${i}`} position={[bx, by, 0.012]} rotation={[Math.PI / 2, 0, 0]}>
             <cylinderGeometry args={[0.032, 0.032, 0.035, 16]} />
@@ -488,7 +488,7 @@ export const CenterWall: React.FC = () => {
           }}
           onPointerOut={() => setHoveringInteractive(false)}
         >
-          <planeGeometry args={[5.4, 3.9]} />
+          <planeGeometry args={[6.65, 4.02]} />
           <meshStandardMaterial
             map={eventsWingTexture}
             emissive="#ffffff"

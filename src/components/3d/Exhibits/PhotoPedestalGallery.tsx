@@ -18,13 +18,15 @@ interface PhotoPedestalConfig {
   accent: string;
 }
 
+// 12 compact low-profile museum photo plinths positioned strictly in wall seam gaps & symmetric open promenade aisles
+// (top edge at y ≈ 1.08m so zero wall boards or department portrait trees behind them are ever obscured)
 const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
   {
     id: 'pedestal-nckh',
-    position: [-7.55, 0, -17.3],
-    rotationY: 0.2,
+    position: [-7.78, 0, -17.65],
+    rotationY: 0,
     tag: 'NGHIÊN CỨU • PRODUCT TEAM',
-    title: 'Nghiên Cứu Khoa Học & Báo Cáo Dự Án',
+    title: 'Nghiên Cứu Khoa Học & Dự Án',
     description:
       'Thành viên TechTonic tham gia nghiên cứu khoa học sinh viên, thuyết trình giải pháp phần mềm và phát triển sản phẩm thực tế.',
     image: '/assets/images/tunnel/nckh_s1.webp',
@@ -32,10 +34,10 @@ const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
   },
   {
     id: 'pedestal-olp',
-    position: [7.55, 0, -17.3],
-    rotationY: -0.2,
+    position: [7.78, 0, -17.65],
+    rotationY: 0,
     tag: 'THÀNH TÍCH • ĐẤU TRƯỜNG',
-    title: 'Olympic Tin Học Sinh Viên VN & ICPC',
+    title: 'Olympic Tin Học SV & ICPC',
     description:
       'Đội tuyển thuật toán TechTonic Club đạt Giải Khuyến Khích Olympic Tin học Sinh viên Việt Nam lần thứ 34 (2025).',
     image: '/assets/images/activity/olp_icpc.webp',
@@ -43,7 +45,7 @@ const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
   },
   {
     id: 'pedestal-cslt',
-    position: [-15.2, 0, -12.1],
+    position: [-15.35, 0, -12.25],
     rotationY: Math.PI / 2,
     tag: 'CHUYÊN MÔN • HỌC THUẬT',
     title: 'Đào Tạo CSLT & CSDL Hằng Tuần',
@@ -54,7 +56,7 @@ const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
   },
   {
     id: 'pedestal-mentor',
-    position: [-15.2, 0, -0.1],
+    position: [-15.35, 0, 0.05],
     rotationY: Math.PI / 2,
     tag: 'ĐỒNG HÀNH • KẾT NỐI',
     title: 'Chương Trình Mentor - Mentee',
@@ -64,8 +66,19 @@ const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
     accent: '#00F0FF',
   },
   {
+    id: 'pedestal-shirt-side',
+    position: [15.35, 0, -8.3],
+    rotationY: -Math.PI / 2,
+    tag: 'HỌC THUẬT • GẮN KẾT',
+    title: 'Sinh Hoạt Mentor & Chuyên Đề',
+    description:
+      'Không khí trao đổi học thuật cởi mở giữa Mentor và thành viên mới trong các buổi sinh hoạt định kỳ.',
+    image: '/assets/images/activity/mentor_mentee.webp',
+    accent: '#38bdf8',
+  },
+  {
     id: 'pedestal-techware',
-    position: [15.2, 0, -0.1],
+    position: [15.35, 0, 0.0],
     rotationY: -Math.PI / 2,
     tag: 'THỰC HÀNH • WORKSHOP',
     title: 'Sự Kiện & Workshop TechWare',
@@ -76,8 +89,8 @@ const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
   },
   {
     id: 'pedestal-techxplore',
-    position: [-8.7, 0, 6.95],
-    rotationY: Math.PI - 0.16,
+    position: [-8.6, 0, 7.1],
+    rotationY: Math.PI,
     tag: 'TUYỂN THÀNH VIÊN',
     title: 'TechXplore Chào Tân Sinh Viên',
     description:
@@ -87,14 +100,58 @@ const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
   },
   {
     id: 'pedestal-ntnm',
-    position: [-3.15, 0, 6.95],
-    rotationY: Math.PI + 0.16,
+    position: [-2.95, 0, 7.1],
+    rotationY: Math.PI,
     tag: 'GẮN KẾT • VĂN HÓA CLB',
     title: 'Đêm Nhạc & Du Lịch Gắn Kết',
     description:
       'Study Hard - Play Harder — khoảnh khắc âm nhạc, thiện nguyện và du lịch nội bộ lưu giữ thanh xuân cùng TechTonic.',
     image: '/assets/images/gallery/ntnm2.webp',
     accent: '#f472b6',
+  },
+  {
+    id: 'pedestal-promenade-nw',
+    position: [-6.7, 0, -9.8],
+    rotationY: Math.PI / 4,
+    tag: 'TRẢI NGHIỆM • TECHWARE',
+    title: 'Không Gian Cộng Đồng TechWare',
+    description:
+      'Chuỗi hoạt động kết nối sinh viên với sản phẩm công nghệ thực tế và chia sẻ kinh nghiệm từ các anh chị.',
+    image: '/assets/images/gallery/tw3.webp',
+    accent: '#a855f7',
+  },
+  {
+    id: 'pedestal-promenade-ne',
+    position: [6.7, 0, -9.8],
+    rotationY: -Math.PI / 4,
+    tag: 'KHÁM PHÁ • TECHXPLORE',
+    title: 'Hành Trình Khám Phá TechXplore',
+    description:
+      'Các trạm thử thách tư duy và định hướng chuyên môn dành cho sinh viên tham gia tuyển thành viên TechTonic.',
+    image: '/assets/images/gallery/tx3.webp',
+    accent: '#00F0FF',
+  },
+  {
+    id: 'pedestal-promenade-w',
+    position: [-7.3, 0, -2.5],
+    rotationY: Math.PI / 2,
+    tag: 'KỶ NIỆM • MENTOR-MENTEE',
+    title: 'Khoảnh Khắc Mentor - Mentee',
+    description:
+      'Những buổi gặp gỡ, sẻ chia học tập và đồng hành phát triển kỹ năng giữa các thế hệ thành viên TechTonic.',
+    image: '/assets/images/gallery/mm9.webp',
+    accent: '#fb923c',
+  },
+  {
+    id: 'pedestal-promenade-e',
+    position: [7.3, 0, -2.5],
+    rotationY: -Math.PI / 2,
+    tag: 'THỰC HÀNH • LẬP TRÌNH',
+    title: 'Thực Hành Chia Sẻ CSLT',
+    description:
+      'Giờ học nhóm trực tiếp giải bài tập thuật toán, cấu trúc dữ liệu và hướng dẫn thực hành trên lớp.',
+    image: '/assets/images/gallery/CSLT3_1.webp',
+    accent: '#38bdf8',
   },
 ];
 
@@ -201,9 +258,9 @@ const PhotoPedestalStand: React.FC<{
 
   return (
     <group position={item.position} rotation={[0, item.rotationY, 0]}>
-      {/* Sculpted Marble & Brushed Metal Gallery Plinth with Physics Collider */}
-      <RigidBody type="fixed" position={[0, 0.48, 0]}>
-        <RoundedBox position={[0, -0.42, 0]} args={[0.98, 0.1, 0.62]} radius={0.025} smoothness={4} receiveShadow>
+      {/* Low-profile Marble & Brushed Metal Gallery Plinth (top height ~0.62m) */}
+      <RigidBody type="fixed" position={[0, 0.31, 0]}>
+        <RoundedBox position={[0, -0.27, 0]} args={[0.9, 0.08, 0.58]} radius={0.02} smoothness={4} receiveShadow>
           <meshStandardMaterial
             color="#334155"
             roughnessMap={metalMaps.roughnessMap}
@@ -211,7 +268,7 @@ const PhotoPedestalStand: React.FC<{
             roughness={0.24}
           />
         </RoundedBox>
-        <RoundedBox args={[0.84, 0.86, 0.5]} radius={0.03} smoothness={4} castShadow receiveShadow>
+        <RoundedBox args={[0.78, 0.54, 0.46]} radius={0.028} smoothness={4} castShadow receiveShadow>
           <meshStandardMaterial
             map={marbleMaps.map}
             roughnessMap={marbleMaps.roughnessMap}
@@ -223,19 +280,19 @@ const PhotoPedestalStand: React.FC<{
           />
         </RoundedBox>
         {/* Top metal collar + neon trim line */}
-        <RoundedBox position={[0, 0.445, 0]} args={[0.9, 0.04, 0.56]} radius={0.015} smoothness={4}>
+        <RoundedBox position={[0, 0.285, 0]} args={[0.84, 0.036, 0.52]} radius={0.012} smoothness={4}>
           <meshStandardMaterial color="#475569" metalness={0.88} roughness={0.22} />
         </RoundedBox>
-        <mesh position={[0, 0.41, 0]}>
-          <boxGeometry args={[0.86, 0.014, 0.52]} />
+        <mesh position={[0, 0.255, 0]}>
+          <boxGeometry args={[0.8, 0.014, 0.48]} />
           <meshBasicMaterial color={item.accent} toneMapped={false} />
         </mesh>
       </RigidBody>
 
-      {/* Tilted Museum Easel Frame & Crisp Photo Canvas */}
+      {/* Low Slanted Museum Easel Frame (y = 0.85, top edge <= 1.08m -> never blocks boards behind!) */}
       <group
-        position={[0, 1.24, 0.02]}
-        rotation={[-0.28, 0, 0]}
+        position={[0, 0.85, 0.02]}
+        rotation={[-0.58, 0, 0]}
         onClick={(e) => {
           e.stopPropagation();
           handleOpen();
@@ -250,14 +307,12 @@ const PhotoPedestalStand: React.FC<{
           setHoveringInteractive(false);
         }}
       >
-        {/* Support neck stem */}
-        <mesh position={[0, -0.26, -0.05]}>
-          <cylinderGeometry args={[0.045, 0.055, 0.2, 20]} />
+        <mesh position={[0, -0.19, -0.05]}>
+          <cylinderGeometry args={[0.04, 0.05, 0.16, 20]} />
           <meshStandardMaterial color="#64748b" metalness={0.88} roughness={0.22} />
         </mesh>
 
-        {/* Brushed metal gallery photo frame */}
-        <RoundedBox args={[0.92, 0.6, 0.045]} radius={0.018} smoothness={4} castShadow>
+        <RoundedBox args={[0.84, 0.54, 0.04]} radius={0.016} smoothness={4} castShadow>
           <meshStandardMaterial
             color="#1e293b"
             roughnessMap={metalMaps.roughnessMap}
@@ -269,20 +324,20 @@ const PhotoPedestalStand: React.FC<{
         </RoundedBox>
 
         {/* Top miniature picture lamp bar */}
-        <group position={[0, 0.33, 0.08]}>
+        <group position={[0, 0.295, 0.07]}>
           <mesh rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[0.014, 0.014, 0.46, 14]} />
+            <cylinderGeometry args={[0.012, 0.012, 0.42, 14]} />
             <meshStandardMaterial color="#64748b" metalness={0.88} roughness={0.2} />
           </mesh>
-          <mesh position={[0, -0.012, 0]}>
-            <boxGeometry args={[0.42, 0.008, 0.014]} />
+          <mesh position={[0, -0.011, 0]}>
+            <boxGeometry args={[0.38, 0.008, 0.012]} />
             <meshBasicMaterial color={item.accent} toneMapped={false} />
           </mesh>
         </group>
 
         {/* 16:10 Crisp Photograph */}
-        <mesh position={[0, 0, 0.025]}>
-          <planeGeometry args={[0.84, 0.525]} />
+        <mesh position={[0, 0, 0.023]}>
+          <planeGeometry args={[0.76, 0.475]} />
           {photoTex ? (
             <meshStandardMaterial
               map={photoTex}
@@ -299,12 +354,12 @@ const PhotoPedestalStand: React.FC<{
       </group>
 
       {/* Front Engraved Caption Plaque on Plinth */}
-      <group position={[0, 0.74, 0.26]} rotation={[-0.14, 0, 0]}>
-        <RoundedBox args={[0.68, 0.19, 0.024]} radius={0.008} smoothness={4}>
+      <group position={[0, 0.45, 0.24]} rotation={[-0.14, 0, 0]}>
+        <RoundedBox args={[0.64, 0.175, 0.022]} radius={0.008} smoothness={4}>
           <meshStandardMaterial color="#334155" metalness={0.86} roughness={0.24} />
         </RoundedBox>
-        <mesh position={[0, 0, 0.014]}>
-          <planeGeometry args={[0.64, 0.16]} />
+        <mesh position={[0, 0, 0.013]}>
+          <planeGeometry args={[0.6, 0.15]} />
           <meshStandardMaterial
             map={captionTex}
             emissive="#ffffff"
