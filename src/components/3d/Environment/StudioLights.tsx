@@ -30,13 +30,8 @@ export const StudioLights: React.FC = () => {
   const timelineTarget = useRef<THREE.Object3D>(new THREE.Object3D());
   const activitiesTarget = useRef<THREE.Object3D>(new THREE.Object3D());
   const interactiveTarget = useRef<THREE.Object3D>(new THREE.Object3D());
-  const bcnEventsTarget = useRef<THREE.Object3D>(new THREE.Object3D());
-  const bcnTechTarget = useRef<THREE.Object3D>(new THREE.Object3D());
   const partnersTarget = useRef<THREE.Object3D>(new THREE.Object3D());
-  const mediaTreeTarget = useRef<THREE.Object3D>(new THREE.Object3D());
-  const hrTreeTarget = useRef<THREE.Object3D>(new THREE.Object3D());
   const testimonialsTarget = useRef<THREE.Object3D>(new THREE.Object3D());
-  const leadershipTreeTarget = useRef<THREE.Object3D>(new THREE.Object3D());
 
   // Animated neon accent lights for living museum depth
   const islandCyanPulseRef = useRef<THREE.PointLight>(null);
@@ -122,13 +117,8 @@ export const StudioLights: React.FC = () => {
       <primitive object={timelineTarget.current} position={[-16.4, 3.2, -6]} />
       <primitive object={activitiesTarget.current} position={[-16.4, 3.2, 3.6]} />
       <primitive object={interactiveTarget.current} position={[9.5, 2.4, -16.8]} />
-      <primitive object={bcnEventsTarget.current} position={[16.4, 2.7, -15.1]} />
-      <primitive object={bcnTechTarget.current} position={[-16.4, 2.7, -15.1]} />
       <primitive object={partnersTarget.current} position={[-12.6, 3.1, 8.05]} />
-      <primitive object={mediaTreeTarget.current} position={[-5.8, 2.7, 8.05]} />
-      <primitive object={hrTreeTarget.current} position={[4.4, 2.7, 8.05]} />
       <primitive object={testimonialsTarget.current} position={[9.6, 3.1, 8.05]} />
-      <primitive object={leadershipTreeTarget.current} position={[14.8, 2.7, 8.05]} />
 
       {/* 1. Moody Architectural Low-Key Fill so lighted zones pop against darker corridors */}
       <hemisphereLight color="#38bdf8" groundColor="#040711" intensity={0.28} />
@@ -246,7 +236,7 @@ export const StudioLights: React.FC = () => {
       />
       <pointLight position={[0, 4.6, -5]} intensity={6.5} distance={7} decay={2} color="#a855f7" />
 
-      {/* 6. Left Wall Exhibits: Cyan Timeline + Neon Magenta Activities + Electric Blue Tech Tree */}
+      {/* 6. Left Wall Exhibits: Cyan Timeline + Neon Magenta Activities */}
       <spotLight
         position={[-9.5, 5.9, -6]}
         target={timelineTarget.current}
@@ -270,18 +260,8 @@ export const StudioLights: React.FC = () => {
         penumbra={0.6}
         color="#e879f9"
       />
-      <spotLight
-        position={[-11.2, 5.8, -14.8]}
-        target={bcnTechTarget.current}
-        intensity={34}
-        distance={14}
-        decay={1.8}
-        angle={0.62}
-        penumbra={0.6}
-        color="#38bdf8"
-      />
 
-      {/* 7. Right Wall Exhibits: Couture Club Shirt + Neon Purple Events Tree + Cobalt Academics */}
+      {/* 7. Right Wall Exhibits: Couture Club Shirt + Cobalt Academics */}
       <spotLight
         position={[9.2, 6.0, -9.2]}
         target={shirtTarget.current}
@@ -302,16 +282,6 @@ export const StudioLights: React.FC = () => {
         distance={7.5}
         decay={2}
         color="#00F0FF"
-      />
-      <spotLight
-        position={[11.2, 5.8, -14.8]}
-        target={bcnEventsTarget.current}
-        intensity={36}
-        distance={14}
-        decay={1.8}
-        angle={0.62}
-        penumbra={0.6}
-        color="#c084fc"
       />
       <pointLight position={[14.2, 3.6, -4.2]} intensity={14} distance={9} decay={2} color="#38bdf8" />
       <pointLight position={[14.2, 3.6, 3.8]} intensity={14} distance={9} decay={2} color="#60a5fa" />
@@ -336,7 +306,7 @@ export const StudioLights: React.FC = () => {
         color="#00F0FF"
       />
 
-      {/* 9. Front Inner Walls: Distinct Color-Coded Department & Board Spotlights */}
+      {/* 9. Front Inner Wall Boards: Partners & Testimonials (Department trees have their own stage spotlight rigs) */}
       <spotLight
         position={[-12.6, 5.6, 2.2]}
         target={partnersTarget.current}
@@ -348,26 +318,6 @@ export const StudioLights: React.FC = () => {
         color="#38bdf8"
       />
       <spotLight
-        position={[-5.8, 5.5, 2.8]}
-        target={mediaTreeTarget.current}
-        intensity={28}
-        distance={12}
-        decay={1.8}
-        angle={0.58}
-        penumbra={0.62}
-        color="#fbbf24"
-      />
-      <spotLight
-        position={[4.4, 5.4, 3.2]}
-        target={hrTreeTarget.current}
-        intensity={26}
-        distance={11}
-        decay={1.9}
-        angle={0.52}
-        penumbra={0.6}
-        color="#34d399"
-      />
-      <spotLight
         position={[9.6, 5.6, 2.2]}
         target={testimonialsTarget.current}
         intensity={36}
@@ -376,16 +326,6 @@ export const StudioLights: React.FC = () => {
         angle={0.65}
         penumbra={0.6}
         color="#60a5fa"
-      />
-      <spotLight
-        position={[14.8, 5.4, 3.2]}
-        target={leadershipTreeTarget.current}
-        intensity={28}
-        distance={11}
-        decay={1.9}
-        angle={0.52}
-        penumbra={0.6}
-        color="#fbbf24"
       />
     </group>
   );

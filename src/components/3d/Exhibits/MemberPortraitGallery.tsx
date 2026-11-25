@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { useHeritageStore } from '../../../store/useHeritageStore';
@@ -17,6 +18,7 @@ interface DeptWallTreeConfig {
   title: string;
   description: string;
   accent: string;
+  stageGlow: string;
   position: [number, number, number];
   rotationY: number;
   bannerWidth: number;
@@ -24,13 +26,14 @@ interface DeptWallTreeConfig {
   cardWidth: [number, number]; // [row1&2 card width, row3 card width]
 }
 
-// Each Department has its own dedicated wall tree positioned comfortably at museum eye height
+// Each Department has its own dedicated wall tree & color-matched stage spotlight rig
 const DEPT_WALL_TREES: DeptWallTreeConfig[] = [
   {
     dept: 'Ban Sự Kiện',
     title: 'BAN SỰ KIỆN • NHIỆM KỲ 2026–2027',
     description: 'Tổ chức & điều phối các chương trình kết nối — tạo dấu ấn hình ảnh CLB',
-    accent: '#a855f7',
+    accent: '#c084fc',
+    stageGlow: '#a855f7',
     position: [16.52, 0, -15.1],
     rotationY: -Math.PI / 2,
     bannerWidth: 4.5,
@@ -41,7 +44,8 @@ const DEPT_WALL_TREES: DeptWallTreeConfig[] = [
     dept: 'Ban Chuyên Môn',
     title: 'BAN CHUYÊN MÔN • NHIỆM KỲ 2026–2027',
     description: 'Tổ chức hoạt động học thuật chuyên sâu, dự án FE/BE/AI & định hướng thi đấu',
-    accent: '#38bdf8',
+    accent: '#00E5FF',
+    stageGlow: '#00F0FF',
     position: [-16.52, 0, -15.1],
     rotationY: Math.PI / 2,
     bannerWidth: 4.5,
@@ -52,7 +56,8 @@ const DEPT_WALL_TREES: DeptWallTreeConfig[] = [
     dept: 'Ban Truyền Thông',
     title: 'BAN TRUYỀN THÔNG • NHIỆM KỲ 2026–2027',
     description: 'Sáng tạo nội dung, thiết kế ấn phẩm & lan tỏa hình ảnh CLB đến cộng đồng',
-    accent: '#f59e0b',
+    accent: '#fb923c',
+    stageGlow: '#f97316',
     position: [-5.8, 0, 8.05],
     rotationY: Math.PI,
     bannerWidth: 4.8,
@@ -64,6 +69,7 @@ const DEPT_WALL_TREES: DeptWallTreeConfig[] = [
     title: 'BAN NHÂN SỰ (2026–2027)',
     description: 'Phụ trách gây quỹ, đối ngoại, hồ sơ nhân sự & hậu cần vận hành CLB',
     accent: '#34d399',
+    stageGlow: '#10b981',
     position: [4.4, 0, 8.05],
     rotationY: Math.PI,
     bannerWidth: 3.0,
@@ -75,6 +81,7 @@ const DEPT_WALL_TREES: DeptWallTreeConfig[] = [
     title: 'BAN CHỦ NHIỆM (2026–2027)',
     description: 'Điều hành chiến lược, giám sát vận hành & phối hợp toàn diện các ban',
     accent: '#fbbf24',
+    stageGlow: '#f59e0b',
     position: [14.8, 0, 8.05],
     rotationY: Math.PI,
     bannerWidth: 3.0,
@@ -171,6 +178,27 @@ function createPortraitLabelTexture(member: ExecutiveMember, accent: string): TH
     ctx.fillText(`${member.role} • ${member.department}`, 284, 108, 530);
   }
   return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
+}
+
+function createStageGlowTexture(hexColor: string, intensityAlpha = 0.88): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    const col = new THREE.Color(hexColor);
+    const r = Math.round(col.r * 255);
+    const g = Math.round(col.g * 255);
+    const b = Math.round(col.b * 255);
+    const grad = ctx.createRadialGradient(128, 128, 6, 128, 128, 126);
+    grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${intensityAlpha})`);
+    grad.addColorStop(0.32, `rgba(${r}, ${g}, ${b}, ${(intensityAlpha * 0.52).toFixed(3)})`);
+    grad.addColorStop(0.68, `rgba(${r}, ${g}, ${b}, ${(intensityAlpha * 0.16).toFixed(3)})`);
+    grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+  }
+  return finalizeCrispTexture(canvas, { anisotropy: 8, srgb: true });
 }
 
 const ConnectorLine: React.FC<{
@@ -328,9 +356,9 @@ const PortraitCard: React.FC<{
           map={photoTex ?? fallbackTex}
           emissive="#ffffff"
           emissiveMap={photoTex ?? fallbackTex}
-          emissiveIntensity={hovered ? 0.48 : 0.3}
-          roughness={0.36}
-          metalness={0.04}
+          emissiveIntensity={hovered ? 0.44 : 0.3}
+          roughness={0.88}
+          metalness={0}
         />
       </mesh>
 
@@ -340,9 +368,9 @@ const PortraitCard: React.FC<{
           map={labelTex}
           emissive="#ffffff"
           emissiveMap={labelTex}
-          emissiveIntensity={hovered ? 0.5 : 0.34}
-          roughness={0.38}
-          metalness={0.05}
+          emissiveIntensity={hovered ? 0.46 : 0.34}
+          roughness={0.88}
+          metalness={0}
         />
       </mesh>
     </group>
@@ -353,21 +381,45 @@ const DepartmentPortraitTree: React.FC<{
   config: DeptWallTreeConfig;
   members: ExecutiveMember[];
   metalMaps: { roughnessMap: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture };
-}> = ({ config, members, metalMaps }) => {
+  phaseOffset: number;
+}> = ({ config, members, metalMaps, phaseOffset }) => {
   const row1 = members.filter((m) => classifyTier(m.role) === 1);
   const row2 = members.filter((m) => classifyTier(m.role) === 2);
   const row3 = members.filter((m) => classifyTier(m.role) === 3);
+
+  const stageTargetRef = useRef<THREE.Object3D>(new THREE.Object3D());
+  const colorSpotRef = useRef<THREE.SpotLight>(null);
+  const outerBeamMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const wallAuraMatRef = useRef<THREE.MeshBasicMaterial>(null);
 
   const bannerTex = useMemo(
     () => createBannerTexture(config.title, config.description, config.accent),
     [config.title, config.description, config.accent]
   );
+  const stageGlowTex = useMemo(
+    () => createStageGlowTexture(config.stageGlow, 0.9),
+    [config.stageGlow]
+  );
 
   useEffect(() => {
     return () => {
       bannerTex.dispose();
+      stageGlowTex.dispose();
     };
-  }, [bannerTex]);
+  }, [bannerTex, stageGlowTex]);
+
+  useFrame((state) => {
+    const pulse = Math.sin(state.clock.elapsedTime * 1.45 + phaseOffset) * 0.5 + 0.5;
+    if (colorSpotRef.current) {
+      colorSpotRef.current.intensity = 38 + pulse * 8;
+    }
+    if (outerBeamMatRef.current) {
+      outerBeamMatRef.current.opacity = 0.07 + pulse * 0.025;
+    }
+    if (wallAuraMatRef.current) {
+      wallAuraMatRef.current.opacity = 0.32 + pulse * 0.09;
+    }
+  });
 
   // Lowered natural eye-height layout (y = 1.02 .. 3.70, banner at y = 4.46 instead of 5.52)
   const row1Y = 3.7;
@@ -376,6 +428,8 @@ const DepartmentPortraitTree: React.FC<{
   const [normW, row3W] = config.cardWidth;
   const cardH = computeCardMetrics(normW).height;
   const row3H = computeCardMetrics(row3W).height;
+  const isWideTree = config.bannerWidth > 3.8;
+  const beamRadiusBottom = isWideTree ? 2.45 : 1.72;
 
   const layoutRow = (list: ExecutiveMember[], step: number, y: number, w: number) =>
     list.map((m, idx) => ({
@@ -394,6 +448,124 @@ const DepartmentPortraitTree: React.FC<{
 
   return (
     <group position={config.position} rotation={[0, config.rotationY, 0]}>
+      {/* Aimed target right at center of this department portrait tree */}
+      <primitive object={stageTargetRef.current} position={[0, 2.48, 0.04]} />
+
+      {/* Theatrical Stage Spotlight Fixture + Dual Light Cones aimed squarely at tree */}
+      <group position={[0, 5.95, 2.9]} rotation={[0.68, 0, 0]}>
+        {/* Ceiling stem & mounting yoke */}
+        <mesh position={[0, 0.24, 0]}>
+          <cylinderGeometry args={[0.03, 0.03, 0.42, 16]} />
+          <meshStandardMaterial color="#334155" metalness={0.86} roughness={0.24} />
+        </mesh>
+        {/* Stage PAR/Spot Barrel */}
+        <mesh>
+          <cylinderGeometry args={[0.16, 0.19, 0.4, 28]} />
+          <meshStandardMaterial
+            color="#1e293b"
+            roughnessMap={metalMaps.roughnessMap}
+            metalness={0.86}
+            roughness={0.26}
+          />
+        </mesh>
+        {/* Colored Neon Bezel Collar */}
+        <mesh position={[0, -0.19, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.18, 0.016, 12, 32]} />
+          <meshBasicMaterial color={config.stageGlow} toneMapped={false} />
+        </mesh>
+        {/* Glowing Stage Spotlight Lens */}
+        <mesh position={[0, -0.205, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[0.155, 28]} />
+          <meshBasicMaterial color={config.accent} toneMapped={false} />
+        </mesh>
+
+        {/* Outer Colored Stage Beam Cone */}
+        <mesh position={[0, -2.48, 0]}>
+          <cylinderGeometry args={[0.15, beamRadiusBottom, 4.55, 36, 1, true]} />
+          <meshBasicMaterial
+            ref={outerBeamMatRef}
+            color={config.stageGlow}
+            transparent
+            opacity={0.075}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+
+        {/* Inner Crisp Core Stage Beam */}
+        <mesh position={[0, -2.42, 0]}>
+          <cylinderGeometry args={[0.08, beamRadiusBottom * 0.56, 4.4, 28, 1, true]} />
+          <meshBasicMaterial
+            color="#ffffff"
+            transparent
+            opacity={0.042}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      </group>
+
+      {/* Real Colored Stage Wash SpotLight + Soft White Key SpotLight (anti-glare balance) */}
+      <spotLight
+        ref={colorSpotRef}
+        position={[0, 5.72, 2.72]}
+        target={stageTargetRef.current}
+        intensity={42}
+        distance={14}
+        decay={1.7}
+        angle={isWideTree ? 0.64 : 0.5}
+        penumbra={0.78}
+        color={config.stageGlow}
+      />
+      <spotLight
+        position={[0, 5.72, 2.72]}
+        target={stageTargetRef.current}
+        intensity={22}
+        distance={12}
+        decay={1.8}
+        angle={isWideTree ? 0.52 : 0.4}
+        penumbra={0.76}
+        color="#f8fafc"
+      />
+      {/* Gentle Overhead Stage Wash Fill without frontal glare hotspot */}
+      <pointLight
+        position={[0, 3.8, 2.25]}
+        intensity={3.5}
+        distance={8.0}
+        decay={2}
+        color={config.accent}
+      />
+
+      {/* Wall Radial Colored Stage Halo behind Tree */}
+      <mesh position={[0, 2.65, -0.02]}>
+        <planeGeometry args={[config.bannerWidth + 2.1, 5.1]} />
+        <meshBasicMaterial
+          ref={wallAuraMatRef}
+          map={stageGlowTex}
+          transparent
+          opacity={0.32}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Floor Stage Light Puddle & Edge Marker Strip in Front of Tree */}
+      <mesh position={[0, 0.013, 1.1]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[config.bannerWidth + 1.1, 3.2]} />
+        <meshBasicMaterial
+          map={stageGlowTex}
+          transparent
+          opacity={0.52}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+      <mesh position={[0, 0.016, 0.05]}>
+        <boxGeometry args={[config.bannerWidth - 0.1, 0.02, 0.04]} />
+        <meshBasicMaterial color={config.stageGlow} toneMapped={false} />
+      </mesh>
       {/* Wall Section Title Banner comfortably at eye-visible upper height */}
       <group position={[0, 4.5, 0]}>
         <RoundedBox position={[0, 0, -0.025]} args={[config.bannerWidth, 0.42, 0.045]} radius={0.02} smoothness={4}>
@@ -405,9 +577,9 @@ const DepartmentPortraitTree: React.FC<{
             map={bannerTex}
             emissive="#ffffff"
             emissiveMap={bannerTex}
-            emissiveIntensity={0.38}
-            roughness={0.38}
-            metalness={0.06}
+            emissiveIntensity={0.4}
+            roughness={0.86}
+            metalness={0}
           />
         </mesh>
       </group>
@@ -549,12 +721,13 @@ export const MemberPortraitGallery: React.FC = () => {
 
   return (
     <group>
-      {DEPT_WALL_TREES.map((config) => (
+      {DEPT_WALL_TREES.map((config, idx) => (
         <DepartmentPortraitTree
           key={`wall-tree-${config.dept}`}
           config={config}
           members={currentMembers.filter((m) => m.department === config.dept)}
           metalMaps={metalMaps}
+          phaseOffset={idx * 1.15}
         />
       ))}
     </group>
