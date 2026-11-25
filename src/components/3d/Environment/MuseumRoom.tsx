@@ -68,61 +68,70 @@ export const MuseumRoom: React.FC = () => {
   const metalMaps = useMemo(() => createBrushedMetalMaps(), []);
   const leatherMaps = useMemo(() => createLeatherMaps(), []);
   const guideMatRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
+  const hallBeamHaloRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const tunnelRibTopRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
+  const tunnelRibHaloRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const tunnelRibLeftRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const tunnelRibRightRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
+  const tunnelConeRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const tunnelDownlightRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const tunnelSideStripRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const portalGlowMatRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
-  const ribGlowLevels = useRef<number[]>([0.25, 0.05, 0.05, 0.05, 0.05]);
-  const portalLevelRef = useRef<number>(0.12);
+  const portalConeRef = useRef<THREE.MeshBasicMaterial>(null);
+  const ribGlowLevels = useRef<number[]>([0.25, 0.04, 0.04, 0.04, 0.04]);
+  const portalLevelRef = useRef<number>(0.1);
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
     const playerZ = state.camera.position.z;
 
-    // 1. Sequential Superstar Runway Floor Guide Bars (light up ahead of player footsteps)
+    // 0. Organic breathing neon halo waves across the 4 Main Hall overhead ceiling beams
+    hallBeamHaloRefs.current.forEach((mat, idx) => {
+      if (!mat) return;
+      const pulse = 0.22 + (Math.sin(t * 1.45 - idx * 0.9) * 0.5 + 0.5) * 0.14;
+      mat.opacity = pulse;
+    });
+
+    // 1. Sequential Superstar Runway Floor Guide Bars (light up brightly ahead of player footsteps)
     GUIDE_Z_POSITIONS.forEach((gz, idx) => {
       const mat = guideMatRefs.current[idx];
       if (!mat) return;
-      const wave = Math.sin(t * 3.0 - idx * 0.7) * 0.5 + 0.5;
+      const wave = Math.sin(t * 3.2 - idx * 0.7) * 0.5 + 0.5;
       if (gz > 8.5) {
-        // Tunnel runway bars: dim ahead of player, blazing brightly right ahead & under footsteps
-        const distAhead = playerZ - gz; // positive means bar is in front of player
+        const distAhead = playerZ - gz;
         const active =
-          distAhead >= -3.5 && distAhead <= 4.8
+          distAhead >= -3.5 && distAhead <= 5.2
             ? 1.0
             : distAhead < -3.5
-            ? 0.28
+            ? 0.34
             : 0.06;
-        const targetOp = active * (0.38 + wave * 0.58);
-        mat.opacity = THREE.MathUtils.lerp(mat.opacity, targetOp, 1 - Math.exp(-7 * dt));
+        const targetOp = active * (0.48 + wave * 0.52);
+        mat.opacity = THREE.MathUtils.lerp(mat.opacity, targetOp, 1 - Math.exp(-8 * dt));
       } else {
-        // Hall threshold bars ignite as player nears the exit portal
-        const hallOn = playerZ <= 12.0 ? 1.0 : 0.14;
+        const hallOn = playerZ <= 12.6 ? 1.0 : 0.14;
         mat.opacity = THREE.MathUtils.lerp(
           mat.opacity,
-          hallOn * (0.24 + wave * 0.6),
-          1 - Math.exp(-5 * dt)
+          hallOn * (0.34 + wave * 0.62),
+          1 - Math.exp(-5.5 * dt)
         );
       }
     });
 
-    // 2. Sequential Tunnel Rib Arches & Overhead Downlights (stadium walkout reveal!)
+    // 2. Powerful Stadium Walkout Tunnel Arches, Volumetric Floodlight Cones & Downlights
     TUNNEL_RIB_Z.forEach((tz, idx) => {
-      const triggerZ = idx === 0 ? 25.5 : tz + 3.8;
-      const trailZ = tz - 6.8;
-      let target = 0.05;
+      const triggerZ = idx === 0 ? 25.5 : tz + 4.1;
+      const trailZ = tz - 7.2;
+      let target = 0.04;
       if (idx === 0 && playerZ > triggerZ) {
-        target = 0.25;
+        target = 0.28;
       } else if (playerZ <= triggerZ && playerZ >= trailZ) {
         target = 1.0;
       } else if (playerZ < trailZ) {
-        target = 0.26;
+        target = 0.28;
       }
 
-      const speed = target > ribGlowLevels.current[idx] ? 6.5 : 2.6;
+      const speed = target > ribGlowLevels.current[idx] ? 8.0 : 2.8;
       ribGlowLevels.current[idx] = THREE.MathUtils.lerp(
         ribGlowLevels.current[idx],
         target,
@@ -132,32 +141,39 @@ export const MuseumRoom: React.FC = () => {
 
       const topMat = tunnelRibTopRefs.current[idx];
       if (topMat) topMat.opacity = lvl;
+      const haloMat = tunnelRibHaloRefs.current[idx];
+      if (haloMat) haloMat.opacity = lvl * 0.38;
       const leftMat = tunnelRibLeftRefs.current[idx];
-      if (leftMat) leftMat.opacity = lvl * 0.78;
+      if (leftMat) leftMat.opacity = lvl * 0.92;
       const rightMat = tunnelRibRightRefs.current[idx];
-      if (rightMat) rightMat.opacity = lvl * 0.78;
+      if (rightMat) rightMat.opacity = lvl * 0.92;
+      const coneMat = tunnelConeRefs.current[idx];
+      if (coneMat) coneMat.opacity = Math.max(0, (lvl - 0.12) * 0.135);
       const dlMat = tunnelDownlightRefs.current[idx];
       if (dlMat) dlMat.opacity = 0.06 + lvl * 0.94;
     });
 
     // 3. Long Tunnel Ceiling & Floor Edge Strips scale smoothly with walkout progress
-    const walkoutProgress = THREE.MathUtils.clamp((25.8 - playerZ) / 15.5, 0, 1);
+    const walkoutProgress = THREE.MathUtils.clamp((25.8 - playerZ) / 14.5, 0, 1);
     tunnelSideStripRefs.current.forEach((mat) => {
       if (mat) {
-        mat.opacity = 0.12 + walkoutProgress * 0.88;
+        mat.opacity = 0.16 + walkoutProgress * 0.84;
       }
     });
 
-    // 4. Grand Entrance Threshold Portal ignites dramatically as you step up to z <= 12.2
-    const targetPortal = playerZ <= 12.2 ? 0.78 + Math.sin(t * 2.2) * 0.22 : 0.12;
+    // 4. Grand Entrance Threshold Portal & Light Curtain ignite powerfully at z <= 12.6
+    const targetPortal = playerZ <= 12.6 ? 0.82 + Math.sin(t * 2.2) * 0.18 : 0.1;
     portalLevelRef.current = THREE.MathUtils.lerp(
       portalLevelRef.current,
       targetPortal,
-      1 - Math.exp(-4.5 * dt)
+      1 - Math.exp(-5.0 * dt)
     );
     portalGlowMatRefs.current.forEach((mat) => {
       if (mat) mat.opacity = portalLevelRef.current;
     });
+    if (portalConeRef.current) {
+      portalConeRef.current.opacity = Math.max(0, (portalLevelRef.current - 0.15) * 0.11);
+    }
   });
 
   useEffect(() => {
@@ -201,26 +217,45 @@ export const MuseumRoom: React.FC = () => {
         </mesh>
       </RigidBody>
 
-      {/* Main Hall Planar Real-Time Space-Mirror Reflector Floor (reflects stars, Moon, neon & golden island!) */}
+      {/* Main Hall Planar Real-Time Space-Mirror Reflector Floor (crisp dynamic neon & cosmic reflections!) */}
       <mesh position={[0, 0.002, -5]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[31.8, 25.8]} />
         <MeshReflectorMaterial
           key={`floor-reflector-${graphicsQuality}`}
-          blur={graphicsQuality === 'high' ? [260, 80] : [180, 60]}
+          blur={graphicsQuality === 'high' ? [190, 60] : [140, 50]}
           resolution={graphicsQuality === 'high' ? 512 : 256}
-          mixBlur={0.86}
-          mixStrength={graphicsQuality === 'high' ? 0.62 : 0.48}
-          roughness={0.42}
-          depthScale={0.8}
-          minDepthThreshold={0.4}
+          mixBlur={0.82}
+          mixStrength={graphicsQuality === 'high' ? 0.85 : 0.62}
+          roughness={0.32}
+          depthScale={0.75}
+          minDepthThreshold={0.35}
           maxDepthThreshold={1.4}
-          color="#0e182c"
-          metalness={0.36}
-          mirror={0.58}
+          color="#0c1528"
+          metalness={0.44}
+          mirror={0.72}
           map={floorMaps.map}
           roughnessMap={floorMaps.roughnessMap}
           bumpMap={floorMaps.bumpMap}
-          bumpScale={0.004}
+          bumpScale={0.003}
+        />
+      </mesh>
+
+      {/* Entrance Tunnel Mirror Runway Reflection Strip (reflects stadium walkout beams right underfoot!) */}
+      <mesh position={[0, 0.003, 18.5]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[4.75, 20.1]} />
+        <MeshReflectorMaterial
+          key={`tunnel-reflector-${graphicsQuality}`}
+          blur={[160, 50]}
+          resolution={graphicsQuality === 'high' ? 384 : 256}
+          mixBlur={0.8}
+          mixStrength={0.92}
+          roughness={0.26}
+          depthScale={0.6}
+          minDepthThreshold={0.35}
+          maxDepthThreshold={1.35}
+          color="#0a1324"
+          metalness={0.48}
+          mirror={0.75}
         />
       </mesh>
 
@@ -305,7 +340,7 @@ export const MuseumRoom: React.FC = () => {
         </mesh>
       ))}
 
-      {HALL_BEAM_CONFIG.map((beam) => (
+      {HALL_BEAM_CONFIG.map((beam, bIdx) => (
         <group key={`beam-${beam.z}`} position={[0, 6.32, beam.z]}>
           <RoundedBox args={[32, 0.28, 0.44]} radius={0.04} smoothness={4}>
             <meshStandardMaterial
@@ -313,20 +348,33 @@ export const MuseumRoom: React.FC = () => {
               roughnessMap={metalMaps.roughnessMap}
               bumpMap={metalMaps.bumpMap}
               bumpScale={0.004}
-              metalness={0.62}
-              roughness={0.38}
+              metalness={0.72}
+              roughness={0.3}
             />
           </RoundedBox>
+          {/* Saturated outer neon bar */}
           <mesh position={[0, -0.15, 0]}>
-            <boxGeometry args={[28, 0.024, 0.11]} />
+            <boxGeometry args={[28.4, 0.034, 0.14]} />
             <meshBasicMaterial color={beam.color} toneMapped={false} />
           </mesh>
-          <mesh position={[0, -0.17, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[28, 0.34]} />
+          {/* Hot bright inner neon filament for crisp realistic glass-tube glow */}
+          <mesh position={[0, -0.168, 0]}>
+            <boxGeometry args={[28.2, 0.012, 0.045]} />
             <meshBasicMaterial
+              color={beam.color === '#00F0FF' ? '#e0fbff' : '#f5e8ff'}
+              toneMapped={false}
+            />
+          </mesh>
+          {/* Wide breathing optical neon ceiling halo */}
+          <mesh position={[0, -0.18, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[28.8, 0.78]} />
+            <meshBasicMaterial
+              ref={(el) => {
+                hallBeamHaloRefs.current[bIdx] = el;
+              }}
               color={beam.color}
               transparent
-              opacity={0.14}
+              opacity={0.28}
               blending={THREE.AdditiveBlending}
               depthWrite={false}
               side={THREE.DoubleSide}
@@ -335,42 +383,42 @@ export const MuseumRoom: React.FC = () => {
         </group>
       ))}
 
-      {/* Subtle Volumetric Light Cones under Hero Spotlights */}
+      {/* Cinematic Volumetric Light Shafts under Hero Spotlights */}
       <mesh position={[0, 3.6, -5]}>
-        <coneGeometry args={[3.4, 4.9, 32, 1, true]} />
+        <coneGeometry args={[3.5, 5.1, 32, 1, true]} />
         <meshBasicMaterial
           color="#fbbf24"
           transparent
-          opacity={0.025}
+          opacity={0.045}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           side={THREE.DoubleSide}
         />
       </mesh>
       <mesh position={[13.8, 3.6, -10.4]}>
-        <coneGeometry args={[2.0, 4.7, 28, 1, true]} />
+        <coneGeometry args={[2.1, 4.9, 28, 1, true]} />
         <meshBasicMaterial
           color="#00F0FF"
           transparent
-          opacity={0.028}
+          opacity={0.044}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           side={THREE.DoubleSide}
         />
       </mesh>
       <mesh position={[0, 4.1, -15.4]} rotation={[-0.36, 0, 0]}>
-        <coneGeometry args={[2.5, 4.8, 28, 1, true]} />
+        <coneGeometry args={[2.7, 4.9, 28, 1, true]} />
         <meshBasicMaterial
           color="#38bdf8"
           transparent
-          opacity={0.024}
+          opacity={0.036}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           side={THREE.DoubleSide}
         />
       </mesh>
 
-      {/* Extended Entrance Tunnel Architectural Rib Arches & Sequential Superstar Walkout Strips */}
+      {/* Extended Entrance Tunnel Architectural Rib Arches, Optical Neon Halos & Volumetric Stadium Floodlight Cones */}
       {TUNNEL_RIB_Z.map((tz, i) => {
         const ribColor = i % 2 === 0 ? '#00F0FF' : '#a855f7';
         return (
@@ -379,25 +427,56 @@ export const MuseumRoom: React.FC = () => {
               <meshStandardMaterial
                 color="#141e32"
                 roughnessMap={metalMaps.roughnessMap}
-                metalness={0.72}
-                roughness={0.32}
+                metalness={0.78}
+                roughness={0.28}
               />
             </RoundedBox>
+            {/* Ceiling arch neon tube */}
             <mesh position={[0, -0.13, 0]}>
-              <boxGeometry args={[4.2, 0.026, 0.095]} />
+              <boxGeometry args={[4.3, 0.034, 0.12]} />
               <meshBasicMaterial
                 ref={(el) => {
                   tunnelRibTopRefs.current[i] = el;
                 }}
                 color={ribColor}
                 transparent
-                opacity={i === 0 ? 0.25 : 0.05}
+                opacity={i === 0 ? 0.25 : 0.04}
                 toneMapped={false}
               />
             </mesh>
-            {/* Side wall vertical neon arch continuation */}
+            {/* Ceiling arch optical neon halo */}
+            <mesh position={[0, -0.155, 0]} rotation={[Math.PI / 2, 0, 0]}>
+              <planeGeometry args={[4.5, 0.62]} />
+              <meshBasicMaterial
+                ref={(el) => {
+                  tunnelRibHaloRefs.current[i] = el;
+                }}
+                color={ribColor}
+                transparent
+                opacity={i === 0 ? 0.08 : 0.01}
+                blending={THREE.AdditiveBlending}
+                depthWrite={false}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+            {/* Powerful Volumetric Stadium Floodlight Beam Cone descending onto the glossy runway */}
+            <mesh position={[0, -3.15, 0]}>
+              <coneGeometry args={[2.25, 5.95, 28, 1, true]} />
+              <meshBasicMaterial
+                ref={(el) => {
+                  tunnelConeRefs.current[i] = el;
+                }}
+                color={ribColor}
+                transparent
+                opacity={0}
+                blending={THREE.AdditiveBlending}
+                depthWrite={false}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+            {/* Side wall vertical neon arch continuations (wider vivid tubes) */}
             <mesh position={[-2.38, -3.1, 0]}>
-              <boxGeometry args={[0.028, 5.9, 0.045]} />
+              <boxGeometry args={[0.042, 5.95, 0.068]} />
               <meshBasicMaterial
                 ref={(el) => {
                   tunnelRibLeftRefs.current[i] = el;
@@ -409,7 +488,7 @@ export const MuseumRoom: React.FC = () => {
               />
             </mesh>
             <mesh position={[2.38, -3.1, 0]}>
-              <boxGeometry args={[0.028, 5.9, 0.045]} />
+              <boxGeometry args={[0.042, 5.95, 0.068]} />
               <meshBasicMaterial
                 ref={(el) => {
                   tunnelRibRightRefs.current[i] = el;
@@ -627,7 +706,7 @@ export const MuseumRoom: React.FC = () => {
           />
         </RoundedBox>
         <mesh position={[0, 5.37, 0]}>
-          <boxGeometry args={[4.6, 0.035, 0.09]} />
+          <boxGeometry args={[4.6, 0.045, 0.11]} />
           <meshBasicMaterial
             ref={(el) => {
               portalGlowMatRefs.current[2] = el;
@@ -638,27 +717,70 @@ export const MuseumRoom: React.FC = () => {
             toneMapped={false}
           />
         </mesh>
+        {/* Dramatic Entrance Threshold Portal Light Curtain Cone */}
+        <mesh position={[0, 2.7, 0]}>
+          <coneGeometry args={[2.8, 5.35, 32, 1, true]} />
+          <meshBasicMaterial
+            ref={portalConeRef}
+            color="#00F0FF"
+            transparent
+            opacity={0}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
       </group>
 
-      {/* ================= PERIMETER NEON COVE LIGHTING & BRUSHED BASEBOARDS ================= */}
+      {/* ================= PERIMETER NEON COVE LIGHTING (TOP + LOWER REFLECTION SKIRTING) ================= */}
       <mesh position={[0, 6.22, -18.55]}>
-        <boxGeometry args={[32.8, 0.05, 0.07]} />
+        <boxGeometry args={[32.8, 0.065, 0.085]} />
         <meshBasicMaterial color="#00F0FF" toneMapped={false} />
       </mesh>
+      <mesh position={[0, 6.18, -18.5]} rotation={[Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[32.8, 0.45]} />
+        <meshBasicMaterial color="#00F0FF" transparent opacity={0.22} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
       <mesh position={[-16.55, 6.22, -5]}>
-        <boxGeometry args={[0.07, 0.05, 26.8]} />
+        <boxGeometry args={[0.085, 0.065, 26.8]} />
         <meshBasicMaterial color="#a855f7" toneMapped={false} />
       </mesh>
+      <mesh position={[-16.5, 6.18, -5]} rotation={[Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.45, 26.8]} />
+        <meshBasicMaterial color="#a855f7" transparent opacity={0.22} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
       <mesh position={[16.55, 6.22, -5]}>
-        <boxGeometry args={[0.07, 0.05, 26.8]} />
+        <boxGeometry args={[0.085, 0.065, 26.8]} />
         <meshBasicMaterial color="#38bdf8" toneMapped={false} />
       </mesh>
+      <mesh position={[16.5, 6.18, -5]} rotation={[Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.45, 26.8]} />
+        <meshBasicMaterial color="#38bdf8" transparent opacity={0.22} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
       <mesh position={[-9.75, 6.22, 8.05]}>
-        <boxGeometry args={[13.2, 0.05, 0.07]} />
+        <boxGeometry args={[13.2, 0.065, 0.085]} />
         <meshBasicMaterial color="#00F0FF" toneMapped={false} />
       </mesh>
       <mesh position={[9.75, 6.22, 8.05]}>
-        <boxGeometry args={[13.2, 0.05, 0.07]} />
+        <boxGeometry args={[13.2, 0.065, 0.085]} />
+        <meshBasicMaterial color="#a855f7" toneMapped={false} />
+      </mesh>
+
+      {/* Matching Floor-Edge Perimeter Neon Skirting Lines (cast crisp reflections into mirror floor) */}
+      <mesh position={[-16.48, 0.02, -5]}>
+        <boxGeometry args={[0.055, 0.018, 26.8]} />
+        <meshBasicMaterial color="#a855f7" toneMapped={false} />
+      </mesh>
+      <mesh position={[16.48, 0.02, -5]}>
+        <boxGeometry args={[0.055, 0.018, 26.8]} />
+        <meshBasicMaterial color="#38bdf8" toneMapped={false} />
+      </mesh>
+      <mesh position={[-9.75, 0.02, 7.98]}>
+        <boxGeometry args={[13.4, 0.018, 0.055]} />
+        <meshBasicMaterial color="#00F0FF" toneMapped={false} />
+      </mesh>
+      <mesh position={[9.75, 0.02, 7.98]}>
+        <boxGeometry args={[13.4, 0.018, 0.055]} />
         <meshBasicMaterial color="#a855f7" toneMapped={false} />
       </mesh>
 
@@ -832,40 +954,68 @@ export const MuseumRoom: React.FC = () => {
         </RigidBody>
       ))}
 
-      {/* ================= CHAMFERED ARCHITECTURAL PILASTERS ================= */}
-      {PILASTER_Z.map((z, i) => (
-        <group key={`left-pillar-${z}`} position={[-16.62, 3.25, z]}>
-          <RoundedBox args={[0.18, 5.9, 0.42]} radius={0.03} smoothness={4} castShadow>
-            <meshStandardMaterial
-              color="#162035"
-              roughnessMap={metalMaps.roughnessMap}
-              metalness={0.62}
-              roughness={0.34}
-            />
-          </RoundedBox>
-          <mesh position={[0.095, 0, 0]}>
-            <boxGeometry args={[0.022, 5.2, 0.055]} />
-            <meshBasicMaterial color={i % 2 === 0 ? '#00F0FF' : '#a855f7'} toneMapped={false} />
-          </mesh>
-        </group>
-      ))}
+      {/* ================= CHAMFERED ARCHITECTURAL PILASTERS WITH OPTICAL NEON HALOS ================= */}
+      {PILASTER_Z.map((z, i) => {
+        const col = i % 2 === 0 ? '#00F0FF' : '#a855f7';
+        return (
+          <group key={`left-pillar-${z}`} position={[-16.62, 3.25, z]}>
+            <RoundedBox args={[0.18, 5.9, 0.42]} radius={0.03} smoothness={4} castShadow>
+              <meshStandardMaterial
+                color="#162035"
+                roughnessMap={metalMaps.roughnessMap}
+                metalness={0.74}
+                roughness={0.28}
+              />
+            </RoundedBox>
+            <mesh position={[0.095, 0, 0]}>
+              <boxGeometry args={[0.028, 5.25, 0.072]} />
+              <meshBasicMaterial color={col} toneMapped={false} />
+            </mesh>
+            <mesh position={[0.115, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+              <planeGeometry args={[0.34, 5.4]} />
+              <meshBasicMaterial
+                color={col}
+                transparent
+                opacity={0.22}
+                blending={THREE.AdditiveBlending}
+                depthWrite={false}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+          </group>
+        );
+      })}
 
-      {PILASTER_Z.map((z, i) => (
-        <group key={`right-pillar-${z}`} position={[16.62, 3.25, z]}>
-          <RoundedBox args={[0.18, 5.9, 0.42]} radius={0.03} smoothness={4} castShadow>
-            <meshStandardMaterial
-              color="#162035"
-              roughnessMap={metalMaps.roughnessMap}
-              metalness={0.62}
-              roughness={0.34}
-            />
-          </RoundedBox>
-          <mesh position={[-0.095, 0, 0]}>
-            <boxGeometry args={[0.022, 5.2, 0.055]} />
-            <meshBasicMaterial color={i % 2 === 0 ? '#a855f7' : '#00F0FF'} toneMapped={false} />
-          </mesh>
-        </group>
-      ))}
+      {PILASTER_Z.map((z, i) => {
+        const col = i % 2 === 0 ? '#a855f7' : '#00F0FF';
+        return (
+          <group key={`right-pillar-${z}`} position={[16.62, 3.25, z]}>
+            <RoundedBox args={[0.18, 5.9, 0.42]} radius={0.03} smoothness={4} castShadow>
+              <meshStandardMaterial
+                color="#162035"
+                roughnessMap={metalMaps.roughnessMap}
+                metalness={0.74}
+                roughness={0.28}
+              />
+            </RoundedBox>
+            <mesh position={[-0.095, 0, 0]}>
+              <boxGeometry args={[0.028, 5.25, 0.072]} />
+              <meshBasicMaterial color={col} toneMapped={false} />
+            </mesh>
+            <mesh position={[-0.115, 0, 0]} rotation={[0, -Math.PI / 2, 0]}>
+              <planeGeometry args={[0.34, 5.4]} />
+              <meshBasicMaterial
+                color={col}
+                transparent
+                opacity={0.22}
+                blending={THREE.AdditiveBlending}
+                depthWrite={false}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+          </group>
+        );
+      })}
     </group>
   );
 };

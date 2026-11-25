@@ -5,23 +5,28 @@ import * as THREE from 'three';
 import { soundFx } from '../../../hooks/useAudio';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 
-const HALL_DOWNLIGHTS: Array<{ pos: [number, number, number]; color: string }> = [
-  { pos: [-10, 6.15, -13], color: '#38bdf8' },
-  { pos: [0, 6.15, -13], color: '#7dd3fc' },
-  { pos: [10, 6.15, -13], color: '#a855f7' },
-  { pos: [-10, 6.15, -5], color: '#a855f7' },
-  { pos: [0, 6.15, -5], color: '#fde68a' },
-  { pos: [10, 6.15, -5], color: '#38bdf8' },
-  { pos: [-10, 6.15, 3], color: '#38bdf8' },
-  { pos: [0, 6.15, 3], color: '#818cf8' },
-  { pos: [10, 6.15, 3], color: '#38bdf8' },
+const HALL_DOWNLIGHTS: Array<{ pos: [number, number, number]; color: string; baseIntensity: number }> = [
+  { pos: [-10, 6.15, -13], color: '#00F0FF', baseIntensity: 4.8 },
+  { pos: [0, 6.15, -13], color: '#7dd3fc', baseIntensity: 4.4 },
+  { pos: [10, 6.15, -13], color: '#a855f7', baseIntensity: 4.8 },
+  { pos: [-10, 6.15, -5], color: '#a855f7', baseIntensity: 4.6 },
+  { pos: [0, 6.15, -5], color: '#fde68a', baseIntensity: 5.2 },
+  { pos: [10, 6.15, -5], color: '#00F0FF', baseIntensity: 4.6 },
+  { pos: [-10, 6.15, 3], color: '#38bdf8', baseIntensity: 4.4 },
+  { pos: [0, 6.15, 3], color: '#818cf8', baseIntensity: 4.2 },
+  { pos: [10, 6.15, 3], color: '#00F0FF', baseIntensity: 4.4 },
 ];
 
-const TUNNEL_STATIONS: Array<{ z: number; color: string; maxIntensity: number }> = [
-  { z: 24.5, color: '#00F0FF', maxIntensity: 14.5 },
-  { z: 20.5, color: '#a855f7', maxIntensity: 14.5 },
-  { z: 16.5, color: '#38bdf8', maxIntensity: 15.0 },
-  { z: 12.5, color: '#fbbf24', maxIntensity: 15.5 },
+const TUNNEL_STATIONS: Array<{
+  z: number;
+  color: string;
+  maxSpotIntensity: number;
+  maxFillIntensity: number;
+}> = [
+  { z: 24.5, color: '#00F0FF', maxSpotIntensity: 56, maxFillIntensity: 18 },
+  { z: 20.5, color: '#a855f7', maxSpotIntensity: 58, maxFillIntensity: 19 },
+  { z: 16.5, color: '#00F0FF', maxSpotIntensity: 62, maxFillIntensity: 20 },
+  { z: 12.5, color: '#c084fc', maxSpotIntensity: 66, maxFillIntensity: 22 },
 ];
 
 export const StudioLights: React.FC = () => {
@@ -34,10 +39,18 @@ export const StudioLights: React.FC = () => {
   const interactiveTarget = useRef<THREE.Object3D>(new THREE.Object3D());
   const partnersTarget = useRef<THREE.Object3D>(new THREE.Object3D());
   const testimonialsTarget = useRef<THREE.Object3D>(new THREE.Object3D());
+  const tunnelTargets = useRef<THREE.Object3D[]>([
+    new THREE.Object3D(),
+    new THREE.Object3D(),
+    new THREE.Object3D(),
+    new THREE.Object3D(),
+  ]);
+  const portalFloorTarget = useRef<THREE.Object3D>(new THREE.Object3D());
 
-  // Superstar walkout sequential tunnel lights + grand hall reveal refs
-  const tunnelLightRefs = useRef<Array<THREE.PointLight | null>>([]);
-  const tunnelLevelRefs = useRef<number[]>([0.28, 0, 0, 0]);
+  // Powerful sequential stadium walkout tunnel lights + grand hall reveal refs
+  const tunnelSpotRefs = useRef<Array<THREE.SpotLight | null>>([]);
+  const tunnelFillRefs = useRef<Array<THREE.PointLight | null>>([]);
+  const tunnelLevelRefs = useRef<number[]>([0.24, 0, 0, 0]);
   const tunnelSurgeRefs = useRef<number[]>([0, 0, 0, 0]);
   const tunnelIgnitedRefs = useRef<boolean[]>([false, false, false, false]);
   const hallRevealRef = useRef<number>(0.24);
@@ -45,10 +58,13 @@ export const StudioLights: React.FC = () => {
 
   const hallDownlightRefs = useRef<Array<THREE.PointLight | null>>([]);
   const centerWallSpotRef = useRef<THREE.SpotLight>(null);
+  const centerCyanWashRef = useRef<THREE.SpotLight>(null);
+  const centerVioletWashRef = useRef<THREE.SpotLight>(null);
   const islandGoldSpotRef = useRef<THREE.SpotLight>(null);
   const islandRimSpotRef = useRef<THREE.SpotLight>(null);
   const islandCrownGlowRef = useRef<THREE.PointLight>(null);
   const islandCyanPulseRef = useRef<THREE.PointLight>(null);
+  const portalSpotRef = useRef<THREE.SpotLight>(null);
   const portalBeaconRef = useRef<THREE.PointLight>(null);
   const screenGlowRef = useRef<THREE.PointLight>(null);
   const shirtRimRef = useRef<THREE.PointLight>(null);
@@ -57,10 +73,9 @@ export const StudioLights: React.FC = () => {
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
     const playerZ = state.camera.position.z;
-    const hasEntered = useHeritageStore.getState().hasEntered;
-    const isCinemaActive = useHeritageStore.getState().isCenterWallCinemaActive;
+    const { hasEntered, isCenterWallCinemaActive: isCinemaActive } = useHeritageStore.getState();
 
-    // Reset walkout ignition triggers when user returns to tunnel start so replay always feels epic
+    // Reset walkout ignition triggers when user returns to tunnel start
     if (playerZ > 24.9) {
       for (let i = 1; i < TUNNEL_STATIONS.length; i++) {
         tunnelIgnitedRefs.current[i] = false;
@@ -68,31 +83,30 @@ export const StudioLights: React.FC = () => {
       hallIgnitedRef.current = false;
     }
 
-    // 1. Sequential Superstar Walkout Tunnel Lights (ignite dramatically one-by-one as player walks forward)
+    // 1. Powerful Stadium Walkout Tunnel Spotlights & Flood Fills
     TUNNEL_STATIONS.forEach((st, idx) => {
-      const light = tunnelLightRefs.current[idx];
-      if (!light) return;
+      const spot = tunnelSpotRefs.current[idx];
+      const fill = tunnelFillRefs.current[idx];
+      if (!spot && !fill) return;
 
-      const triggerZ = idx === 0 ? 25.35 : st.z + 3.2;
-      const trailZ = st.z - 7.0;
+      const triggerZ = idx === 0 ? 25.4 : st.z + 3.6;
+      const trailZ = st.z - 7.4;
 
-      let target = 0.03; // Dark dramatic tunnel ahead
+      let target = 0.02;
       if (idx === 0 && playerZ > triggerZ) {
-        // Gentle moody standby silhouette right at spawn before first step
-        target = 0.28;
+        target = 0.24;
       } else if (playerZ <= triggerZ && playerZ >= trailZ) {
         target = 1.0;
         if (!tunnelIgnitedRefs.current[idx] && hasEntered) {
           tunnelIgnitedRefs.current[idx] = true;
-          tunnelSurgeRefs.current[idx] = 0.45; // Brief stadium floodlight power-up flash
+          tunnelSurgeRefs.current[idx] = 0.72; // Strong stadium floodlight ignition flash!
           soundFx.playLightIgnite(idx);
         }
       } else if (playerZ < trailZ) {
-        // Soft dim glow trailing behind the superstar walkout
-        target = 0.25;
+        target = 0.22;
       }
 
-      const speed = target > tunnelLevelRefs.current[idx] ? 5.8 : 2.6;
+      const speed = target > tunnelLevelRefs.current[idx] ? 7.2 : 2.8;
       tunnelLevelRefs.current[idx] = THREE.MathUtils.lerp(
         tunnelLevelRefs.current[idx],
         target,
@@ -101,25 +115,25 @@ export const StudioLights: React.FC = () => {
       tunnelSurgeRefs.current[idx] = THREE.MathUtils.lerp(
         tunnelSurgeRefs.current[idx],
         0,
-        1 - Math.exp(-5.0 * dt)
+        1 - Math.exp(-4.2 * dt)
       );
 
-      light.intensity =
-        st.maxIntensity * (tunnelLevelRefs.current[idx] + tunnelSurgeRefs.current[idx]);
+      const power = tunnelLevelRefs.current[idx] + tunnelSurgeRefs.current[idx];
+      if (spot) spot.intensity = st.maxSpotIntensity * power;
+      if (fill) fill.intensity = st.maxFillIntensity * power;
     });
 
-    // 2. Threshold Portal & Main Hall Grand Reveal when exiting tunnel (z <= 11.4)
-    const hallTriggered = playerZ <= 11.4;
+    // 2. Threshold Portal Floodlight & Main Hall Grand Reveal
+    const hallTriggered = playerZ <= 11.6;
     if (hallTriggered && !hallIgnitedRef.current && hasEntered) {
       hallIgnitedRef.current = true;
-      // Only play grand hall reveal if walking out of tunnel (not on distant instant load)
       if (playerZ > 4.0) {
         soundFx.playHallReveal();
       }
     }
 
-    const targetHallReveal = isCinemaActive ? 0.28 : hallTriggered ? 1.0 : 0.24;
-    const hallRampSpeed = hallTriggered ? 2.4 : 1.8;
+    const targetHallReveal = isCinemaActive ? 0.26 : hallTriggered ? 1.0 : 0.22;
+    const hallRampSpeed = hallTriggered ? 2.8 : 1.9;
     hallRevealRef.current = THREE.MathUtils.lerp(
       hallRevealRef.current,
       targetHallReveal,
@@ -127,93 +141,130 @@ export const StudioLights: React.FC = () => {
     );
     const hr = hallRevealRef.current;
 
-    if (portalBeaconRef.current) {
-      const portalTarget = playerZ <= 12.2 ? 15 + Math.sin(t * 1.4) * 3.5 : 1.8;
-      portalBeaconRef.current.intensity = THREE.MathUtils.lerp(
-        portalBeaconRef.current.intensity,
-        portalTarget,
-        1 - Math.exp(-4.5 * dt)
+    if (portalSpotRef.current) {
+      const portalSpotTarget = playerZ <= 12.6 && !isCinemaActive ? 58 + Math.sin(t * 1.6) * 8 : 3.5;
+      portalSpotRef.current.intensity = THREE.MathUtils.lerp(
+        portalSpotRef.current.intensity,
+        portalSpotTarget,
+        1 - Math.exp(-5.0 * dt)
       );
     }
 
-    hallDownlightRefs.current.forEach((dl) => {
-      if (dl) {
-        dl.intensity = 3.2 * hr;
-      }
+    if (portalBeaconRef.current) {
+      const portalTarget = playerZ <= 12.6 && !isCinemaActive ? 20 + Math.sin(t * 1.5) * 4.5 : 2.0;
+      portalBeaconRef.current.intensity = THREE.MathUtils.lerp(
+        portalBeaconRef.current.intensity,
+        portalTarget,
+        1 - Math.exp(-4.8 * dt)
+      );
+    }
+
+    // Organic living neon breathing across the 9 hall aisle lights (exact existing color scheme)
+    hallDownlightRefs.current.forEach((dl, idx) => {
+      if (!dl) return;
+      const cfg = HALL_DOWNLIGHTS[idx];
+      const breathe = 1 + Math.sin(t * (0.95 + idx * 0.13) + idx * 1.1) * 0.14;
+      dl.intensity = cfg.baseIntensity * breathe * hr;
     });
 
     if (centerWallSpotRef.current) {
-      // Turn down direct front spotlight over the OLED TV screen so colors stay rich & glare-free
-      centerWallSpotRef.current.intensity = isCinemaActive ? 6 : 58 * hr;
+      centerWallSpotRef.current.intensity = isCinemaActive ? 6 : 62 * hr;
+    }
+    if (centerCyanWashRef.current) {
+      const wave = 1 + Math.sin(t * 1.15) * 0.16;
+      centerCyanWashRef.current.intensity = (isCinemaActive ? 8 : 36 * wave) * hr;
+    }
+    if (centerVioletWashRef.current) {
+      const wave = 1 + Math.cos(t * 1.05 + 0.7) * 0.16;
+      centerVioletWashRef.current.intensity = (isCinemaActive ? 8 : 34 * wave) * hr;
     }
     if (islandGoldSpotRef.current) {
-      islandGoldSpotRef.current.intensity = 72 * hr;
+      islandGoldSpotRef.current.intensity = (76 + Math.sin(t * 0.9) * 5) * hr;
     }
     if (islandRimSpotRef.current) {
-      islandRimSpotRef.current.intensity = 38 * hr;
+      islandRimSpotRef.current.intensity = (42 + Math.cos(t * 1.1) * 4) * hr;
     }
     if (islandCrownGlowRef.current) {
-      islandCrownGlowRef.current.intensity = (13.5 + Math.sin(t * 1.3) * 2.5) * hr;
+      islandCrownGlowRef.current.intensity = (16 + Math.sin(t * 1.35) * 3.2) * hr;
     }
     if (islandCyanPulseRef.current) {
-      islandCyanPulseRef.current.intensity = (8.5 + Math.sin(t * 1.5) * 2.8) * hr;
+      islandCyanPulseRef.current.intensity = (12.5 + Math.sin(t * 1.65 + 0.4) * 3.8) * hr;
     }
     if (screenGlowRef.current) {
-      screenGlowRef.current.intensity = (11 + Math.sin(t * 1.8 + 0.5) * 3.0) * hr;
+      screenGlowRef.current.intensity = (14.5 + Math.sin(t * 1.7 + 0.5) * 3.5) * hr;
     }
     if (shirtRimRef.current) {
-      shirtRimRef.current.intensity = (10 + Math.sin(t * 1.5 + 2.0) * 2.8) * hr;
+      shirtRimRef.current.intensity = (13.5 + Math.sin(t * 1.45 + 2.0) * 3.4) * hr;
     }
   });
 
   return (
     <group>
-      {/* Overhead Luxury Gallery Reflection Rig (bright gold/crystal specular highlights on metals & glass) */}
-      <Environment resolution={256} frames={1} environmentIntensity={0.62}>
+      {/* Crisp Overhead Neon & Royal Gold Gallery Reflection Rig (no harsh wall-level slabs) */}
+      <Environment resolution={256} frames={1} environmentIntensity={0.78}>
+        {/* Primary overhead cool-cyan skylight reflection */}
         <Lightformer
           form="circle"
-          intensity={1.35}
-          color="#e0f2fe"
+          intensity={1.6}
+          color="#bae6fd"
           position={[0, 11, -5]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[14, 14, 1]}
+          scale={[15, 15, 1]}
         />
+        {/* Royal gold halo reflection directly over Central Island */}
         <Lightformer
           form="ring"
-          intensity={2.2}
-          color="#ffe4a1"
+          intensity={2.6}
+          color="#ffe49e"
           position={[0, 8.8, -5]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[5.5, 5.5, 1]}
+          scale={[5.8, 5.8, 1]}
+        />
+        {/* Vivid Cyan & Violet Overhead Neon Reflection Strips (give metals & glass authentic neon sheen!) */}
+        <Lightformer
+          form="rect"
+          intensity={2.4}
+          color="#00F0FF"
+          position={[0, 9.2, -12]}
+          rotation={[Math.PI / 2, 0, 0]}
+          scale={[22, 0.7, 1]}
+        />
+        <Lightformer
+          form="rect"
+          intensity={2.2}
+          color="#a855f7"
+          position={[0, 9.2, -7]}
+          rotation={[Math.PI / 2, 0, 0]}
+          scale={[22, 0.7, 1]}
+        />
+        <Lightformer
+          form="rect"
+          intensity={2.2}
+          color="#00F0FF"
+          position={[0, 9.2, -2]}
+          rotation={[Math.PI / 2, 0, 0]}
+          scale={[22, 0.7, 1]}
+        />
+        <Lightformer
+          form="rect"
+          intensity={2.0}
+          color="#a855f7"
+          position={[0, 9.2, 3]}
+          rotation={[Math.PI / 2, 0, 0]}
+          scale={[22, 0.7, 1]}
         />
         <Lightformer
           form="circle"
-          intensity={1.1}
-          color="#fef3c7"
-          position={[6, 7.5, -2]}
-          rotation={[Math.PI / 3, -Math.PI / 4, 0]}
-          scale={[4.5, 4.5, 1]}
-        />
-        <Lightformer
-          form="circle"
-          intensity={1.0}
-          color="#bae6fd"
-          position={[-6, 7.5, -8]}
-          rotation={[Math.PI / 3, Math.PI / 4, 0]}
-          scale={[4.5, 4.5, 1]}
-        />
-        <Lightformer
-          form="circle"
-          intensity={0.95}
+          intensity={1.2}
           color="#7dd3fc"
-          position={[0, 10, 15]}
+          position={[0, 10, 16]}
           rotation={[Math.PI / 2, 0, 0]}
           scale={[8, 8, 1]}
         />
         <Lightformer
           form="rect"
-          intensity={0.28}
-          color="#091020"
+          intensity={0.22}
+          color="#060c1a"
           position={[0, -5, -4]}
           rotation={[-Math.PI / 2, 0, 0]}
           scale={[34, 34, 1]}
@@ -230,13 +281,17 @@ export const StudioLights: React.FC = () => {
       <primitive object={interactiveTarget.current} position={[-11.75, 3.25, -17.8]} />
       <primitive object={partnersTarget.current} position={[-12.6, 3.1, 8.05]} />
       <primitive object={testimonialsTarget.current} position={[9.6, 3.1, 8.05]} />
+      <primitive object={portalFloorTarget.current} position={[0, 0.4, 8.5]} />
+      {TUNNEL_STATIONS.map((st, idx) => (
+        <primitive key={`tunnel-target-${st.z}`} object={tunnelTargets.current[idx]} position={[0, 0.2, st.z]} />
+      ))}
 
-      {/* 1. Moody Architectural Low-Key Fill so spotlight reveals feel dramatic */}
-      <hemisphereLight color="#38bdf8" groundColor="#040711" intensity={0.24} />
-      <ambientLight color="#0a1222" intensity={0.12} />
+      {/* 1. Deep Low-Key Cosmic Fill so vibrant neon & spotlights pop dramatically */}
+      <hemisphereLight color="#38bdf8" groundColor="#03060f" intensity={0.22} />
+      <ambientLight color="#081020" intensity={0.11} />
       <directionalLight
         position={[4, 14, 8]}
-        intensity={0.24}
+        intensity={0.22}
         color="#dbeafe"
         castShadow
         shadow-mapSize={[1024, 1024]}
@@ -244,30 +299,55 @@ export const StudioLights: React.FC = () => {
         shadow-normalBias={0.02}
       />
 
-      {/* 2. Entrance Tunnel: Superstar Walkout Sequential Stations (ignite dynamically on approach) */}
+      {/* 2. Entrance Tunnel: Powerful Stadium Walkout Overhead Spotlights + Neon Pools */}
       {TUNNEL_STATIONS.map((st, idx) => (
-        <pointLight
-          key={`tunnel-station-${st.z}`}
-          ref={(el) => {
-            tunnelLightRefs.current[idx] = el;
-          }}
-          position={[0, 4.55, st.z]}
-          intensity={idx === 0 ? 4.0 : 0.3}
-          distance={8.2}
-          decay={2}
-          color={st.color}
-        />
+        <group key={`tunnel-station-${st.z}`}>
+          <spotLight
+            ref={(el) => {
+              tunnelSpotRefs.current[idx] = el;
+            }}
+            position={[0, 6.08, st.z + 0.5]}
+            target={tunnelTargets.current[idx]}
+            intensity={idx === 0 ? 12 : 0.4}
+            distance={12.5}
+            decay={1.6}
+            angle={0.76}
+            penumbra={0.5}
+            color={st.color}
+          />
+          <pointLight
+            ref={(el) => {
+              tunnelFillRefs.current[idx] = el;
+            }}
+            position={[0, 3.8, st.z]}
+            intensity={idx === 0 ? 4.5 : 0.2}
+            distance={8.8}
+            decay={2}
+            color={st.color}
+          />
+        </group>
       ))}
+      <spotLight
+        ref={portalSpotRef}
+        position={[0, 6.1, 9.8]}
+        target={portalFloorTarget.current}
+        intensity={3.5}
+        distance={14}
+        decay={1.6}
+        angle={0.82}
+        penumbra={0.55}
+        color="#00F0FF"
+      />
       <pointLight
         ref={portalBeaconRef}
-        position={[0, 4.9, 8.8]}
-        intensity={1.8}
-        distance={9.5}
+        position={[0, 4.6, 8.6]}
+        intensity={2.0}
+        distance={11}
         decay={2}
         color="#00F0FF"
       />
 
-      {/* 3. Subtle Ambient Aisle Markers (swell smoothly on hall reveal) */}
+      {/* 3. Living Breathing Neon Aisle Lights */}
       {HALL_DOWNLIGHTS.map((dl, idx) => (
         <pointLight
           key={`hall-downlight-${idx}`}
@@ -275,19 +355,19 @@ export const StudioLights: React.FC = () => {
             hallDownlightRefs.current[idx] = el;
           }}
           position={dl.pos}
-          intensity={1.0}
-          distance={9.5}
+          intensity={dl.baseIntensity}
+          distance={11.5}
           decay={2}
           color={dl.color}
         />
       ))}
 
-      {/* 4. Center Wall Stage: Crisp Hero Beam + Cyan/Violet Neon Flanking Washes */}
+      {/* 4. Center Wall Stage: Crisp Hero Beam + Vivid Breathing Cyan/Violet Neon Flanking Washes */}
       <spotLight
         ref={centerWallSpotRef}
         position={[0, 5.9, -11.2]}
         target={centerWallTarget.current}
-        intensity={58}
+        intensity={62}
         distance={20}
         decay={1.7}
         angle={0.72}
@@ -299,42 +379,44 @@ export const StudioLights: React.FC = () => {
         shadow-normalBias={0.02}
       />
       <spotLight
+        ref={centerCyanWashRef}
         position={[-6.8, 5.8, -12.0]}
         target={centerWallTarget.current}
-        intensity={26}
-        distance={18}
-        decay={1.8}
-        angle={0.62}
-        penumbra={0.7}
+        intensity={36}
+        distance={19}
+        decay={1.7}
+        angle={0.66}
+        penumbra={0.68}
         color="#00F0FF"
       />
       <spotLight
+        ref={centerVioletWashRef}
         position={[6.8, 5.8, -12.0]}
         target={centerWallTarget.current}
-        intensity={22}
-        distance={18}
-        decay={1.8}
-        angle={0.62}
-        penumbra={0.7}
+        intensity={34}
+        distance={19}
+        decay={1.7}
+        angle={0.66}
+        penumbra={0.68}
         color="#a855f7"
       />
       <spotLight
         position={[11.75, 5.8, -12.5]}
         target={valuesTarget.current}
-        intensity={42}
-        distance={16}
-        decay={1.8}
-        angle={0.66}
-        penumbra={0.62}
+        intensity={46}
+        distance={17}
+        decay={1.75}
+        angle={0.68}
+        penumbra={0.6}
         color="#c084fc"
       />
 
-      {/* 5. Central Sovereign Island 360°: Royal 3-Point Champagne-Gold Key + Crisp Rim + Crown Uplight */}
+      {/* 5. Central Sovereign Island 360°: Royal Champagne-Gold Key + Crisp Rim + Vivid Neon Pulse */}
       <spotLight
         ref={islandGoldSpotRef}
         position={[0, 6.25, -4.4]}
         target={centralIslandTarget.current}
-        intensity={72}
+        intensity={76}
         distance={17}
         decay={1.55}
         angle={0.72}
@@ -349,40 +431,40 @@ export const StudioLights: React.FC = () => {
         ref={islandRimSpotRef}
         position={[-3.4, 5.85, -8.6]}
         target={centralIslandTarget.current}
-        intensity={38}
+        intensity={42}
         distance={16}
-        decay={1.7}
-        angle={0.62}
-        penumbra={0.55}
-        color="#e0f2fe"
+        decay={1.65}
+        angle={0.64}
+        penumbra={0.54}
+        color="#7dd3fc"
       />
       <pointLight
         ref={islandCrownGlowRef}
         position={[0, 2.55, -5]}
-        intensity={13.5}
-        distance={9.5}
+        intensity={16}
+        distance={10.5}
         decay={2}
         color="#fbbf24"
       />
       <pointLight
         ref={islandCyanPulseRef}
         position={[0, 1.05, -5]}
-        intensity={8.5}
-        distance={9.0}
+        intensity={12.5}
+        distance={10.0}
         decay={2}
         color="#00F0FF"
       />
 
-      {/* 6. Left Wall Exhibits: Cyan Timeline + Neon Magenta Activities */}
+      {/* 6. Left Wall Exhibits: Electric Cyan Timeline + Vivid Neon Magenta Activities */}
       <spotLight
         position={[-9.5, 5.9, -6]}
         target={timelineTarget.current}
-        intensity={44}
-        distance={16}
-        decay={1.7}
-        angle={0.68}
+        intensity={50}
+        distance={17}
+        decay={1.65}
+        angle={0.7}
         penumbra={0.58}
-        color="#67e8f9"
+        color="#00F0FF"
         castShadow
         shadow-bias={-0.0004}
         shadow-normalBias={0.02}
@@ -390,22 +472,22 @@ export const StudioLights: React.FC = () => {
       <spotLight
         position={[-9.5, 5.9, 3.6]}
         target={activitiesTarget.current}
-        intensity={42}
-        distance={16}
-        decay={1.7}
-        angle={0.68}
+        intensity={48}
+        distance={17}
+        decay={1.65}
+        angle={0.7}
         penumbra={0.6}
-        color="#e879f9"
+        color="#d946ef"
       />
 
-      {/* 7. Right Wall Exhibits: Couture Club Shirt + Cobalt Academics */}
+      {/* 7. Right Wall Exhibits: Couture Club Shirt + Vivid Electric Cyan/Cobalt Academics */}
       <spotLight
         position={[9.2, 6.0, -9.2]}
         target={shirtTarget.current}
-        intensity={48}
+        intensity={52}
         distance={16}
-        decay={1.7}
-        angle={0.58}
+        decay={1.65}
+        angle={0.6}
         penumbra={0.52}
         color="#e0f7ff"
         castShadow
@@ -415,30 +497,30 @@ export const StudioLights: React.FC = () => {
       <pointLight
         ref={shirtRimRef}
         position={[14.8, 3.2, -10.4]}
-        intensity={10}
-        distance={7.5}
+        intensity={13.5}
+        distance={8.5}
         decay={2}
         color="#00F0FF"
       />
-      <pointLight position={[14.2, 3.6, -4.2]} intensity={14} distance={9} decay={2} color="#38bdf8" />
-      <pointLight position={[14.2, 3.6, 3.8]} intensity={14} distance={9} decay={2} color="#60a5fa" />
+      <pointLight position={[14.2, 3.6, -4.2]} intensity={17} distance={10} decay={2} color="#38bdf8" />
+      <pointLight position={[14.2, 3.6, 3.8]} intensity={17} distance={10} decay={2} color="#818cf8" />
 
       {/* 8. Interactive Corner (Left Wing): Dynamic Neon Events Display + Guestbook Pool */}
       <spotLight
         position={[-11.75, 5.9, -12.2]}
         target={interactiveTarget.current}
-        intensity={36}
+        intensity={42}
         distance={16}
-        decay={1.8}
-        angle={0.66}
+        decay={1.75}
+        angle={0.68}
         penumbra={0.58}
-        color="#7dd3fc"
+        color="#38bdf8"
       />
       <pointLight
         ref={screenGlowRef}
         position={[-11.75, 3.2, -14.6]}
-        intensity={11}
-        distance={9}
+        intensity={14.5}
+        distance={10}
         decay={2}
         color="#00F0FF"
       />
@@ -447,20 +529,20 @@ export const StudioLights: React.FC = () => {
       <spotLight
         position={[-12.6, 5.6, 2.2]}
         target={partnersTarget.current}
-        intensity={36}
-        distance={14}
-        decay={1.8}
-        angle={0.65}
+        intensity={40}
+        distance={15}
+        decay={1.75}
+        angle={0.66}
         penumbra={0.6}
-        color="#38bdf8"
+        color="#00F0FF"
       />
       <spotLight
         position={[9.6, 5.6, 2.2]}
         target={testimonialsTarget.current}
-        intensity={36}
-        distance={14}
-        decay={1.8}
-        angle={0.65}
+        intensity={40}
+        distance={15}
+        decay={1.75}
+        angle={0.66}
         penumbra={0.6}
         color="#60a5fa"
       />
