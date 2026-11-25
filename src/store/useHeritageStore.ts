@@ -116,6 +116,8 @@ interface HeritageState {
   // Entry, Controls & Pointer state
   hasEntered: boolean;
   setHasEntered: (entered: boolean) => void;
+  sceneWarmupProgress: number;
+  setSceneWarmupProgress: (progress: number) => void;
   controlMode: 'cursor' | 'fps';
   setControlMode: (mode: 'cursor' | 'fps') => void;
   isLocked: boolean;
@@ -267,6 +269,9 @@ function maybeScheduleJourneyPrompt(get: () => HeritageState, set: (partial: Par
 export const useHeritageStore = create<HeritageState>((set, get) => ({
   hasEntered: false,
   setHasEntered: (entered) => set({ hasEntered: entered }),
+  sceneWarmupProgress: 0,
+  setSceneWarmupProgress: (progress) =>
+    set({ sceneWarmupProgress: Math.min(100, Math.max(0, Math.round(progress))) }),
   controlMode: 'cursor',
   setControlMode: (mode) => {
     if (mode === 'cursor' && document.pointerLockElement && document.exitPointerLock) {

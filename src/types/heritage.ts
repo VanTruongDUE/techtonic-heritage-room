@@ -79,10 +79,20 @@ export interface HeritageDataPayload {
   exhibitItems: ExhibitItem[];
   timelineMilestones: TimelineMilestone[];
   activityHighlights: ActivityHighlight[];
+  testimonials?: MemberTestimonial[];
+  digitalEcosystem?: Array<{
+    id: string;
+    title: string;
+    badge: string;
+    url: string;
+  }>;
   stats?: {
     totalMembers: number;
     totalTerms: number;
     totalExhibits: number;
+    totalDepartments?: number;
+    totalPhotoPedestals?: number;
+    totalDigitalVitrines?: number;
   };
   updatedAt: string;
 }

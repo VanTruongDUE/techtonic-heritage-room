@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useProgress } from '@react-three/drei';
 import { useHeritageStore } from '../../store/useHeritageStore';
+import { preloadMuseumAssets } from '../../utils/assetPreloader';
 import {
   Monitor,
   Sparkles,
@@ -60,6 +61,7 @@ const EXHIBITION_HIGHLIGHTS = [
 
 export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
   const { progress, active } = useProgress();
+  const [assetRatio, setAssetRatio] = useState(0);
   const [displayProgress, setDisplayProgress] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
@@ -71,6 +73,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
     totalVisits,
     exhibitItems,
     executiveMembers,
+    sceneWarmupProgress,
   } = useHeritageStore();
 
   useEffect(() => {
@@ -83,22 +86,38 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Phase 1: Concurrently preload & decode all 35+ local gallery/team images into RAM
   useEffect(() => {
-    const target = active ? Math.max(progress, 32) : 100;
+    if (isMobileDevice) return;
+    let activeRun = true;
+    void preloadMuseumAssets((ratio) => {
+      if (activeRun) setAssetRatio(ratio);
+    }, 3600);
+    return () => {
+      activeRun = false;
+    };
+  }, [isMobileDevice]);
+
+  // Phase 2: Combine real image decode progress (0..62%) + real WebGL shader & GPU warmup (62..100%)
+  useEffect(() => {
+    const dreiRatio = active ? Math.min(1, progress / 100) : 1;
+    const warmupRatio = Math.min(1, sceneWarmupProgress / 100);
+    const combinedTarget = Math.round(assetRatio * 62 + warmupRatio * 30 + dreiRatio * 8);
+
     const timer = window.setInterval(() => {
       setDisplayProgress((prev) => {
-        if (prev >= target) {
-          if (target >= 100) {
+        if (prev >= combinedTarget) {
+          if (combinedTarget >= 100 && assetRatio >= 1 && sceneWarmupProgress >= 100) {
             setIsReady(true);
           }
-          return target;
+          return combinedTarget;
         }
-        return Math.min(prev + 10, target);
+        return Math.min(prev + 3, combinedTarget);
       });
-    }, 28);
+    }, 24);
 
     return () => window.clearInterval(timer);
-  }, [progress, active]);
+  }, [progress, active, assetRatio, sceneWarmupProgress]);
 
   const handleEnterClick = useCallback(() => {
     if (!isReady || isExiting) return;
@@ -281,9 +300,13 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
                           : 'bg-tech-cyan animate-pulse shadow-[0_0_8px_#00F5FF]'
                       }`}
                     />
-                    {roundedProgress >= 100
-                      ? 'Không gian 3D, ánh sáng & âm thanh đã sẵn sàng'
-                      : 'Đang khởi tạo ánh sáng sân khấu & không gian 3D...'}
+                    {isReady
+                      ? 'Sẵn sàng! Không gian 3D, shader & 37+ tư liệu đã tối ưu'
+                      : roundedProgress < 40
+                      ? 'Đang tải & giải mã 37 ảnh tư liệu và kết cấu PBR...'
+                      : roundedProgress < 75
+                      ? 'Đang khởi tạo 5 Linh thú 3D & 4 Tủ kính hệ sinh thái...'
+                      : 'Đang biên dịch Shader WebGL & tối ưu mượt 60 FPS...'}
                   </span>
                   <span className="text-tech-cyan font-bold">{roundedProgress}%</span>
                 </div>

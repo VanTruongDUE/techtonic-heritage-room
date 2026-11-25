@@ -71,6 +71,53 @@ const DEPARTMENT_STAGES: Array<{
   },
 ];
 
+const DIGITAL_VITRINE_MARKERS: Array<{
+  id: string;
+  label: string;
+  color: string;
+  x: number;
+  z: number;
+  glidePos: [number, number, number];
+  glideLook: [number, number, number];
+}> = [
+  {
+    id: 'vitrine-web',
+    label: 'Tủ kính Website TechTonic',
+    color: '#00F5FF',
+    x: -8.8,
+    z: -8.6,
+    glidePos: [-7.0, 1.4, -6.2],
+    glideLook: [-8.8, 1.5, -8.6],
+  },
+  {
+    id: 'vitrine-fb',
+    label: 'Tủ kính Facebook TechTonic',
+    color: '#3b82f6',
+    x: 9.4,
+    z: -2.2,
+    glidePos: [7.4, 1.4, 0.2],
+    glideLook: [9.4, 1.5, -2.2],
+  },
+  {
+    id: 'vitrine-drive',
+    label: 'Tủ kính Kho Tài Liệu Drive',
+    color: '#34d399',
+    x: 8.2,
+    z: -12.4,
+    glidePos: [6.8, 1.4, -9.8],
+    glideLook: [8.2, 1.5, -12.4],
+  },
+  {
+    id: 'vitrine-puzzle',
+    label: 'Tủ kính Minigame Live Puzzle',
+    color: '#d946ef',
+    x: -9.6,
+    z: 1.4,
+    glidePos: [-7.4, 1.4, 3.3],
+    glideLook: [-9.6, 1.5, 1.4],
+  },
+];
+
 export const MiniMap: React.FC = () => {
   const {
     hasEntered,
@@ -212,6 +259,30 @@ export const MiniMap: React.FC = () => {
             );
           })}
 
+          {/* 4 Clickable Digital Ecosystem Glass Vitrine Diamonds */}
+          {DIGITAL_VITRINE_MARKERS.map((v) => {
+            const vx = toSvgX(v.x);
+            const vy = toSvgY(v.z);
+            return (
+              <g
+                key={v.id}
+                transform={`translate(${vx}, ${vy})`}
+                onClick={() => requestCustomGlide(v.glidePos, v.glideLook, v.label)}
+                className="cursor-pointer"
+              >
+                <title>{`Lướt tới ${v.label}`}</title>
+                <polygon
+                  points="0,-4.2 4.2,0 0,4.2 -4.2,0"
+                  fill={v.color}
+                  fillOpacity={0.28}
+                  stroke={v.color}
+                  strokeWidth={1.1}
+                />
+                <circle cx={0} cy={0} r={1.2} fill="#ffffff" />
+              </g>
+            );
+          })}
+
           {/* Clickable Teleport Zone Markers */}
           {TELEPORT_ZONES.map((zone) => {
             const zx = toSvgX(zone.position[0]);
@@ -248,7 +319,16 @@ export const MiniMap: React.FC = () => {
       </div>
 
       <div className="mt-2 flex items-center justify-between text-[10px] text-slate-300">
-        <span>Nhấn điểm để lướt tới</span>
+        <span className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            Ban
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rotate-45 bg-fuchsia-400 inline-block" />
+            Tủ kính
+          </span>
+        </span>
         <span className="font-mono text-tech-cyan tabular-nums">
           {countOfficialVisitedZones(visitedZones)}/{TELEPORT_ZONES.length} khu
         </span>

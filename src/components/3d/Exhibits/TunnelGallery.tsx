@@ -437,16 +437,18 @@ const TunnelFrame: React.FC<{
         <planeGeometry args={[2.24, 1.4]} />
         {item.kind === 'photo' && photoTex ? (
           <meshStandardMaterial
+            key="tunnel-photo-ready"
             ref={mainMatRef}
             map={photoTex}
             emissive="#ffffff"
             emissiveMap={photoTex}
             emissiveIntensity={0.04}
-            roughness={0.38}
-            metalness={0.05}
+            roughness={0.42}
+            metalness={0.04}
           />
         ) : (
           <meshStandardMaterial
+            key="tunnel-info-ready"
             ref={mainMatRef}
             map={infoTex ?? captionTex}
             emissive="#ffffff"

@@ -47,6 +47,18 @@ export async function readJsonBody(req: ApiRequest, maxBytes = 16_384): Promise<
   return JSON.parse(raw);
 }
 
+export function handlePreflight(req: ApiRequest, res: ApiResponse, allowedMethods: string): boolean {
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Allow', allowedMethods);
+    res.setHeader('Access-Control-Allow-Methods', allowedMethods);
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.statusCode = 204;
+    res.end();
+    return true;
+  }
+  return false;
+}
+
 export function sendJson(
   res: ApiResponse,
   statusCode: number,
@@ -55,6 +67,7 @@ export function sendJson(
 ): void {
   res.setHeader('Cache-Control', cacheControl);
   res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   const statusFn = res.status;
   if (typeof statusFn === 'function') {
     const chained = statusFn.call(res, statusCode);

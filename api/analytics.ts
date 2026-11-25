@@ -5,9 +5,10 @@ import {
   recordMuseumVisit,
 } from './_lib/storage.js';
 import { sanitizeExhibitId } from './_lib/validation.js';
-import { getClientKey, readJsonBody, sendJson, type ApiRequest, type ApiResponse } from './_lib/http.js';
+import { getClientKey, handlePreflight, readJsonBody, sendJson, type ApiRequest, type ApiResponse } from './_lib/http.js';
 
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
+  if (handlePreflight(req, res, 'GET, POST, OPTIONS')) return;
   if (req.method === 'GET') {
     try {
       const analytics = await getMuseumAnalytics();

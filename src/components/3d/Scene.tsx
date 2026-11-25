@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect, useRef } from 'react';
-import { useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import { StudioLights } from './Environment/StudioLights';
 import { CosmicBackdrop } from './Environment/CosmicBackdrop';
@@ -19,25 +19,52 @@ import { CodeCosmosOrbit } from './Effects/CodeCosmosOrbit';
 import { useHeritageStore } from '../../store/useHeritageStore';
 
 /**
- * Pre-compiles WebGL shaders in the background while the Welcome overlay is active
- * so panning the camera around the gallery has ZERO first-look shader compilation hitch.
+ * Multi-stage GPU Pre-Warmer:
+ * Compiles all WebGL shaders & uploads textures/mipmaps across 6 silent frames
+ * while the LoadingScreen is displayed so entering and panning inside the 3D museum
+ * starts at locked 60 FPS with ZERO first-look stutter.
  */
 const ShaderPrewarmer: React.FC = () => {
   const { gl, scene, camera } = useThree();
-  const compiledRef = useRef(false);
+  const setSceneWarmupProgress = useHeritageStore((s) => s.setSceneWarmupProgress);
+  const stageRef = useRef<'init' | 'compiled' | 'done'>('init');
+  const warmFramesRef = useRef(0);
 
   useEffect(() => {
-    if (compiledRef.current) return;
-    const rafId = window.requestAnimationFrame(() => {
+    setSceneWarmupProgress(15);
+    const timer = window.setTimeout(() => {
+      if (stageRef.current !== 'done') {
+        stageRef.current = 'done';
+        setSceneWarmupProgress(100);
+      }
+    }, 3200);
+    return () => window.clearTimeout(timer);
+  }, [setSceneWarmupProgress]);
+
+  useFrame(() => {
+    if (stageRef.current === 'done') return;
+
+    if (stageRef.current === 'init') {
       try {
         gl.compile(scene, camera);
-        compiledRef.current = true;
       } catch {
         // Ignore if context is disposed during hot reload
       }
-    });
-    return () => window.cancelAnimationFrame(rafId);
-  }, [gl, scene, camera]);
+      stageRef.current = 'compiled';
+      setSceneWarmupProgress(55);
+      return;
+    }
+
+    warmFramesRef.current += 1;
+    if (warmFramesRef.current === 2) {
+      setSceneWarmupProgress(75);
+    } else if (warmFramesRef.current === 4) {
+      setSceneWarmupProgress(90);
+    } else if (warmFramesRef.current >= 6) {
+      stageRef.current = 'done';
+      setSceneWarmupProgress(100);
+    }
+  });
 
   return null;
 };

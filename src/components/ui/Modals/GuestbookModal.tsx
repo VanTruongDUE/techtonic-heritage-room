@@ -41,6 +41,7 @@ export const GuestbookModal: React.FC = () => {
   const [message, setMessage] = useState('');
   const [selectedTag, setSelectedTag] = useState<GuestbookTag>('Lời chúc');
   const [filterTag, setFilterTag] = useState<'ALL' | GuestbookTag>('ALL');
+  const [sortBy, setSortBy] = useState<'newest' | 'likes'>('newest');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const authorInputRef = useRef<HTMLInputElement>(null);
@@ -55,7 +56,7 @@ export const GuestbookModal: React.FC = () => {
 
   const filteredEntries = useMemo(() => {
     const needle = searchQuery.trim().toLowerCase();
-    return guestbookEntries.filter((entry) => {
+    const list = guestbookEntries.filter((entry) => {
       const entryTag = entry.tag || 'Lời chúc';
       const matchTag = filterTag === 'ALL' || entryTag === filterTag;
       const matchSearch =
@@ -65,7 +66,11 @@ export const GuestbookModal: React.FC = () => {
         entry.message.toLowerCase().includes(needle);
       return matchTag && matchSearch;
     });
-  }, [guestbookEntries, filterTag, searchQuery]);
+    if (sortBy === 'likes') {
+      return [...list].sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0));
+    }
+    return list;
+  }, [guestbookEntries, filterTag, searchQuery, sortBy]);
 
   if (activeModal !== 'guestbook') return null;
 
@@ -349,21 +354,43 @@ export const GuestbookModal: React.FC = () => {
                 />
               </div>
 
-              <div className="flex flex-wrap gap-1">
-                {(['ALL', ...GUESTBOOK_TAGS] as const).map((tag) => (
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
+                <div className="flex flex-wrap gap-1">
+                  {(['ALL', ...GUESTBOOK_TAGS] as const).map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setFilterTag(tag)}
+                      className={`px-2 py-1 rounded-md text-[11px] font-medium transition cursor-pointer ${
+                        filterTag === tag
+                          ? 'bg-tech-cyan/20 text-tech-cyan border border-tech-cyan/50'
+                          : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      {tag === 'ALL' ? 'Tất cả' : tag}
+                    </button>
+                  ))}
+                </div>
+                <div className="inline-flex rounded-md bg-white/5 border border-white/10 p-0.5 text-[10px]">
                   <button
-                    key={tag}
                     type="button"
-                    onClick={() => setFilterTag(tag)}
-                    className={`px-2 py-1 rounded-md text-[11px] font-medium transition cursor-pointer ${
-                      filterTag === tag
-                        ? 'bg-tech-cyan/20 text-tech-cyan border border-tech-cyan/50'
-                        : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'
+                    onClick={() => setSortBy('newest')}
+                    className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                      sortBy === 'newest' ? 'bg-tech-cyan text-slate-950 font-semibold' : 'text-slate-300 hover:text-white'
                     }`}
                   >
-                    {tag === 'ALL' ? 'Tất cả' : tag}
+                    Mới nhất
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => setSortBy('likes')}
+                    className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                      sortBy === 'likes' ? 'bg-rose-400 text-slate-950 font-semibold' : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    Yêu thích
+                  </button>
+                </div>
               </div>
             </div>
 

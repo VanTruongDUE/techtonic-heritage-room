@@ -272,9 +272,9 @@ export const HUD: React.FC = () => {
                 </kbd>
               </div>
               <div className="flex justify-between items-center">
-                <span>Xoay 360°:</span>
+                <span>Xoay 360° / Zoom:</span>
                 <span className="text-[11px] font-mono text-tech-cyan">
-                  {controlMode === 'cursor' ? 'Giữ kéo chuột' : 'Di chuột'}
+                  {controlMode === 'cursor' ? 'Kéo / Cuộn' : 'Chuột / Cuộn'}
                 </span>
               </div>
               <div className="flex justify-between items-center">

@@ -286,8 +286,8 @@ export const InstructionsModal: React.FC = () => {
                     <kbd className="font-mono text-tech-cyan">W A S D / Mũi tên</kbd>
                   </div>
                   <div className="flex justify-between">
-                    <span>Xoay góc nhìn 360°</span>
-                    <kbd className="font-mono text-tech-cyan">Nhấn giữ & kéo chuột</kbd>
+                    <span>Xoay 360° & Phóng to / Thu nhỏ</span>
+                    <kbd className="font-mono text-tech-cyan">Kéo & Cuộn chuột</kbd>
                   </div>
                   <div className="flex justify-between">
                     <span>Lướt nhanh 8 khu vực</span>

@@ -1,6 +1,7 @@
 import {
   appendGuestbookEntry,
   checkRateLimit,
+  isDuplicateSubmission,
   likeGuestbookEntry,
   listGuestbookEntries,
 } from './_lib/storage.js';
@@ -8,6 +9,7 @@ import { sanitizeExhibitId, sanitizeText, validateGuestbookInput } from './_lib/
 import {
   getClientKey,
   getQueryParams,
+  handlePreflight,
   readJsonBody,
   sendJson,
   type ApiRequest,
@@ -15,14 +17,17 @@ import {
 } from './_lib/http.js';
 
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
+  if (handlePreflight(req, res, 'GET, POST, PATCH, OPTIONS')) return;
+
   if (req.method === 'GET') {
     try {
       const result = await listGuestbookEntries();
       const params = getQueryParams(req);
       const query = sanitizeText(params.get('q') ?? '', 80).toLowerCase();
       const tag = sanitizeText(params.get('tag') ?? '', 32);
+      const sort = params.get('sort') === 'likes' ? 'likes' : 'newest';
 
-      let filtered = result.entries;
+      let filtered = [...result.entries];
       if (tag && tag !== 'all') {
         filtered = filtered.filter((e) => (e.tag ?? 'Lời chúc') === tag);
       }
@@ -33,6 +38,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
             e.roleOrAffiliation.toLowerCase().includes(query) ||
             e.message.toLowerCase().includes(query)
         );
+      }
+      if (sort === 'likes') {
+        filtered.sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0));
       }
 
       sendJson(res, 200, {
@@ -71,6 +79,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const validation = validateGuestbookInput(parsedBody);
     if (!validation.valid || !validation.data) {
       sendJson(res, 400, validation.error ?? { error: 'Dữ liệu không hợp lệ.' });
+      return;
+    }
+
+    const fingerprint = `${validation.data.author.toLowerCase()}|${validation.data.message.toLowerCase()}`;
+    if (isDuplicateSubmission(clientKey, fingerprint)) {
+      sendJson(res, 409, { error: 'Lời chúc này vừa được gửi trước đó. Cảm ơn bạn!' });
       return;
     }
 

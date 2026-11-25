@@ -21,15 +21,40 @@ interface PersistedAnalytics {
 }
 
 const DEFAULT_ANALYTICS: PersistedAnalytics = {
-  totalVisits: 128,
+  totalVisits: 136,
   exhibitLikes: {
-    'exhibit-1': 24,
-    'exhibit-2': 19,
-    'exhibit-3': 16,
-    'exhibit-4': 14,
-    'mission-statement': 31,
+    'exhibit-1': 28,
+    'exhibit-2': 22,
+    'exhibit-3': 19,
+    'exhibit-4': 17,
+    'mission-statement': 35,
+    'vitrine-website-techtonic': 21,
+    'vitrine-facebook-techtonic': 18,
+    'vitrine-drive-archive': 26,
+    'vitrine-minigame-puzzle': 24,
+    'pedestal-btt-1': 15,
+    'pedestal-bcm-1': 16,
   },
 };
+
+// Recent duplicate submission guard (prevents accidental double-clicks within 15s)
+const recentSubmissionHashes = new Map<string, number>();
+
+export function isDuplicateSubmission(clientKey: string, fingerprint: string, windowMs = 15_000): boolean {
+  const now = Date.now();
+  if (recentSubmissionHashes.size > 200) {
+    for (const [k, ts] of recentSubmissionHashes) {
+      if (now - ts > windowMs) recentSubmissionHashes.delete(k);
+    }
+  }
+  const key = `${clientKey}:${fingerprint}`;
+  const last = recentSubmissionHashes.get(key);
+  if (last && now - last < windowMs) {
+    return true;
+  }
+  recentSubmissionHashes.set(key, now);
+  return false;
+}
 
 // Module-level fallback stores for warm serverless instances without KV/writable FS
 let memoryEntries: GuestbookEntry[] = GUESTBOOK_ENTRIES_SEED.map((e, idx) => ({
@@ -51,8 +76,18 @@ export function checkRateLimit(
   maxRequests = 6,
   windowMs = 60_000
 ): boolean {
-  const key = `${bucket}:${clientKey}`;
   const now = Date.now();
+  if (rateBuckets.size > 300) {
+    for (const [k, timestamps] of rateBuckets) {
+      const alive = timestamps.filter((ts) => now - ts < windowMs);
+      if (alive.length === 0) {
+        rateBuckets.delete(k);
+      } else {
+        rateBuckets.set(k, alive);
+      }
+    }
+  }
+  const key = `${bucket}:${clientKey}`;
   const recent = (rateBuckets.get(key) ?? []).filter((ts) => now - ts < windowMs);
   if (recent.length >= maxRequests) {
     rateBuckets.set(key, recent);

@@ -118,6 +118,7 @@ export const MuseumRoom: React.FC = () => {
   const guideMatRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const hallBeamHaloRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const floorBouncePoolRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
+  const perimeterTracerRefs = useRef<Array<THREE.Mesh | null>>([]);
   const tunnelRibTopRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const tunnelRibHaloRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const tunnelRibLeftRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
@@ -145,6 +146,17 @@ export const MuseumRoom: React.FC = () => {
       if (!mat) return;
       const baseOp = idx === 0 ? 0.095 : idx === 1 ? 0.085 : 0.065;
       mat.opacity = baseOp + Math.sin(t * 1.15 + idx * 1.3) * 0.018;
+    });
+
+    // 0c. Smooth traveling cyber-neon energy tracer pulses along Left/Right perimeter coves & skirting
+    const trackLen = 25.0;
+    const zMin = -17.5;
+    perimeterTracerRefs.current.forEach((mesh, idx) => {
+      if (!mesh) return;
+      const dir = idx % 2 === 0 ? 1 : -1;
+      const phase = ((t * 0.14 + idx * 0.37) % 1 + 1) % 1;
+      const posZ = dir === 1 ? zMin + phase * trackLen : zMin + (1 - phase) * trackLen;
+      mesh.position.z = posZ;
     });
 
     // 1. Sequential Superstar Runway Floor Guide Bars (light up brightly ahead of player footsteps)
@@ -852,6 +864,32 @@ export const MuseumRoom: React.FC = () => {
         <boxGeometry args={[13.4, 0.02, 0.058]} />
         <meshBasicMaterial color="#b84dff" toneMapped={false} />
       </mesh>
+
+      {/* Traveling Luminous Neon Energy Pulse Tracers gliding along perimeter floor & ceiling rails (0 extra lights!) */}
+      {[
+        { x: -16.46, y: 0.026, color: '#f0abfc' },
+        { x: 16.46, y: 0.026, color: '#a5f3fc' },
+        { x: -16.52, y: 6.22, color: '#e879f9' },
+        { x: 16.52, y: 6.22, color: '#67e8f9' },
+      ].map((tracer, tIdx) => (
+        <mesh
+          key={`perimeter-tracer-${tIdx}`}
+          ref={(el) => {
+            perimeterTracerRefs.current[tIdx] = el;
+          }}
+          position={[tracer.x, tracer.y, -5]}
+        >
+          <boxGeometry args={[0.075, 0.032, 2.2]} />
+          <meshBasicMaterial
+            color={tracer.color}
+            transparent
+            opacity={0.92}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
 
       {/* Brushed Metallic Architectural Baseboards across All Hall Walls */}
       <mesh position={[0, 0.14, -18.55]}>
