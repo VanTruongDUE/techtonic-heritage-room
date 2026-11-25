@@ -60,7 +60,7 @@ const VALUES_PREVIEW: HoverPreview = {
   actionLabel: 'Xem chi tiết 7 giá trị cốt lõi',
 };
 
-const SLAT_POSITIONS = [-9.4, -9.0, -8.6, -8.2, -7.8, 7.8, 8.2, 8.6, 9.0, 9.4];
+const SLAT_POSITIONS = [-6.25, -5.9, -5.55, 5.55, 5.9, 6.25];
 
 function drawWrappedText(
   ctx: CanvasRenderingContext2D,
@@ -87,7 +87,7 @@ function drawWrappedText(
 }
 
 export const CenterWall: React.FC = () => {
-  const { setHoveringInteractive, openModal } = useHeritageStore();
+  const { setHoveringInteractive, openModal, activityHighlights } = useHeritageStore();
   const reducedMotion = useReducedMotionPreference();
   const emblemRef = useRef<THREE.Group>(null);
   const haloRef = useRef<THREE.Mesh>(null);
@@ -206,98 +206,73 @@ export const CenterWall: React.FC = () => {
     return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, []);
 
-  // Back-left wing panel: Full detailed 7 Core Values + Club Metrics + Benefits
-  const valuesBoardTexture = useMemo(() => {
+  // Back-left wing panel (left of Dream It - Code It): 6 Key Term Events & Activities
+  const eventsWingTexture = useMemo(() => {
     const { canvas, ctx } = createHiResCanvas(1520, 1100, 2);
     if (ctx) {
       ctx.fillStyle = '#0c1322';
       ctx.fillRect(0, 0, 1520, 1100);
 
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.34)';
+      ctx.strokeStyle = 'rgba(192, 132, 252, 0.42)';
       ctx.lineWidth = 4;
       ctx.strokeRect(24, 24, 1472, 1052);
 
-      ctx.fillStyle = '#38bdf8';
+      ctx.fillStyle = '#c084fc';
       ctx.font = '600 22px "JetBrains Mono", monospace';
-      ctx.fillText('BẢN SẮC • GIÁ TRỊ CỐT LÕI • THÀNH TỰU', 68, 86);
+      ctx.fillText('CHUỖI SỰ KIỆN TRỌNG TÂM • MỖI NHIỆM KỲ', 68, 84);
 
       ctx.fillStyle = '#f8fafc';
       ctx.font = 'bold 42px Inter, sans-serif';
-      ctx.fillText('7 GIÁ TRỊ CỐT LÕI & DẤU ẤN CLB', 68, 142);
+      ctx.fillText('6 CHƯƠNG TRÌNH & SỰ KIỆN CLB', 68, 138);
 
-      // Top 4 Metrics strip
-      CLUB_PROFILE.metrics.forEach((m, idx) => {
-        const x = 68 + idx * 352;
-        const y = 180;
-        ctx.fillStyle = '#131d32';
-        ctx.fillRect(x, y, 328, 126);
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, 328, 126);
-
-        ctx.fillStyle = '#38bdf8';
-        ctx.font = '800 46px Inter, sans-serif';
-        ctx.fillText(m.value, x + 24, y + 66);
-
-        ctx.fillStyle = '#cbd5e1';
-        ctx.font = '500 22px Inter, sans-serif';
-        ctx.fillText(m.label, x + 24, y + 104);
-      });
-
-      // 7 Core Values cleanly in 2 columns with richer explanation
-      CLUB_PROFILE.coreValues.forEach((val, idx) => {
-        const col = idx < 4 ? 0 : 1;
-        const row = idx < 4 ? idx : idx - 4;
+      activityHighlights.slice(0, 6).forEach((ev, idx) => {
+        const col = idx % 2;
+        const row = Math.floor(idx / 2);
         const x = 68 + col * 704;
-        const y = 340 + row * 144;
+        const y = 178 + row * 276;
+        const w = 676;
+        const h = 250;
 
-        ctx.fillStyle = '#111a2d';
-        ctx.fillRect(x, y, 676, 122);
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(x, y, 676, 122);
+        ctx.fillStyle = '#121b2e';
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = ev.color;
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(x, y, w, h);
 
-        ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 24px "JetBrains Mono", monospace';
-        ctx.fillText(`0${idx + 1}`, x + 22, y + 44);
+        ctx.fillStyle = ev.color;
+        ctx.font = '600 17px "JetBrains Mono", monospace';
+        ctx.fillText(`[ ${ev.tag} • ${ev.year} ]`, x + 24, y + 38);
 
         ctx.fillStyle = '#f8fafc';
-        ctx.font = 'bold 26px Inter, sans-serif';
-        ctx.fillText(val.name, x + 76, y + 44);
+        ctx.font = 'bold 25px Inter, sans-serif';
+        ctx.fillText(ev.title, x + 24, y + 76, w - 48);
 
         ctx.fillStyle = '#cbd5e1';
-        ctx.font = '400 20px Inter, sans-serif';
-        drawWrappedText(ctx, val.note, x + 76, y + 80, 578, 28);
+        ctx.font = '400 19px Inter, sans-serif';
+        drawWrappedText(ctx, ev.summary, x + 24, y + 114, w - 48, 26);
+
+        if (ev.goal) {
+          ctx.fillStyle = '#7dd3fc';
+          ctx.font = '500 17px Inter, sans-serif';
+          ctx.fillText(`Mục tiêu: ${ev.goal}`, x + 24, y + h - 24, w - 48);
+        }
       });
 
-      // Bottom Benefits strip in slot (col 1, row 3)
-      ctx.fillStyle = '#13223b';
-      ctx.fillRect(772, 772, 676, 122);
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(772, 772, 676, 122);
-      ctx.fillStyle = '#7dd3fc';
-      ctx.font = 'bold 22px Inter, sans-serif';
-      ctx.fillText('CLB MANG LẠI GÌ CHO BẠN?', 796, 814);
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = '400 20px Inter, sans-serif';
-      ctx.fillText('• Anh chị tốt  • Cơ sở học thuật tốt  • Bạn bè cùng chí hướng', 796, 856);
-
-      ctx.fillStyle = '#7dd3fc';
+      ctx.fillStyle = '#e879f9';
       ctx.font = '500 21px "JetBrains Mono", monospace';
-      ctx.fillText('• Nhấp hoặc nhấn [E] để xem đầy đủ Giá trị cốt lõi & Lợi ích', 68, 1020);
+      ctx.fillText('• Nhấp hoặc nhấn [E] để xem chi tiết 6 sự kiện & lộ trình TechXplore', 68, 1034);
     }
     return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
-  }, []);
+  }, [activityHighlights]);
 
   useEffect(() => {
     return () => {
       outerHexGeom.dispose();
       innerHexGeom.dispose();
       textTexture.dispose();
-      valuesBoardTexture.dispose();
+      eventsWingTexture.dispose();
     };
-  }, [outerHexGeom, innerHexGeom, textTexture, valuesBoardTexture]);
+  }, [outerHexGeom, innerHexGeom, textTexture, eventsWingTexture]);
 
   useFrame((state, delta) => {
     if (!reducedMotion && emblemRef.current) {
@@ -312,14 +287,44 @@ export const CenterWall: React.FC = () => {
     }
   });
 
+  const eventsWingExhibit: ExhibitItem = useMemo(
+    () => ({
+      id: 'center-events-wing',
+      title: 'Chuỗi Hoạt Động Trọng Tâm & Sự Kiện CLB',
+      category: 'activity',
+      year: 'Mỗi nhiệm kỳ',
+      highlight: '6 Sự Kiện Cố Định • Không Thu Phí Thành Viên',
+      description:
+        'Các chương trình kết nối tân sinh viên, tuyển thành viên TechXplore và chuỗi sự kiện gắn kết cộng đồng TechTonic Club.',
+      bullets: activityHighlights.map(
+        (a) =>
+          `${a.title} (${a.tag}): ${a.summary}${a.goal ? ` — Mục tiêu: ${a.goal}.` : ''}${
+            a.audience ? ` Đối tượng: ${a.audience}.` : ''
+          }`
+      ),
+    }),
+    [activityHighlights]
+  );
+
+  const eventsWingPreview: HoverPreview = useMemo(
+    () => ({
+      title: 'Chuỗi 6 Sự Kiện Trọng Tâm',
+      badge: 'TECHXPLORE • MENTOR-MENTEE • TECHWARE',
+      summary: '6 chương trình hoạt động cố định mỗi nhiệm kỳ tại TechTonic Club.',
+      bullets: activityHighlights.slice(0, 3).map((a) => `${a.title} (${a.tag})`),
+      actionLabel: 'Xem chi tiết 6 sự kiện trọng tâm',
+    }),
+    [activityHighlights]
+  );
+
   const handleOpenMission = () => openModal('exhibit', MISSION_EXHIBIT);
-  const handleOpenValues = () => openModal('exhibit', VALUES_EXHIBIT);
+  const handleOpenEvents = () => openModal('exhibit', eventsWingExhibit);
 
   return (
     <group position={[0, 0, -18.42]}>
       <RoundedBox
         position={[0, 3.35, -0.05]}
-        args={[20.4, 5.5, 0.14]}
+        args={[13.2, 5.5, 0.14]}
         radius={0.04}
         smoothness={4}
         receiveShadow
@@ -341,11 +346,11 @@ export const CenterWall: React.FC = () => {
       ))}
 
       <mesh position={[0, 6.08, 0.04]}>
-        <boxGeometry args={[20.2, 0.06, 0.08]} />
+        <boxGeometry args={[13.0, 0.06, 0.08]} />
         <meshStandardMaterial color="#00F0FF" emissive="#00F0FF" emissiveIntensity={1.6} toneMapped={false} />
       </mesh>
       <mesh position={[0, 0.62, 0.04]}>
-        <boxGeometry args={[20.2, 0.06, 0.08]} />
+        <boxGeometry args={[13.0, 0.06, 0.08]} />
         <meshStandardMaterial color="#38bdf8" emissive="#0ea5e9" emissiveIntensity={1.1} toneMapped={false} />
       </mesh>
 
@@ -416,9 +421,9 @@ export const CenterWall: React.FC = () => {
         </mesh>
       </group>
 
-      {/* Vision & Mission Graphic Plane */}
+      {/* Vision & Mission Graphic Plane centered cleanly inside Dream It - Code It */}
       <mesh
-        position={[0, 2.45, 0.06]}
+        position={[0, 2.55, 0.06]}
         onClick={(e) => {
           e.stopPropagation();
           handleOpenMission();
@@ -434,7 +439,7 @@ export const CenterWall: React.FC = () => {
         }}
         onPointerOut={() => setHoveringInteractive(false)}
       >
-        <planeGeometry args={[14.8, 7.4]} />
+        <planeGeometry args={[12.8, 6.4]} />
         <meshStandardMaterial
           map={textTexture}
           transparent
@@ -446,14 +451,14 @@ export const CenterWall: React.FC = () => {
         />
       </mesh>
 
-      {/* Back-Left Wing: Framed 7 Core Values & Metrics Board with Corner Bolts */}
-      <group position={[-13.4, 3.25, 0.02]}>
+      {/* Back-Left Wing: Framed Chuỗi Sự Kiện Trọng Tâm Board cleanly left of Dream It - Code It */}
+      <group position={[-11.3, 3.25, 0.04]}>
         <RoundedBox position={[0, 0, -0.05]} args={[5.72, 4.22, 0.1]} radius={0.04} smoothness={4} castShadow>
           <meshStandardMaterial color="#334155" metalness={0.86} roughness={0.22} />
         </RoundedBox>
         <mesh position={[0, 2.09, 0.005]}>
           <boxGeometry args={[5.5, 0.024, 0.02]} />
-          <meshBasicMaterial color="#38bdf8" toneMapped={false} />
+          <meshBasicMaterial color="#c084fc" toneMapped={false} />
         </mesh>
         {[
           [-2.74, 1.98],
@@ -461,7 +466,7 @@ export const CenterWall: React.FC = () => {
           [-2.74, -1.98],
           [2.74, -1.98],
         ].map(([bx, by], i) => (
-          <mesh key={`val-bolt-${i}`} position={[bx, by, 0.012]} rotation={[Math.PI / 2, 0, 0]}>
+          <mesh key={`ev-bolt-${i}`} position={[bx, by, 0.012]} rotation={[Math.PI / 2, 0, 0]}>
             <cylinderGeometry args={[0.032, 0.032, 0.035, 16]} />
             <meshStandardMaterial color="#94a3b8" metalness={0.92} roughness={0.18} />
           </mesh>
@@ -470,24 +475,24 @@ export const CenterWall: React.FC = () => {
           position={[0, 0, 0.01]}
           onClick={(e) => {
             e.stopPropagation();
-            handleOpenValues();
+            handleOpenEvents();
           }}
           onPointerOver={(e) => {
             e.stopPropagation();
             setHoveringInteractive(
               true,
-              'Xem 7 Giá trị cốt lõi & Dấu ấn',
-              handleOpenValues,
-              VALUES_PREVIEW
+              'Xem Chuỗi 6 Sự kiện trọng tâm',
+              handleOpenEvents,
+              eventsWingPreview
             );
           }}
           onPointerOut={() => setHoveringInteractive(false)}
         >
           <planeGeometry args={[5.4, 3.9]} />
           <meshStandardMaterial
-            map={valuesBoardTexture}
+            map={eventsWingTexture}
             emissive="#ffffff"
-            emissiveMap={valuesBoardTexture}
+            emissiveMap={eventsWingTexture}
             emissiveIntensity={0.34}
             roughness={0.44}
             metalness={0.04}

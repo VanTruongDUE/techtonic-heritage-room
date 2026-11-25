@@ -10,6 +10,7 @@ import { TunnelGallery } from './Exhibits/TunnelGallery';
 import { MemberPortraitGallery } from './Exhibits/MemberPortraitGallery';
 import { PlayerController } from './PlayerController';
 import { HallParticleField, OrgConstellationOrbit } from './Effects/AmbientMotion';
+import { CodeCosmosOrbit } from './Effects/CodeCosmosOrbit';
 
 export const Scene: React.FC = () => {
   return (
@@ -23,6 +24,7 @@ export const Scene: React.FC = () => {
       {/* Subtle Ambient Motion Layers */}
       <HallParticleField />
       <OrgConstellationOrbit />
+      <CodeCosmosOrbit />
 
       {/* Physics World for Collisions and Character Movement */}
       <Physics gravity={[0, -9.81, 0]}>

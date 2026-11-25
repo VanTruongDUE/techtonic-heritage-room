@@ -236,75 +236,88 @@ export const PerimeterGallery: React.FC = () => {
     return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, [timelineMilestones]);
 
-  // Left Wall Bay 2: 6 Fixed Term Events (clean 3x2 grid with Goal & Audience)
-  const activityTexture = useMemo(() => {
+  // Left Wall Bay 2: 7 Core Values, Club Metrics & Benefits
+  const coreValuesTexture = useMemo(() => {
     const { canvas, ctx } = createHiResCanvas(1680, 1024, 1.75);
     if (ctx) {
       ctx.fillStyle = '#0c1322';
       ctx.fillRect(0, 0, 1680, 1024);
 
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.32)';
+      ctx.strokeStyle = 'rgba(192, 132, 252, 0.35)';
       ctx.lineWidth = 4;
       ctx.strokeRect(24, 24, 1632, 976);
 
       ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 40px Inter, sans-serif';
-      ctx.fillText('CHUỖI HOẠT ĐỘNG TRỌNG TÂM MỖI NHIỆM KỲ', 60, 92);
+      ctx.font = '600 22px "JetBrains Mono", monospace';
+      ctx.fillText('BẢN SẮC • GIÁ TRỊ CỐT LÕI • THÀNH TỰU', 64, 78);
 
-      activityHighlights.slice(0, 6).forEach((c, idx) => {
-        const col = idx % 3;
-        const row = Math.floor(idx / 3);
-        const x = 60 + col * 530;
-        const y = 136 + row * 398;
-        const cardW = 496;
-        const cardH = 362;
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 42px Inter, sans-serif';
+      ctx.fillText('7 GIÁ TRỊ CỐT LÕI & DẤU ẤN TECHTONIC CLUB', 64, 132);
 
+      // Top 4 Metrics strip
+      CLUB_PROFILE.metrics.forEach((m, idx) => {
+        const x = 64 + idx * 394;
+        const y = 166;
         ctx.fillStyle = '#131d32';
-        ctx.fillRect(x, y, cardW, cardH);
+        ctx.fillRect(x, y, 368, 118);
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, 368, 118);
 
-        ctx.strokeStyle = c.color;
-        ctx.lineWidth = 2.5;
-        ctx.strokeRect(x, y, cardW, cardH);
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '800 44px Inter, sans-serif';
+        ctx.fillText(m.value, x + 24, y + 60);
 
-        ctx.fillStyle = c.color;
-        ctx.font = '600 17px "JetBrains Mono", monospace';
-        ctx.fillText(`[ ${c.tag} • ${c.year} ]`, x + 24, y + 42);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '500 21px Inter, sans-serif';
+        ctx.fillText(m.label, x + 24, y + 98);
+      });
+
+      // 7 Core Values cleanly in 2 columns + Benefits card in slot (col 1, row 3)
+      CLUB_PROFILE.coreValues.forEach((val, idx) => {
+        const col = idx < 4 ? 0 : 1;
+        const row = idx < 4 ? idx : idx - 4;
+        const x = 64 + col * 790;
+        const y = 314 + row * 150;
+
+        ctx.fillStyle = '#111a2d';
+        ctx.fillRect(x, y, 760, 128);
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.28)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(x, y, 760, 128);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 24px "JetBrains Mono", monospace';
+        ctx.fillText(`0${idx + 1}`, x + 22, y + 46);
 
         ctx.fillStyle = '#f8fafc';
         ctx.font = 'bold 26px Inter, sans-serif';
-        const nextY = drawWrappedText(ctx, c.title, x + 24, y + 84, cardW - 48, 33, 2);
+        ctx.fillText(val.name, x + 78, y + 46);
 
         ctx.fillStyle = '#cbd5e1';
-        ctx.font = '400 19px Inter, sans-serif';
-        const afterSummaryY = drawWrappedText(ctx, c.summary, x + 24, nextY + 8, cardW - 48, 26, 3);
-
-        // Divider + Goal/Audience block anchored inside card footer
-        const footerY = Math.max(afterSummaryY + 6, y + cardH - 96);
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(x + 24, footerY);
-        ctx.lineTo(x + cardW - 24, footerY);
-        ctx.stroke();
-
-        if (c.goal) {
-          ctx.fillStyle = '#7dd3fc';
-          ctx.font = '500 16px Inter, sans-serif';
-          drawWrappedText(ctx, `Mục tiêu: ${c.goal}`, x + 24, footerY + 26, cardW - 48, 22, 2);
-        }
-        if (c.audience) {
-          ctx.fillStyle = '#94a3b8';
-          ctx.font = '500 15px "JetBrains Mono", monospace';
-          ctx.fillText(`Đối tượng: ${c.audience}`, x + 24, y + cardH - 18);
-        }
+        ctx.font = '400 20px Inter, sans-serif';
+        drawWrappedText(ctx, val.note, x + 78, y + 84, 658, 28, 2);
       });
 
+      ctx.fillStyle = '#13223b';
+      ctx.fillRect(854, 764, 760, 128);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(854, 764, 760, 128);
       ctx.fillStyle = '#7dd3fc';
-      ctx.font = '500 20px "JetBrains Mono", monospace';
-      ctx.fillText('• Nhấp hoặc nhấn [E] để xem chi tiết chuỗi sự kiện & tuyển thành viên', 60, 964);
+      ctx.font = 'bold 23px Inter, sans-serif';
+      ctx.fillText('CLB MANG LẠI GÌ CHO BẠN?', 880, 810);
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '400 21px Inter, sans-serif';
+      ctx.fillText('• Anh chị tốt  • Cơ sở học thuật tốt  • Bạn bè cùng chí hướng', 880, 856);
+
+      ctx.fillStyle = '#7dd3fc';
+      ctx.font = '500 21px "JetBrains Mono", monospace';
+      ctx.fillText('• Nhấp hoặc nhấn [E] để xem đầy đủ 7 Giá trị cốt lõi & Lợi ích', 64, 962);
     }
     return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
-  }, [activityHighlights]);
+  }, []);
 
   // Right Wall Bay 1: 3-Term BCN Leadership & 4 Functional Departments
   const shirtPlaqueTexture = useMemo(() => {
@@ -572,7 +585,7 @@ export const PerimeterGallery: React.FC = () => {
   useEffect(() => {
     return () => {
       timelineTexture.dispose();
-      activityTexture.dispose();
+      coreValuesTexture.dispose();
       shirtPlaqueTexture.dispose();
       academicTexture.dispose();
       partnersContactTexture.dispose();
@@ -580,7 +593,7 @@ export const PerimeterGallery: React.FC = () => {
     };
   }, [
     timelineTexture,
-    activityTexture,
+    coreValuesTexture,
     shirtPlaqueTexture,
     academicTexture,
     partnersContactTexture,
@@ -601,23 +614,19 @@ export const PerimeterGallery: React.FC = () => {
     [timelineMilestones]
   );
 
-  const activityExhibit: ExhibitItem = useMemo(
+  const coreValuesExhibit: ExhibitItem = useMemo(
     () => ({
-      id: 'activity-highlights',
-      title: 'Chuỗi Hoạt Động Trọng Tâm & Tuyển Thành Viên TechXplore',
-      category: 'activity',
-      year: 'Mỗi nhiệm kỳ',
-      highlight: '6 Hoạt Động Cố Định • Không Thu Phí Thành Viên',
+      id: 'core-values-left',
+      title: '7 Giá Trị Cốt Lõi & Dấu Ấn TechTonic Club',
+      category: 'history',
+      year: '2024 - 2026',
+      highlight: 'Học Thuật • Kết Nối • Phát Triển • Trải Nghiệm • Chân Thành',
       description:
-        'Các chương trình kết nối tân sinh viên, tuyển thành viên qua Vòng đơn → Phỏng vấn → Thực tập (đối với BCN) và chuỗi hoạt động gắn kết nội bộ.',
-      bullets: activityHighlights.map(
-        (a) =>
-          `${a.title} (${a.tag}): ${a.summary}${a.goal ? ` — Mục tiêu: ${a.goal}.` : ''}${
-            a.audience ? ` Đối tượng: ${a.audience}.` : ''
-          }`
-      ),
+        'Hệ giá trị dẫn dắt văn hóa học thuật cạnh tranh lành mạnh, chia sẻ chân thành và đổi mới liên tục tại TechTonic Club.',
+      metrics: CLUB_PROFILE.metrics,
+      bullets: CLUB_PROFILE.coreValues.map((v) => `${v.name}: ${v.note}`),
     }),
-    [activityHighlights]
+    []
   );
 
   const academicExhibit: ExhibitItem = useMemo(
@@ -669,15 +678,15 @@ export const PerimeterGallery: React.FC = () => {
     [timelineMilestones]
   );
 
-  const activityPreview: HoverPreview = useMemo(
+  const coreValuesPreview: HoverPreview = useMemo(
     () => ({
-      title: 'Chuỗi 6 Hoạt Động Trọng Tâm',
-      badge: 'HOẠT ĐỘNG • TECHXPLORE',
-      summary: '6 chương trình cố định mỗi nhiệm kỳ từ TechXplore tuyển thành viên đến Mentor-Mentee và Du lịch nội bộ.',
-      bullets: activityHighlights.slice(0, 3).map((a) => `${a.title} (${a.tag})`),
-      actionLabel: 'Xem mục tiêu & đối tượng 6 sự kiện',
+      title: '7 Giá Trị Cốt Lõi & Dấu Ấn CLB',
+      badge: '10+ GIẢI THƯỞNG • 100+ THÀNH VIÊN',
+      summary: 'Hệ 7 giá trị nền tảng từ Chia sẻ, Tương trợ, Chân thành đến Đổi mới (phản chứng).',
+      bullets: CLUB_PROFILE.coreValues.slice(0, 3).map((v) => `${v.name}: ${v.note}`),
+      actionLabel: 'Xem chi tiết 7 giá trị cốt lõi',
     }),
-    [activityHighlights]
+    []
   );
 
   const shirtPreview: HoverPreview = useMemo(
@@ -737,7 +746,7 @@ export const PerimeterGallery: React.FC = () => {
 
   const openShirtModal = () => openModal('shirt');
   const openTimelineModal = () => openModal('exhibit', timelineExhibit);
-  const openActivityModal = () => openModal('exhibit', activityExhibit);
+  const openCoreValuesModal = () => openModal('exhibit', coreValuesExhibit);
   const openAcademicModal = () => openModal('exhibit', academicExhibit);
   const openPartnersModal = () => openModal('exhibit', partnersContactExhibit);
 
@@ -770,11 +779,11 @@ export const PerimeterGallery: React.FC = () => {
         rotation={[0, Math.PI / 2, 0]}
         frameArgs={[7.42, 4.52, 0.1]}
         planeArgs={[7.1, 4.2]}
-        texture={activityTexture}
+        texture={coreValuesTexture}
         metalMaps={metalMaps}
-        tooltip="Xem Chuỗi hoạt động trọng tâm"
-        preview={activityPreview}
-        onInteract={openActivityModal}
+        tooltip="Xem 7 Giá trị cốt lõi & Dấu ấn"
+        preview={coreValuesPreview}
+        onInteract={openCoreValuesModal}
         onHover={setHoveringInteractive}
       />
 
