@@ -1,21 +1,22 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { RoundedBox } from '@react-three/drei';
+import { RoundedBox, useGLTF } from '@react-three/drei';
 import { CylinderCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
+import { clone as cloneSkinnedScene } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { createBrushedMetalMaps, createMarbleMaps } from '../utils/proceduralMaterials';
 import {
-  createFoxFurMaps,
-  createOwlPlumageMaps,
-  createPhoenixPlumageMaps,
+  createMythicalFurBumpMap,
+  createMythicalPBRMaterial,
   createSculptedFeatherGeometry,
-  createTaperedTubeGeometry,
+  createSpiraledHornGeometry,
+  smoothSkinnedGeometryNormals,
 } from '../utils/mythicalCreatureGeometries';
 import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
 import type { Department, HoverPreview } from '../../../types/heritage';
 
-type EmblemKind = 'owl' | 'phoenix' | 'fox' | 'camera' | 'crown';
+type EmblemKind = 'wolf' | 'pegasus' | 'fox' | 'stag' | 'crown';
 
 interface DeptEmblemConfig {
   id: string;
@@ -34,44 +35,50 @@ interface DeptEmblemConfig {
 
 const CURRENT_TERM = 'Nhiệm kỳ 2026 - 2027';
 
+// Preload all 4 rigged skeletal mythical beast models at module parse time
+useGLTF.preload('/models/mascots/wolf.glb');
+useGLTF.preload('/models/mascots/horse.glb');
+useGLTF.preload('/models/mascots/fox.glb');
+useGLTF.preload('/models/mascots/stag.glb');
+
 /**
- * 5 Department Mythical 3D Living Mascots & Rotating Artifacts:
- * - Ban Chuyên Môn: Thần Cú Thiên Cơ (Great Horned Owl sculpted with layered feathers & curved talons)
- * - Ban Sự Kiện:    Phượng Hoàng Bất Tử (Celestial Phoenix with multi-feather flapping wings & ribbon plumes)
- * - Ban Nhân Sự:    Cửu Vĩ Linh Hồ (Mythical Spirit Fox with velvety fur & 5 undulating jade spirit tails)
- * - Ban Truyền Thông: Máy Quay Điện Ảnh 3D xoay 360°
+ * 4 Mythical Living Rigged Guardians (Tứ Linh Thần Thú TechTonic) + Sovereign Leadership Artifact:
+ * - Ban Chuyên Môn:   Thiên Lang Thiên Cơ (Rigged Celestial Alpha Wolf — wolf.glb)
+ * - Ban Sự Kiện:      Thiên Mã Phượng Dực (Rigged Celestial Flame Pegasus — horse.glb + sculpted flame wings & Kirin horn)
+ * - Ban Nhân Sự:      Linh Hồ Ngọc Bích (Rigged Celestial Emerald Spirit Fox — fox.glb)
+ * - Ban Truyền Thông: Thần Lộc Quang Ảnh (Rigged Celestial Sovereign Stag — stag.glb with crystal cyan antlers)
  * - Ban Chủ Nhiệm:    Vương Miện & La Bàn Định Hướng 3D xoay 360°
  */
 const DEPT_EMBLEMS: DeptEmblemConfig[] = [
   {
-    id: 'emblem-bcm-owl',
+    id: 'emblem-bcm-wolf',
     dept: 'Ban Chuyên Môn',
-    kind: 'owl',
+    kind: 'wolf',
     isMascot: true,
     position: [-14.87, 0, -12.95],
     rotationY: Math.PI / 2,
-    badge: 'LINH VẬT THẦN THOẠI • BAN CHUYÊN MÔN',
-    title: 'Thần Cú Thiên Cơ',
-    subtitle: 'Trí tuệ sâu sắc • Tầm nhìn xuyên màn đêm',
+    badge: 'LINH THÚ THẦN THOẠI • BAN CHUYÊN MÔN',
+    title: 'Thiên Lang Thiên Cơ',
+    subtitle: 'Bản lĩnh dẫn đầu • Tư duy sắc bén • Kỷ luật thép',
     accent: '#fb923c',
     secondary: '#00F5FF',
     description:
-      'Linh vật Thần Cú điêu khắc bộ lông tầng tỉ mỉ, đôi mắt sáng tinh anh và sải cánh uy nghi — biểu trưng cho trí tuệ, tư duy thuật toán và tinh thần nghiên cứu bền bỉ của Ban Chuyên Môn.',
+      'Thiên Lang thần thoại mang bộ lông tinh vân uy nghi, ánh mắt hổ phách rực sáng và khí chất thủ lĩnh bầy đàn — biểu trưng cho tư duy thuật toán sắc bén và sức mạnh nghiên cứu của Ban Chuyên Môn.',
   },
   {
-    id: 'emblem-bsk-phoenix',
+    id: 'emblem-bsk-pegasus',
     dept: 'Ban Sự Kiện',
-    kind: 'phoenix',
+    kind: 'pegasus',
     isMascot: true,
     position: [14.87, 0, -12.95],
     rotationY: -Math.PI / 2,
-    badge: 'LINH VẬT THẦN THOẠI • BAN SỰ KIỆN',
-    title: 'Phượng Hoàng Bất Tử',
-    subtitle: 'Rực rỡ • Tái sinh sáng tạo • Bùng nổ sân khấu',
+    badge: 'LINH THÚ THẦN THOẠI • BAN SỰ KIỆN',
+    title: 'Thiên Mã Phượng Dực',
+    subtitle: 'Bùng nổ sân khấu • Sải cánh thăng hoa • Nhiệt huyết',
     accent: '#c084fc',
     secondary: '#f472b6',
     description:
-      'Linh vật Phượng Hoàng huyền thoại với đôi cánh lông vũ hai khớp vỗ nhịp sống động, vương miện mào lửa và 5 dải đuôi uốn lượn — biểu tượng cho những sân khấu rực rỡ của Ban Sự Kiện.',
+      'Thiên Mã Kỳ Lân mang bờm lửa hoàng kim, sừng xoắn pha lê và đôi cánh phượng quang rực rỡ — biểu tượng cho khí thế bùng nổ, tốc độ triển khai và dấu ấn sân khấu mãn nhãn của Ban Sự Kiện.',
   },
   {
     id: 'emblem-bns-fox',
@@ -80,28 +87,28 @@ const DEPT_EMBLEMS: DeptEmblemConfig[] = [
     isMascot: true,
     position: [2.95, 0, 6.4],
     rotationY: Math.PI,
-    badge: 'LINH VẬT THẦN THOẠI • BAN NHÂN SỰ',
+    badge: 'LINH THÚ THẦN THOẠI • BAN NHÂN SỰ',
     title: 'Linh Hồ Ngọc Bích',
-    subtitle: 'Tinh tế • Ấm áp • Gắn kết muôn người',
+    subtitle: 'Tinh tế • Thấu cảm • Gắn kết bền chặt',
     accent: '#34d399',
     secondary: '#a7f3d0',
     description:
-      'Linh Hồ thần thoại với bộ lông ngọc bích mượt mà, đôi tai lắng nghe nhạy bén và 5 chiếc đuôi linh khí uốn lượn mềm mại — biểu trưng cho sự khéo léo, tận tâm và gắn kết của Ban Nhân Sự.',
+      'Linh Hồ Ngọc Bích uyển chuyển với lớp lông nhung thanh khiết, đôi mắt tinh anh và ngọc linh khí xoay quanh — biểu trưng cho sự khéo léo, tận tâm và sợi dây gắn kết con người của Ban Nhân Sự.',
   },
   {
-    id: 'emblem-btt-camera',
+    id: 'emblem-btt-stag',
     dept: 'Ban Truyền Thông',
-    kind: 'camera',
-    isMascot: false,
+    kind: 'stag',
+    isMascot: true,
     position: [-3.55, 0, 6.35],
     rotationY: Math.PI,
-    badge: 'VẬT PHẨM • BAN TRUYỀN THÔNG',
-    title: 'Máy Quay Điện Ảnh 3D',
-    subtitle: 'Góc nhìn sáng tạo • Lan tỏa hình ảnh',
+    badge: 'LINH THÚ THẦN THOẠI • BAN TRUYỀN THÔNG',
+    title: 'Thần Lộc Quang Ảnh',
+    subtitle: 'Tầm nhìn cao quý • Tỏa sáng • Lan tỏa thương hiệu',
     accent: '#38bdf8',
     secondary: '#00F5FF',
     description:
-      'Vật phẩm biểu tượng của Ban Truyền Thông — lưu giữ từng khung hình thanh xuân, sản xuất ấn phẩm truyền thông và đưa thương hiệu TechTonic vươn xa.',
+      'Thần Lộc Quang Ảnh mang cặp gạc pha lê xanh lam phát sáng như ngọn hải đăng sáng tạo — biểu trưng cho vẻ đẹp thẩm mỹ cao quý, góc nhìn nghệ thuật và sức lan tỏa mạnh mẽ của Ban Truyền Thông.',
   },
   {
     id: 'emblem-bcn-crown',
@@ -149,1119 +156,984 @@ function createEmblemPlaqueTexture(cfg: DeptEmblemConfig): THREE.CanvasTexture {
   return finalizeCrispTexture(canvas, { anisotropy: 4, srgb: true });
 }
 
-/* ================= 1. MYTHICAL GREAT HORNED OWL (THẦN CÚ THIÊN CƠ — BAN CHUYÊN MÔN) ================= */
-const MythicalOwlMascot: React.FC<{ hovered: boolean }> = ({ hovered }) => {
-  const bodyRef = useRef<THREE.Group>(null);
-  const headRef = useRef<THREE.Group>(null);
-  const leftWingRef = useRef<THREE.Group>(null);
-  const rightWingRef = useRef<THREE.Group>(null);
-  const leftLidRef = useRef<THREE.Mesh>(null);
-  const rightLidRef = useRef<THREE.Mesh>(null);
-  const leftHornRef = useRef<THREE.Mesh>(null);
-  const rightHornRef = useRef<THREE.Mesh>(null);
+/* ================= SHARED RISING CELESTIAL SPIRIT EMBERS ================= */
+const CelestialEmbers: React.FC<{
+  color: string;
+  count?: number;
+  radius?: number;
+  height?: number;
+  baseY?: number;
+  hovered: boolean;
+}> = ({ color, count = 34, radius = 0.62, height = 1.35, baseY = 1.02, hovered }) => {
+  const pointsRef = useRef<THREE.Points>(null);
 
-  const plumage = useMemo(() => createOwlPlumageMaps(), []);
+  const { geom, seeds } = useMemo(() => {
+    const positions = new Float32Array(count * 3);
+    const seedArr = new Float32Array(count * 4);
+    for (let i = 0; i < count; i += 1) {
+      const a = (i / count) * Math.PI * 2 + (i % 5) * 0.42;
+      const r = radius * (0.48 + ((i * 37) % 100) / 145);
+      const y = ((i * 53) % 100) / 100;
+      const speed = 0.16 + ((i * 29) % 100) / 360;
+      seedArr[i * 4] = a;
+      seedArr[i * 4 + 1] = r;
+      seedArr[i * 4 + 2] = y;
+      seedArr[i * 4 + 3] = speed;
 
-  const geoms = useMemo(() => {
-    // Organic pear-shaped perched owl torso profile (LatheGeometry)
-    const torsoPts = [
-      new THREE.Vector2(0.0, -0.18),
-      new THREE.Vector2(0.09, -0.16),
-      new THREE.Vector2(0.155, -0.08),
-      new THREE.Vector2(0.195, 0.04),
-      new THREE.Vector2(0.205, 0.16),
-      new THREE.Vector2(0.185, 0.27),
-      new THREE.Vector2(0.135, 0.34),
-      new THREE.Vector2(0.095, 0.37),
-      new THREE.Vector2(0.0, 0.38),
-    ];
-    const torso = new THREE.LatheGeometry(torsoPts, 36);
-    torso.computeVertexNormals();
-
-    // Sculpted raptor hooked beak
-    const beak = createTaperedTubeGeometry(
-      [
-        new THREE.Vector3(0, 0.012, 0),
-        new THREE.Vector3(0, 0.008, 0.036),
-        new THREE.Vector3(0, -0.015, 0.068),
-        new THREE.Vector3(0, -0.052, 0.072),
-      ],
-      (t) => 0.032 * Math.pow(1 - t, 0.85),
-      16,
-      12,
-      0.85,
-      1.15
-    );
-
-    // Sweeping Great Horned Owl curved ear plumes (left & right)
-    const leftHorn = createTaperedTubeGeometry(
-      [
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(-0.04, 0.065, -0.01),
-        new THREE.Vector3(-0.095, 0.13, -0.035),
-        new THREE.Vector3(-0.14, 0.175, -0.06),
-      ],
-      (t) => 0.034 * (1 - t * 0.88),
-      16,
-      10,
-      1.2,
-      0.6
-    );
-    const rightHorn = createTaperedTubeGeometry(
-      [
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(0.04, 0.065, -0.01),
-        new THREE.Vector3(0.095, 0.13, -0.035),
-        new THREE.Vector3(0.14, 0.175, -0.06),
-      ],
-      (t) => 0.034 * (1 - t * 0.88),
-      16,
-      10,
-      1.2,
-      0.6
-    );
-
-    // Ancient gnarled twisted branch perch
-    const branch = createTaperedTubeGeometry(
-      [
-        new THREE.Vector3(-0.26, 0.02, -0.02),
-        new THREE.Vector3(-0.1, 0.05, 0.01),
-        new THREE.Vector3(0.08, 0.045, 0.015),
-        new THREE.Vector3(0.25, 0.08, -0.03),
-      ],
-      (t) => 0.028 * (1 - Math.abs(t - 0.5) * 0.45),
-      20,
-      12
-    );
-
-    // Curved gripping talon claw
-    const talon = createTaperedTubeGeometry(
-      [
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(0, -0.02, 0.035),
-        new THREE.Vector3(0, -0.055, 0.045),
-        new THREE.Vector3(0, -0.075, 0.02),
-      ],
-      (t) => 0.012 * (1 - t * 0.78),
-      12,
-      8
-    );
-
-    const primaryFeather = createSculptedFeatherGeometry(0.32, 0.068, 0.03);
-    const covertFeather = createSculptedFeatherGeometry(0.21, 0.062, 0.022);
-    const tailFeather = createSculptedFeatherGeometry(0.28, 0.058, 0.018);
-
-    return {
-      torso,
-      beak,
-      leftHorn,
-      rightHorn,
-      branch,
-      talon,
-      primaryFeather,
-      covertFeather,
-      tailFeather,
-    };
-  }, []);
+      positions[i * 3] = Math.cos(a) * r;
+      positions[i * 3 + 1] = baseY + y * height;
+      positions[i * 3 + 2] = Math.sin(a) * r;
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    return { geom: g, seeds: seedArr };
+  }, [baseY, count, height, radius]);
 
   useEffect(() => {
     return () => {
-      plumage.map.dispose();
-      plumage.bumpMap.dispose();
-      Object.values(geoms).forEach((g) => g.dispose());
+      geom.dispose();
     };
-  }, [plumage, geoms]);
+  }, [geom]);
+
+  useFrame((state) => {
+    if (!pointsRef.current) return;
+    const t = state.clock.elapsedTime;
+    const pos = geom.attributes.position as THREE.BufferAttribute;
+    const boost = hovered ? 1.45 : 1.0;
+
+    for (let i = 0; i < count; i += 1) {
+      const a0 = seeds[i * 4];
+      const r0 = seeds[i * 4 + 1];
+      const y0 = seeds[i * 4 + 2];
+      const spd = seeds[i * 4 + 3];
+
+      const cycle = (y0 + t * spd * boost) % 1;
+      const swirl = a0 + t * (0.45 + spd * 0.9) * boost + cycle * 1.4;
+      const r = r0 * (1 - cycle * 0.32) + Math.sin(t * 2.2 + i) * 0.035;
+
+      pos.setXYZ(i, Math.cos(swirl) * r, baseY + cycle * height, Math.sin(swirl) * r);
+    }
+    pos.needsUpdate = true;
+  });
+
+  return (
+    <points ref={pointsRef} geometry={geom}>
+      <pointsMaterial
+        color={color}
+        size={hovered ? 0.048 : 0.036}
+        transparent
+        opacity={hovered ? 0.95 : 0.72}
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+        toneMapped={false}
+      />
+    </points>
+  );
+};
+
+/* ================= SHARED FLUID SKELETAL ANIMATION & SMOOTH-NORMAL ENGINE ================= */
+interface RiggedBeastProps {
+  url: string;
+  scale: number;
+  baseRotationY: number;
+  idleClips: string[];
+  hoverClip: string;
+  hovered: boolean;
+  furBump: THREE.CanvasTexture;
+  resolveMaterial: (meshName: string, materialName: string) => THREE.Material;
+  renderAttachments?: (bones: Record<string, THREE.Object3D>, rootGroup: THREE.Group | null) => React.ReactNode;
+}
+
+const MythicalRiggedBeast: React.FC<RiggedBeastProps> = ({
+  url,
+  scale,
+  baseRotationY,
+  idleClips,
+  hoverClip,
+  hovered,
+  resolveMaterial,
+  renderAttachments,
+}) => {
+  const gltf = useGLTF(url);
+  const rootRef = useRef<THREE.Group>(null);
+  const mixerRef = useRef<THREE.AnimationMixer | null>(null);
+  const actionsRef = useRef<Map<string, THREE.AnimationAction>>(new Map());
+  const currentClipRef = useRef<string>('');
+  const switchTimerRef = useRef<number>(4.5);
+  const idleIdxRef = useRef<number>(0);
+  const prevHoveredRef = useRef<boolean>(false);
+
+  // Clone the rigged skeleton safely, weld coincident normals for silky organic muscle smoothness,
+  // and bind custom mythical PBR + Fresnel rim shaders per material zone.
+  const { sceneClone, bonesMap, disposedGeoms, disposedMats } = useMemo(() => {
+    const cloned = cloneSkinnedScene(gltf.scene) as THREE.Group;
+    const bones: Record<string, THREE.Object3D> = {};
+    const geomsToDispose: THREE.BufferGeometry[] = [];
+    const matsToDispose: THREE.Material[] = [];
+    const matCache = new Map<string, THREE.Material>();
+
+    cloned.traverse((obj) => {
+      if (obj.name) {
+        bones[obj.name] = obj;
+      }
+
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.frustumCulled = false;
+
+        // Smooth split-face normals while preserving 100% of skinIndex/skinWeight!
+        if (mesh.geometry) {
+          const smoothed = smoothSkinnedGeometryNormals(mesh.geometry);
+          geomsToDispose.push(smoothed);
+          mesh.geometry = smoothed;
+        }
+
+        const swapMat = (orig: THREE.Material): THREE.Material => {
+          const key = `${mesh.name}::${orig.name}`;
+          const existing = matCache.get(key);
+          if (existing) return existing;
+          const custom = resolveMaterial(mesh.name, orig.name);
+          matCache.set(key, custom);
+          matsToDispose.push(custom);
+          return custom;
+        };
+
+        if (Array.isArray(mesh.material)) {
+          mesh.material = mesh.material.map(swapMat);
+        } else if (mesh.material) {
+          mesh.material = swapMat(mesh.material);
+        }
+      }
+    });
+
+    return {
+      sceneClone: cloned,
+      bonesMap: bones,
+      disposedGeoms: geomsToDispose,
+      disposedMats: matsToDispose,
+    };
+  }, [gltf.scene, resolveMaterial]);
+
+  // Build AnimationMixer and start with smooth organic idle blending
+  useEffect(() => {
+    const mixer = new THREE.AnimationMixer(sceneClone);
+    mixerRef.current = mixer;
+    const map = new Map<string, THREE.AnimationAction>();
+
+    for (const clip of gltf.animations) {
+      const action = mixer.clipAction(clip);
+      action.setLoop(THREE.LoopRepeat, Infinity);
+      map.set(clip.name, action);
+    }
+    actionsRef.current = map;
+
+    const initialName =
+      idleClips.find((name) => map.has(name)) ?? gltf.animations[0]?.name ?? '';
+    if (initialName) {
+      const firstAction = map.get(initialName)!;
+      firstAction.reset().fadeIn(0.4).play();
+      currentClipRef.current = initialName;
+    }
+
+    return () => {
+      mixer.stopAllAction();
+      mixer.uncacheRoot(sceneClone);
+      mixerRef.current = null;
+      actionsRef.current.clear();
+    };
+  }, [gltf.animations, idleClips, sceneClone]);
+
+  // Cleanly dispose cloned smoothed geometries and custom shader materials on unmount
+  useEffect(() => {
+    return () => {
+      disposedGeoms.forEach((g) => g.dispose());
+      disposedMats.forEach((m) => m.dispose());
+    };
+  }, [disposedGeoms, disposedMats]);
+
+  const crossFadeTo = (targetName: string, duration = 0.72) => {
+    const map = actionsRef.current;
+    const next = map.get(targetName);
+    if (!next || currentClipRef.current === targetName) return;
+
+    const prev = map.get(currentClipRef.current);
+    next.reset().setEffectiveTimeScale(1).setEffectiveWeight(1).play();
+    if (prev) {
+      prev.crossFadeTo(next, duration, true);
+    } else {
+      next.fadeIn(duration);
+    }
+    currentClipRef.current = targetName;
+  };
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
 
-    if (bodyRef.current) {
-      // Natural slow chest breathing
-      const breath = Math.sin(t * 2.0) * 0.014;
-      bodyRef.current.position.y = 1.24 + breath;
-      bodyRef.current.scale.set(
-        THREE.MathUtils.lerp(bodyRef.current.scale.x, hovered ? 1.07 : 1.0, dt * 6),
-        THREE.MathUtils.lerp(bodyRef.current.scale.y, (hovered ? 1.07 : 1.0) + breath * 0.6, dt * 6),
-        THREE.MathUtils.lerp(bodyRef.current.scale.z, hovered ? 1.07 : 1.0, dt * 6)
-      );
+    // React to hover state transitions with commanding heroic flourish
+    if (hovered !== prevHoveredRef.current) {
+      prevHoveredRef.current = hovered;
+      if (hovered && actionsRef.current.has(hoverClip)) {
+        crossFadeTo(hoverClip, 0.36);
+        switchTimerRef.current = 2.4;
+      } else {
+        const calmClip = idleClips[0];
+        if (calmClip && actionsRef.current.has(calmClip)) {
+          crossFadeTo(calmClip, 0.65);
+          switchTimerRef.current = 4.6;
+        }
+      }
     }
 
-    // Authentic smooth owl neck swivel & curious sideways head tilt
-    if (headRef.current) {
-      const lookWave = Math.sin(t * 0.68) * 0.52 + Math.sin(t * 1.45) * 0.14;
-      headRef.current.rotation.y = lookWave;
-      headRef.current.rotation.z = Math.sin(t * 0.95 + 0.8) * 0.14;
-      headRef.current.rotation.x = Math.cos(t * 0.6) * 0.07;
+    // Autonomous organic clip cycling so the beast never repeats a stiff single loop
+    switchTimerRef.current -= dt;
+    if (switchTimerRef.current <= 0) {
+      if (hovered) {
+        // After signature flourish, settle into alert survey pose while hovered
+        const alertClip = idleClips[1] ?? idleClips[0];
+        if (alertClip) crossFadeTo(alertClip, 0.6);
+        switchTimerRef.current = 3.8;
+      } else {
+        idleIdxRef.current = (idleIdxRef.current + 1) % idleClips.length;
+        const nextIdle = idleClips[idleIdxRef.current];
+        if (nextIdle) crossFadeTo(nextIdle, 0.85);
+        switchTimerRef.current = 4.8 + (idleIdxRef.current % 2) * 1.6;
+      }
     }
 
-    // Subtle ear-plume alertness twitch
-    const alert = Math.sin(t * 1.9) * 0.05;
-    if (leftHornRef.current) leftHornRef.current.rotation.z = alert;
-    if (rightHornRef.current) rightHornRef.current.rotation.z = -alert;
-
-    // Periodic majestic wing-mantle spread every ~5.5s (or gently lifted on hover)
-    const cycle = t % 5.5;
-    const spread =
-      cycle < 1.35
-        ? Math.sin((cycle / 1.35) * Math.PI) * 0.62
-        : hovered
-        ? 0.24 + Math.sin(t * 2.8) * 0.05
-        : Math.sin(t * 2.0) * 0.03;
-    if (leftWingRef.current) {
-      leftWingRef.current.rotation.z = 0.08 + spread;
-      leftWingRef.current.rotation.y = -spread * 0.35;
-    }
-    if (rightWingRef.current) {
-      rightWingRef.current.rotation.z = -0.08 - spread;
-      rightWingRef.current.rotation.y = spread * 0.35;
+    if (mixerRef.current) {
+      const targetSpeed = hovered ? 1.06 : 0.78;
+      mixerRef.current.timeScale = THREE.MathUtils.lerp(mixerRef.current.timeScale, targetSpeed, dt * 4);
+      mixerRef.current.update(dt);
     }
 
-    // Smooth anatomical upper eyelid blink every ~3.8s
-    const blinkPhase = t % 3.8;
-    const lidAngle = blinkPhase > 3.6 ? Math.sin(((blinkPhase - 3.6) / 0.2) * Math.PI) * 1.35 : 0;
-    if (leftLidRef.current) leftLidRef.current.rotation.x = -0.65 + lidAngle;
-    if (rightLidRef.current) rightLidRef.current.rotation.x = -0.65 + lidAngle;
+    // Gentle living presence turn & heroic hover scale emphasis
+    if (rootRef.current) {
+      const subtleTurn = baseRotationY + Math.sin(t * 0.42) * 0.09;
+      rootRef.current.rotation.y = THREE.MathUtils.lerp(rootRef.current.rotation.y, subtleTurn, dt * 3);
+      const targetScale = scale * (hovered ? 1.06 : 1.0);
+      rootRef.current.scale.setScalar(THREE.MathUtils.lerp(rootRef.current.scale.x, targetScale, dt * 5));
+    }
   });
 
   return (
-    <group>
-      {/* Sculpted Ancient Twisted Branch Perch mounted above pedestal */}
-      <group position={[0, 1.03, 0]}>
-        <mesh geometry={geoms.branch} castShadow>
-          <meshStandardMaterial color="#3b2c26" roughness={0.82} metalness={0.12} />
-        </mesh>
-        {/* Subtle glowing amber rune ring around perch stem */}
-        <mesh position={[0, -0.01, 0]}>
-          <cylinderGeometry args={[0.045, 0.06, 0.12, 16]} />
-          <meshStandardMaterial color="#271e1a" roughness={0.85} />
-        </mesh>
+    <group position={[0, 1.0, 0]}>
+      <group ref={rootRef} scale={scale} rotation={[0, baseRotationY, 0]}>
+        <primitive object={sceneClone} />
       </group>
-
-      <group ref={bodyRef} position={[0, 1.24, 0]}>
-        {/* Sculpted Organic Owl Torso with Velvety Layered Plumage */}
-        <mesh geometry={geoms.torso} scale={[1.0, 1.0, 0.92]} castShadow>
-          <meshPhysicalMaterial
-            map={plumage.map}
-            bumpMap={plumage.bumpMap}
-            bumpScale={0.015}
-            color="#d8dee9"
-            roughness={0.72}
-            metalness={0.06}
-            sheen={0.8}
-            sheenRoughness={0.62}
-            sheenColor="#fed7aa"
-          />
-        </mesh>
-
-        {/* Soft Sculpted Cream-Gold Breast Plumage */}
-        <mesh position={[0, 0.1, 0.135]} scale={[0.76, 1.05, 0.45]}>
-          <sphereGeometry args={[0.165, 24, 20]} />
-          <meshPhysicalMaterial
-            map={plumage.map}
-            bumpMap={plumage.bumpMap}
-            bumpScale={0.01}
-            color="#f5e6d3"
-            roughness={0.78}
-            sheen={0.85}
-            sheenColor="#ffedd5"
-          />
-        </mesh>
-
-        {/* 5 Fanned Sculpted Tail Feathers */}
-        <group position={[0, -0.1, -0.14]} rotation={[-2.52, 0, 0]}>
-          {[-0.36, -0.18, 0, 0.18, 0.36].map((ang, i) => (
-            <mesh
-              key={`owl-tail-${i}`}
-              geometry={geoms.tailFeather}
-              position={[ang * 0.14, 0, -Math.abs(ang) * 0.02]}
-              rotation={[0, 0, -ang]}
-            >
-              <meshPhysicalMaterial
-                map={plumage.map}
-                color={i === 2 ? '#e2c29b' : '#94a3b8'}
-                roughness={0.68}
-                sheen={0.6}
-                sheenColor="#fb923c"
-              />
-            </mesh>
-          ))}
-        </group>
-
-        {/* Feathered Legs + Curved Raptor Talons gripping branch */}
-        {[-0.075, 0.075].map((lx, legIdx) => (
-          <group key={`owl-leg-${legIdx}`} position={[lx, -0.13, 0.015]}>
-            <mesh scale={[0.85, 1.15, 0.85]}>
-              <sphereGeometry args={[0.048, 14, 12]} />
-              <meshStandardMaterial color="#e6d5c3" roughness={0.8} />
-            </mesh>
-            {[-0.35, 0, 0.35].map((yaw, cIdx) => (
-              <mesh
-                key={`claw-${cIdx}`}
-                geometry={geoms.talon}
-                position={[0, -0.025, 0.01]}
-                rotation={[0, yaw, 0]}
-              >
-                <meshStandardMaterial color="#d97706" metalness={0.42} roughness={0.38} />
-              </mesh>
-            ))}
-          </group>
-        ))}
-
-        {/* Articulated Left & Right Multi-Feather Sculpted Wings */}
-        {(['left', 'right'] as const).map((side) => {
-          const sign = side === 'left' ? -1 : 1;
-          return (
-            <group
-              key={`owl-wing-${side}`}
-              ref={side === 'left' ? leftWingRef : rightWingRef}
-              position={[sign * 0.18, 0.25, -0.02]}
-            >
-              {/* Shoulder wing covert fan (5 overlapping feathers) */}
-              {[0, 1, 2, 3, 4].map((idx) => (
-                <mesh
-                  key={`covert-${idx}`}
-                  geometry={geoms.covertFeather}
-                  position={[sign * (0.015 + idx * 0.008), -0.01 - idx * 0.018, 0.025 - idx * 0.028]}
-                  rotation={[Math.PI + 0.12, sign * 0.35, sign * (0.14 + idx * 0.08)]}
-                >
-                  <meshPhysicalMaterial
-                    map={plumage.map}
-                    bumpMap={plumage.bumpMap}
-                    bumpScale={0.012}
-                    color="#c7d2e5"
-                    roughness={0.7}
-                    sheen={0.75}
-                    sheenColor="#fdba74"
-                  />
-                </mesh>
-              ))}
-              {/* Long swept primary flight feathers (6 tapered blades) */}
-              {[0, 1, 2, 3, 4, 5].map((idx) => (
-                <mesh
-                  key={`primary-${idx}`}
-                  geometry={geoms.primaryFeather}
-                  position={[sign * (0.035 + idx * 0.006), -0.05 - idx * 0.022, 0.01 - idx * 0.026]}
-                  rotation={[Math.PI + 0.06, sign * 0.28, sign * (0.08 + idx * 0.11)]}
-                >
-                  <meshPhysicalMaterial
-                    map={plumage.map}
-                    color={idx % 2 === 0 ? '#94a3b8' : '#7a8ba8'}
-                    emissive="#fb923c"
-                    emissiveIntensity={idx === 5 ? 0.32 : 0.08}
-                    roughness={0.64}
-                    sheen={0.75}
-                    sheenColor="#fb923c"
-                  />
-                </mesh>
-              ))}
-            </group>
-          );
-        })}
-
-        {/* Sculpted Anatomical Owl Head */}
-        <group ref={headRef} position={[0, 0.42, 0.02]}>
-          <mesh scale={[1.08, 0.94, 0.98]} castShadow>
-            <sphereGeometry args={[0.148, 32, 24]} />
-            <meshPhysicalMaterial
-              map={plumage.map}
-              bumpMap={plumage.bumpMap}
-              bumpScale={0.014}
-              color="#d8dee9"
-              roughness={0.7}
-              sheen={0.8}
-              sheenColor="#fed7aa"
-            />
-          </mesh>
-
-          {/* Iconic Heart-Shaped Facial Discs + Expressive Golden-Amber Raptor Eyes */}
-          {[-0.062, 0.062].map((ex, eIdx) => (
-            <group key={`owl-eye-${eIdx}`} position={[ex, 0.012, 0.116]}>
-              {/* Feathered facial disc cushion */}
-              <mesh position={[0, 0, -0.006]} scale={[1.05, 1.0, 0.45]}>
-                <sphereGeometry args={[0.056, 20, 16]} />
-                <meshStandardMaterial color="#f5e6d3" roughness={0.85} />
-              </mesh>
-              {/* Dark outer orbital rim */}
-              <mesh position={[0, 0, 0.012]}>
-                <torusGeometry args={[0.044, 0.007, 10, 24]} />
-                <meshStandardMaterial color="#1e1b24" roughness={0.5} />
-              </mesh>
-              {/* Luminous Mythical Amber-Gold Iris */}
-              <mesh position={[0, 0, 0.012]}>
-                <sphereGeometry args={[0.036, 20, 16]} />
-                <meshStandardMaterial
-                  color="#f59e0b"
-                  emissive="#fb923c"
-                  emissiveIntensity={1.15}
-                  roughness={0.12}
-                  metalness={0.1}
-                />
-              </mesh>
-              {/* Deep Obsidian Pupil + Bright Corneal Specular Catchlight */}
-              <mesh position={[0, 0, 0.042]}>
-                <sphereGeometry args={[0.017, 14, 12]} />
-                <meshPhysicalMaterial color="#05060a" roughness={0.05} clearcoat={1} />
-              </mesh>
-              <mesh position={[0.012, 0.012, 0.052]}>
-                <sphereGeometry args={[0.006, 8, 8]} />
-                <meshBasicMaterial color="#ffffff" toneMapped={false} />
-              </mesh>
-              {/* Articulated Blinking Upper Eyelid */}
-              <mesh
-                ref={eIdx === 0 ? leftLidRef : rightLidRef}
-                position={[0, 0.005, 0.014]}
-                rotation={[-0.65, 0, 0]}
-              >
-                <sphereGeometry args={[0.041, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
-                <meshStandardMaterial color="#2a3852" roughness={0.75} />
-              </mesh>
-            </group>
-          ))}
-
-          {/* Sculpted Curved Hooked Raptor Beak */}
-          <mesh geometry={geoms.beak} position={[0, -0.018, 0.135]}>
-            <meshPhysicalMaterial
-              color="#d97706"
-              roughness={0.28}
-              metalness={0.22}
-              clearcoat={0.65}
-            />
-          </mesh>
-
-          {/* Sweeping Curved Mythical Horned Ear Plumes */}
-          <mesh ref={leftHornRef} geometry={geoms.leftHorn} position={[-0.075, 0.095, 0.04]}>
-            <meshPhysicalMaterial
-              map={plumage.map}
-              color="#e6c39c"
-              emissive="#fb923c"
-              emissiveIntensity={0.22}
-              roughness={0.62}
-              sheen={0.8}
-              sheenColor="#fed7aa"
-            />
-          </mesh>
-          <mesh ref={rightHornRef} geometry={geoms.rightHorn} position={[0.075, 0.095, 0.04]}>
-            <meshPhysicalMaterial
-              map={plumage.map}
-              color="#e6c39c"
-              emissive="#fb923c"
-              emissiveIntensity={0.22}
-              roughness={0.62}
-              sheen={0.8}
-              sheenColor="#fed7aa"
-            />
-          </mesh>
-        </group>
-      </group>
+      {renderAttachments ? renderAttachments(bonesMap, rootRef.current) : null}
     </group>
   );
 };
 
-/* ================= 2. MYTHICAL CELESTIAL PHOENIX (PHƯỢNG HOÀNG BẤT TỬ — BAN SỰ KIỆN) ================= */
-const MythicalPhoenixMascot: React.FC<{ hovered: boolean }> = ({ hovered }) => {
-  const rootRef = useRef<THREE.Group>(null);
-  const leftShoulderRef = useRef<THREE.Group>(null);
-  const leftForearmRef = useRef<THREE.Group>(null);
-  const rightShoulderRef = useRef<THREE.Group>(null);
-  const rightForearmRef = useRef<THREE.Group>(null);
-  const tailGroupRefs = useRef<Array<THREE.Group | null>>([]);
-  const embersRef = useRef<THREE.Points>(null);
+/* ================= 1. BAN CHUYÊN MÔN — THIÊN LANG THIÊN CƠ (CELESTIAL ALPHA WOLF) ================= */
+const CelestialWolfMascot: React.FC<{ hovered: boolean; furBump: THREE.CanvasTexture }> = ({
+  hovered,
+  furBump,
+}) => {
+  const haloOuterRef = useRef<THREE.Mesh>(null);
+  const haloInnerRef = useRef<THREE.Mesh>(null);
 
-  const plumage = useMemo(() => createPhoenixPlumageMaps(), []);
+  const resolveMaterial = useMemo(
+    () => (_meshName: string, materialName: string): THREE.Material => {
+      if (materialName === 'Eyes_Black') {
+        return new THREE.MeshStandardMaterial({
+          color: '#fff7ed',
+          emissive: '#fb923c',
+          emissiveIntensity: 3.2,
+          roughness: 0.1,
+          toneMapped: false,
+        });
+      }
+      if (materialName === 'Nose') {
+        return new THREE.MeshPhysicalMaterial({
+          color: '#091120',
+          roughness: 0.2,
+          metalness: 0.25,
+          clearcoat: 0.9,
+        });
+      }
+      if (materialName === 'Main_Light') {
+        return createMythicalPBRMaterial({
+          cacheKey: 'wolf-mane',
+          color: '#8ea8cb',
+          emissive: '#1e3a5f',
+          emissiveIntensity: 0.28,
+          roughness: 0.42,
+          metalness: 0.16,
+          sheen: 0.95,
+          sheenColor: '#fed7aa',
+          iridescence: 0.35,
+          bumpMap: furBump,
+          bumpScale: 0.008,
+          rimColor: '#fb923c',
+          rimPower: 2.4,
+          rimStrength: 0.95,
+        });
+      }
+      return createMythicalPBRMaterial({
+        cacheKey: 'wolf-coat',
+        color: '#192744',
+        emissive: '#0c1c38',
+        emissiveIntensity: 0.2,
+        roughness: 0.44,
+        metalness: 0.18,
+        sheen: 0.9,
+        sheenColor: '#7dd3fc',
+        iridescence: 0.3,
+        bumpMap: furBump,
+        bumpScale: 0.009,
+        rimColor: '#00f5ff',
+        rimPower: 2.5,
+        rimStrength: 0.88,
+      });
+    },
+    [furBump]
+  );
 
-  const geoms = useMemo(() => {
-    // Seamless organic S-curved avian torso -> graceful arched neck -> head base
-    const spineBody = createTaperedTubeGeometry(
-      [
-        new THREE.Vector3(0, -0.06, -0.22),
-        new THREE.Vector3(0, -0.02, -0.06),
-        new THREE.Vector3(0, 0.03, 0.1),
-        new THREE.Vector3(0, 0.16, 0.2),
-        new THREE.Vector3(0, 0.28, 0.19),
-        new THREE.Vector3(0, 0.34, 0.25),
-      ],
-      (t) => {
-        if (t < 0.45) return 0.03 + Math.sin((t / 0.45) * Math.PI * 0.72) * 0.115; // plump proud chest
-        if (t < 0.8) return 0.09 - (t - 0.45) * 0.14; // graceful slender swan neck
-        return 0.048 + Math.sin(((t - 0.8) / 0.2) * Math.PI) * 0.022; // sleek eagle head
-      },
-      36,
-      18,
-      0.88,
-      1.0
-    );
-
-    const beak = createTaperedTubeGeometry(
-      [
-        new THREE.Vector3(0, 0.008, 0),
-        new THREE.Vector3(0, 0.005, 0.045),
-        new THREE.Vector3(0, -0.016, 0.088),
-      ],
-      (t) => 0.024 * (1 - t * 0.9),
-      14,
-      10
-    );
-
-    // Sweeping royal flame crest plumes
-    const crest = createTaperedTubeGeometry(
-      [
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(0, 0.06, -0.06),
-        new THREE.Vector3(0, 0.11, -0.16),
-        new THREE.Vector3(0, 0.09, -0.26),
-      ],
-      (t) => 0.015 * (1 - t * 0.82),
-      18,
-      8
-    );
-
-    // Flowing S-wave mythical silk tail plumes
-    const tailRibbon = createTaperedTubeGeometry(
-      [
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(0, -0.04, -0.18),
-        new THREE.Vector3(0, 0.03, -0.38),
-        new THREE.Vector3(0, -0.06, -0.58),
-        new THREE.Vector3(0, 0.02, -0.74),
-      ],
-      (t) => 0.022 * Math.sin(Math.min(1, t + 0.1) * Math.PI * 0.88) + 0.005,
-      26,
-      8,
-      1.4,
-      0.45
-    );
-
-    const innerFeather = createSculptedFeatherGeometry(0.28, 0.072, 0.032);
-    const outerFeather = createSculptedFeatherGeometry(0.38, 0.064, 0.045);
-
-    // 42 glowing celestial ember sparks spiraling gently around the Phoenix
-    const emberCount = 42;
-    const emberPos = new Float32Array(emberCount * 3);
-    for (let i = 0; i < emberCount; i += 1) {
-      const a = (i / emberCount) * Math.PI * 6;
-      const r = 0.22 + (i % 7) * 0.042;
-      emberPos[i * 3] = Math.cos(a) * r;
-      emberPos[i * 3 + 1] = 1.08 + (i / emberCount) * 0.85;
-      emberPos[i * 3 + 2] = Math.sin(a) * r;
-    }
-
-    return {
-      spineBody,
-      beak,
-      crest,
-      tailRibbon,
-      innerFeather,
-      outerFeather,
-      emberPos,
-    };
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      plumage.map.dispose();
-      plumage.bumpMap.dispose();
-      geoms.spineBody.dispose();
-      geoms.beak.dispose();
-      geoms.crest.dispose();
-      geoms.tailRibbon.dispose();
-      geoms.innerFeather.dispose();
-      geoms.outerFeather.dispose();
-    };
-  }, [plumage, geoms]);
+  const idleClips = useMemo(
+    () => ['AnimalArmature|Idle', 'AnimalArmature|Idle_2', 'AnimalArmature|Idle_2_HeadLow'],
+    []
+  );
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
-
-    if (rootRef.current) {
-      rootRef.current.position.y = 1.54 + Math.sin(t * 2.3) * 0.075;
-      rootRef.current.position.x = Math.sin(t * 0.95) * 0.055;
-      rootRef.current.rotation.y = Math.sin(t * 0.78) * 0.3;
-      rootRef.current.rotation.x = 0.08 + Math.cos(t * 2.3) * 0.07;
-      const targetScale = hovered ? 1.08 : 1.0;
-      rootRef.current.scale.setScalar(THREE.MathUtils.lerp(rootRef.current.scale.x, targetScale, dt * 6));
+    if (haloOuterRef.current) {
+      haloOuterRef.current.rotation.z += dt * (hovered ? 0.9 : 0.35);
+      haloOuterRef.current.position.y = 1.66 + Math.sin(t * 1.4) * 0.025;
     }
-
-    // Living phase-delayed 2-joint avian wingbeat wave
-    const flapSpeed = hovered ? 4.8 : 3.6;
-    const shoulderWave = Math.sin(t * flapSpeed) * 0.44;
-    const forearmWave = Math.sin(t * flapSpeed - 0.95) * 0.48;
-    if (leftShoulderRef.current) leftShoulderRef.current.rotation.z = 0.22 + shoulderWave;
-    if (leftForearmRef.current) leftForearmRef.current.rotation.z = forearmWave;
-    if (rightShoulderRef.current) rightShoulderRef.current.rotation.z = -0.22 - shoulderWave;
-    if (rightForearmRef.current) rightForearmRef.current.rotation.z = -forearmWave;
-
-    // Liquid-silk tail plume undulation
-    for (let i = 0; i < 5; i += 1) {
-      const tg = tailGroupRefs.current[i];
-      if (!tg) continue;
-      tg.rotation.x = -0.18 + Math.sin(t * 2.8 - i * 0.55) * 0.16;
-      tg.rotation.y = (i - 2) * 0.2 + Math.cos(t * 2.1 - i * 0.45) * 0.08;
-    }
-
-    if (embersRef.current) {
-      embersRef.current.rotation.y += dt * 0.55;
-      embersRef.current.position.y = Math.sin(t * 1.4) * 0.04;
+    if (haloInnerRef.current) {
+      haloInnerRef.current.rotation.z -= dt * (hovered ? 1.2 : 0.5);
+      haloInnerRef.current.position.y = 1.66 + Math.sin(t * 1.4) * 0.025;
     }
   });
 
   return (
     <group>
-      {/* Swirling Celestial Ember Sparks */}
-      <points ref={embersRef}>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[geoms.emberPos, 3]} />
-        </bufferGeometry>
-        <pointsMaterial
-          color="#f5d0fe"
-          size={0.026}
-          sizeAttenuation
+      <MythicalRiggedBeast
+        url="/models/mascots/wolf.glb"
+        scale={0.38}
+        baseRotationY={0.28}
+        idleClips={idleClips}
+        hoverClip="AnimalArmature|Attack"
+        hovered={hovered}
+        furBump={furBump}
+        resolveMaterial={resolveMaterial}
+      />
+
+      {/* Sovereign Arcane Runic Halo behind Alpha Wolf's shoulders */}
+      <mesh ref={haloOuterRef} position={[0, 1.66, -0.34]} rotation={[0.14, 0.22, 0]}>
+        <torusGeometry args={[0.52, 0.011, 10, 56]} />
+        <meshBasicMaterial color="#fb923c" transparent opacity={hovered ? 0.92 : 0.56} toneMapped={false} />
+      </mesh>
+      <mesh ref={haloInnerRef} position={[0, 1.66, -0.34]} rotation={[0.14, 0.22, Math.PI / 6]}>
+        <ringGeometry args={[0.37, 0.395, 6]} />
+        <meshBasicMaterial
+          color="#00F5FF"
           transparent
-          opacity={0.85}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
+          opacity={hovered ? 0.82 : 0.42}
+          side={THREE.DoubleSide}
           toneMapped={false}
         />
-      </points>
+      </mesh>
 
-      <group ref={rootRef} position={[0, 1.54, 0]}>
-        {/* Seamless Sculpted S-Curve Phoenix Torso, Neck & Head */}
-        <mesh geometry={geoms.spineBody} castShadow>
-          <meshPhysicalMaterial
-            map={plumage.map}
-            bumpMap={plumage.bumpMap}
-            bumpScale={0.014}
-            color="#f5d0fe"
-            emissive="#9333ea"
-            emissiveIntensity={0.45}
-            roughness={0.32}
-            metalness={0.28}
-            iridescence={1.0}
-            iridescenceIOR={1.5}
-            sheen={0.9}
-            sheenColor="#fde047"
-          />
-        </mesh>
-
-        {/* Sculpted Golden Raptor Beak & Luminous Sapphire Eyes */}
-        <group position={[0, 0.34, 0.27]}>
-          <mesh geometry={geoms.beak}>
-            <meshPhysicalMaterial
-              color="#fbbf24"
-              emissive="#f59e0b"
-              emissiveIntensity={0.45}
-              metalness={0.78}
-              roughness={0.18}
-              clearcoat={0.8}
-            />
-          </mesh>
-          {[-0.042, 0.042].map((ex, i) => (
-            <mesh key={`phx-eye-${i}`} position={[ex, 0.015, -0.01]}>
-              <sphereGeometry args={[0.014, 14, 12]} />
-              <meshBasicMaterial color="#00F5FF" toneMapped={false} />
-            </mesh>
-          ))}
-          {/* 3 Sweeping Royal Flame Crest Plumes */}
-          {[-0.24, 0, 0.24].map((ang, i) => (
-            <mesh
-              key={`phx-crest-${i}`}
-              geometry={geoms.crest}
-              position={[ang * 0.06, 0.035, -0.02]}
-              rotation={[0.08 * Math.abs(i - 1), ang, ang * 0.5]}
-            >
-              <meshBasicMaterial color={i === 1 ? '#fde047' : '#f472b6'} toneMapped={false} />
-            </mesh>
-          ))}
-        </group>
-
-        {/* Articulated 2-Joint Layered Multi-Feather Wings (14 sculpted feathers per wing!) */}
-        {(['left', 'right'] as const).map((side) => {
-          const sign = side === 'left' ? -1 : 1;
-          return (
-            <group
-              key={`phx-wing-${side}`}
-              ref={side === 'left' ? leftShoulderRef : rightShoulderRef}
-              position={[sign * 0.085, 0.055, 0.04]}
-            >
-              {/* Inner Secondary Feathers (7 overlapping curved feathers) */}
-              {[0, 1, 2, 3, 4, 5, 6].map((idx) => (
-                <mesh
-                  key={`sec-${idx}`}
-                  geometry={geoms.innerFeather}
-                  position={[sign * (0.04 + idx * 0.042), 0.01, 0.02 - idx * 0.018]}
-                  rotation={[Math.PI / 2 + 0.14, sign * 0.12, -sign * (1.28 + idx * 0.09)]}
-                >
-                  <meshPhysicalMaterial
-                    map={plumage.map}
-                    color="#f0abfc"
-                    emissive="#a855f7"
-                    emissiveIntensity={0.48}
-                    roughness={0.34}
-                    iridescence={0.95}
-                    sheen={0.8}
-                    sheenColor="#fde047"
-                  />
-                </mesh>
-              ))}
-
-              {/* Articulated Outer Forearm & Long Primary Flight Feather Fan (7 radiant blades) */}
-              <group
-                ref={side === 'left' ? leftForearmRef : rightForearmRef}
-                position={[sign * 0.3, 0, -0.06]}
-              >
-                {[0, 1, 2, 3, 4, 5, 6].map((idx) => (
-                  <mesh
-                    key={`prim-${idx}`}
-                    geometry={geoms.outerFeather}
-                    position={[sign * (0.02 + idx * 0.035), 0.005, 0.01 - idx * 0.016]}
-                    rotation={[Math.PI / 2 + 0.08, sign * 0.08, -sign * (1.42 + idx * 0.11)]}
-                  >
-                    <meshPhysicalMaterial
-                      map={plumage.map}
-                      color={idx >= 4 ? '#fde047' : '#f472b6'}
-                      emissive={idx >= 4 ? '#f59e0b' : '#d946ef'}
-                      emissiveIntensity={idx >= 4 ? 0.85 : 0.58}
-                      roughness={0.28}
-                      iridescence={1.0}
-                    />
-                  </mesh>
-                ))}
-              </group>
-            </group>
-          );
-        })}
-
-        {/* 5 Long Undulating Silk Tail Plumes with Glowing Peacock-Eye Medallions */}
-        {[-0.08, -0.04, 0, 0.04, 0.08].map((tx, idx) => (
-          <group
-            key={`phx-tail-${idx}`}
-            ref={(el) => {
-              tailGroupRefs.current[idx] = el;
-            }}
-            position={[tx, -0.05, -0.2]}
-            scale={[1, 1, idx === 2 ? 1.18 : idx === 1 || idx === 3 ? 1.0 : 0.82]}
-          >
-            <mesh geometry={geoms.tailRibbon}>
-              <meshPhysicalMaterial
-                color={idx === 2 ? '#fde047' : '#e879f9'}
-                emissive={idx === 2 ? '#f59e0b' : '#c026d3'}
-                emissiveIntensity={0.78}
-                roughness={0.25}
-                iridescence={1.0}
-              />
-            </mesh>
-            {/* Glowing Mythical Tail Eye Medallion */}
-            <mesh position={[0, 0.02, -0.74]} rotation={[Math.PI / 2, 0, 0]}>
-              <cylinderGeometry args={[0.038, 0.038, 0.008, 16]} />
-              <meshBasicMaterial color={idx % 2 === 0 ? '#fde047' : '#00F5FF'} toneMapped={false} />
-            </mesh>
-          </group>
-        ))}
-      </group>
+      <CelestialEmbers color="#fb923c" count={32} radius={0.62} height={1.25} hovered={hovered} />
     </group>
   );
 };
 
-/* ================= 3. MYTHICAL SPIRIT FOX (LINH HỒ NGỌC BÍCH — BAN NHÂN SỰ) ================= */
-const MythicalSpiritFoxMascot: React.FC<{ hovered: boolean }> = ({ hovered }) => {
-  const rootRef = useRef<THREE.Group>(null);
-  const headRef = useRef<THREE.Group>(null);
-  const leftEarRef = useRef<THREE.Group>(null);
-  const rightEarRef = useRef<THREE.Group>(null);
-  const tailRefs = useRef<Array<THREE.Group | null>>([]);
-  const spiritOrbRef = useRef<THREE.Mesh>(null);
+/* ================= 2. BAN SỰ KIỆN — THIÊN MÃ PHƯỢNG DỰC (CELESTIAL FLAME PEGASUS) ================= */
+const PegasusWingsAndHorn: React.FC<{
+  bones: Record<string, THREE.Object3D>;
+  hovered: boolean;
+}> = ({ bones, hovered }) => {
+  const wingsHostRef = useRef<THREE.Group>(null);
+  const leftWingRef = useRef<THREE.Group>(null);
+  const rightWingRef = useRef<THREE.Group>(null);
+  const hornHostRef = useRef<THREE.Group>(null);
 
-  const fur = useMemo(() => createFoxFurMaps(), []);
+  const tmpPos = useMemo(() => new THREE.Vector3(), []);
+  const tmpHeadPos = useMemo(() => new THREE.Vector3(), []);
+  const tmpHeadEndPos = useMemo(() => new THREE.Vector3(), []);
+  const tmpForward = useMemo(() => new THREE.Vector3(), []);
+  const tmpAim = useMemo(() => new THREE.Vector3(), []);
+  const tmpRight = useMemo(() => new THREE.Vector3(), []);
+  const tmpOrthoUp = useMemo(() => new THREE.Vector3(), []);
+  const yUp = useMemo(() => new THREE.Vector3(0, 1, 0), []);
 
-  const geoms = useMemo(() => {
-    // Organic seated fox torso (broad chest tapering smoothly into seated haunches)
-    const torsoPts = [
-      new THREE.Vector2(0.0, 0.0),
-      new THREE.Vector2(0.145, 0.02),
-      new THREE.Vector2(0.165, 0.1),
-      new THREE.Vector2(0.135, 0.22),
-      new THREE.Vector2(0.142, 0.33),
-      new THREE.Vector2(0.11, 0.42),
-      new THREE.Vector2(0.072, 0.48),
-      new THREE.Vector2(0.0, 0.5),
-    ];
-    const torso = new THREE.LatheGeometry(torsoPts, 36);
-    torso.computeVertexNormals();
-
-    // Smooth anatomical fox snout (tapered organic muzzle bridge, not a sharp cone!)
-    const snout = createTaperedTubeGeometry(
-      [
-        new THREE.Vector3(0, 0.015, 0),
-        new THREE.Vector3(0, 0.004, 0.058),
-        new THREE.Vector3(0, -0.012, 0.115),
-        new THREE.Vector3(0, -0.016, 0.155),
-      ],
-      (t) => 0.068 * Math.pow(1 - t * 0.72, 0.9),
-      18,
-      16,
-      1.1,
-      0.82
-    );
-
-    // Sculpted agile front leg
-    const leg = createTaperedTubeGeometry(
-      [
-        new THREE.Vector3(0, 0.24, -0.02),
-        new THREE.Vector3(0, 0.14, 0.015),
-        new THREE.Vector3(0, 0.04, 0.01),
-        new THREE.Vector3(0, 0.01, 0.048),
-      ],
-      (t) => (t > 0.8 ? 0.032 : 0.038 - t * 0.014),
-      18,
-      12
-    );
-
-    // Lush S-curved mythical spirit fox tail (plump bushy middle tapering to fine spirit flame tip!)
-    const spiritTail = createTaperedTubeGeometry(
-      [
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(0, 0.08, -0.14),
-        new THREE.Vector3(0, 0.24, -0.22),
-        new THREE.Vector3(0, 0.39, -0.17),
-        new THREE.Vector3(0, 0.51, -0.25),
-      ],
-      (t) => {
-        if (t < 0.15) return 0.032 + t * 0.22;
-        if (t < 0.72) return 0.065 + Math.sin(((t - 0.15) / 0.57) * Math.PI) * 0.035;
-        return Math.max(0.004, 0.065 * Math.pow((1 - t) / 0.28, 1.1));
-      },
-      26,
-      14
-    );
-
-    // Hollowed sculpted outer fox ear shell
-    const earShape = new THREE.Shape();
-    earShape.moveTo(-0.052, 0);
-    earShape.bezierCurveTo(-0.058, 0.08, -0.025, 0.17, 0, 0.21);
-    earShape.bezierCurveTo(0.025, 0.17, 0.058, 0.08, 0.052, 0);
-    earShape.closePath();
-    const ear = new THREE.ExtrudeGeometry(earShape, {
-      depth: 0.016,
-      bevelEnabled: true,
-      bevelThickness: 0.008,
-      bevelSize: 0.006,
-      bevelSegments: 3,
-      curveSegments: 16,
-    });
-    ear.computeVertexNormals();
-
-    return { torso, snout, leg, spiritTail, ear };
+  const { primaryFeather, secondaryFeather, hornGeom } = useMemo(() => {
+    return {
+      primaryFeather: createSculptedFeatherGeometry(0.46, 0.095, 0.045),
+      secondaryFeather: createSculptedFeatherGeometry(0.32, 0.082, 0.032),
+      hornGeom: createSpiraledHornGeometry(0.24, 0.022),
+    };
   }, []);
 
   useEffect(() => {
     return () => {
-      fur.map.dispose();
-      fur.bumpMap.dispose();
-      Object.values(geoms).forEach((g) => g.dispose());
+      primaryFeather.dispose();
+      secondaryFeather.dispose();
+      hornGeom.dispose();
     };
-  }, [fur, geoms]);
+  }, [hornGeom, primaryFeather, secondaryFeather]);
 
-  useFrame((state, delta) => {
-    const dt = Math.min(delta, 0.05);
+  const wingFeathers = useMemo(
+    () => [
+      { x: 0.08, y: 0.04, z: -0.02, rz: -0.35, ry: -0.18, s: 0.82 },
+      { x: 0.16, y: 0.08, z: -0.05, rz: -0.52, ry: -0.22, s: 0.98 },
+      { x: 0.25, y: 0.11, z: -0.09, rz: -0.72, ry: -0.25, s: 1.12 },
+      { x: 0.34, y: 0.12, z: -0.13, rz: -0.92, ry: -0.28, s: 1.18 },
+      { x: 0.42, y: 0.10, z: -0.16, rz: -1.12, ry: -0.26, s: 1.06 },
+      { x: 0.48, y: 0.06, z: -0.18, rz: -1.30, ry: -0.22, s: 0.9 },
+    ],
+    []
+  );
+
+  useFrame((state) => {
     const t = state.clock.elapsedTime;
+    const parent = wingsHostRef.current?.parent;
 
-    if (rootRef.current) {
-      const targetScale = hovered ? 1.07 : 1.0;
-      rootRef.current.scale.setScalar(THREE.MathUtils.lerp(rootRef.current.scale.x, targetScale, dt * 6));
+    // Anchor wings seamlessly to the animated Torso2/Torso3 ribcage bone
+    const torsoBone = bones['Torso2'] ?? bones['Torso3'] ?? bones['Torso'];
+    if (torsoBone && wingsHostRef.current && parent) {
+      torsoBone.getWorldPosition(tmpPos);
+      parent.worldToLocal(tmpPos);
+      wingsHostRef.current.position.set(tmpPos.x, tmpPos.y + 0.13, tmpPos.z - 0.02);
+      wingsHostRef.current.rotation.y = -0.24 + Math.sin(t * 0.42) * 0.09;
     }
 
-    // Attentive lifelike fox head scan & playful sideways tilt
-    if (headRef.current) {
-      headRef.current.rotation.y = Math.sin(t * 0.92) * 0.36;
-      headRef.current.rotation.z = Math.cos(t * 1.25) * 0.11;
-      headRef.current.rotation.x = Math.sin(t * 0.7) * 0.05;
+    // Anchor spiraled Kirin horn seamlessly to the animated Head bone
+    const headBone = bones['Head'];
+    const earL = bones['Ear1.L'];
+    const earR = bones['Ear1.R'];
+    if (headBone && hornHostRef.current && parent) {
+      headBone.getWorldPosition(tmpHeadPos);
+      parent.worldToLocal(tmpHeadPos);
+
+      if (earL && earR) {
+        earL.getWorldPosition(tmpPos);
+        earR.getWorldPosition(tmpHeadEndPos);
+        parent.worldToLocal(tmpPos);
+        parent.worldToLocal(tmpHeadEndPos);
+        // Midpoint between ears = exact crown of forehead!
+        tmpHeadPos.lerpVectors(tmpPos, tmpHeadEndPos, 0.5);
+        tmpRight.subVectors(tmpPos, tmpHeadEndPos).normalize();
+        const neckBone = bones['Neck3'] ?? bones['Neck2'];
+        if (neckBone) {
+          neckBone.getWorldPosition(tmpForward);
+          parent.worldToLocal(tmpForward);
+          tmpForward.subVectors(tmpHeadPos, tmpForward).normalize();
+        } else {
+          tmpForward.set(0, 0.35, 0.94).normalize();
+        }
+        tmpOrthoUp.crossVectors(tmpForward, tmpRight).normalize();
+        if (tmpOrthoUp.y < 0) tmpOrthoUp.negate();
+
+        hornHostRef.current.position.set(
+          tmpHeadPos.x + tmpForward.x * 0.042,
+          tmpHeadPos.y + 0.032,
+          tmpHeadPos.z + tmpForward.z * 0.042
+        );
+        // Map local +Y (exact horn axis) cleanly upward & heroically forward
+        tmpAim.copy(tmpOrthoUp).multiplyScalar(0.74).addScaledVector(tmpForward, 0.67).normalize();
+        hornHostRef.current.quaternion.setFromUnitVectors(yUp, tmpAim);
+      } else {
+        hornHostRef.current.position.set(tmpHeadPos.x, tmpHeadPos.y + 0.11, tmpHeadPos.z + 0.08);
+      }
     }
 
-    // Natural ear perk & listening twitch
-    const twitch = (t % 3.4) > 3.15 ? Math.sin(t * 34) * 0.16 : 0;
-    if (leftEarRef.current) leftEarRef.current.rotation.z = 0.24 + twitch;
-    if (rightEarRef.current) rightEarRef.current.rotation.z = -0.24 - twitch * 0.5;
-
-    // 5 Mythical Kitsune Spirit Tails undulating organically in phase waves
-    const wagSpeed = hovered ? 3.8 : 2.1;
-    for (let i = 0; i < 5; i += 1) {
-      const tg = tailRefs.current[i];
-      if (!tg) continue;
-      const spreadAngle = (i - 2) * 0.36;
-      tg.rotation.y = spreadAngle + Math.sin(t * wagSpeed - i * 0.65) * 0.16;
-      tg.rotation.z = spreadAngle * 0.45 + Math.cos(t * 1.7 - i * 0.5) * 0.08;
+    // Graceful celestial Phoenix wing breathing & hover flare
+    const speed = hovered ? 3.8 : 1.75;
+    const flap = Math.sin(t * speed) * (hovered ? 0.32 : 0.16) + (hovered ? 0.22 : 0.08);
+    if (leftWingRef.current) {
+      leftWingRef.current.rotation.z = flap;
+      leftWingRef.current.rotation.y = 0.28 + Math.cos(t * speed) * 0.08;
     }
-
-    // Orbiting sacred jade spirit pearl
-    if (spiritOrbRef.current) {
-      spiritOrbRef.current.position.set(
-        Math.cos(t * 1.4) * 0.28,
-        0.58 + Math.sin(t * 2.2) * 0.05,
-        Math.sin(t * 1.4) * 0.28
-      );
+    if (rightWingRef.current) {
+      rightWingRef.current.rotation.z = -flap;
+      rightWingRef.current.rotation.y = -0.28 - Math.cos(t * speed) * 0.08;
     }
   });
 
-  return (
-    <group ref={rootRef} position={[0, 1.01, 0]}>
-      {/* Floating Sacred Jade Spirit Orb orbiting the Spirit Fox */}
-      <mesh ref={spiritOrbRef} position={[0.28, 0.58, 0]}>
-        <sphereGeometry args={[0.036, 18, 14]} />
-        <meshBasicMaterial color="#6ee7b7" toneMapped={false} />
-      </mesh>
-
-      {/* Organic Seated Fox Torso with Plush Velvet Fur */}
-      <mesh geometry={geoms.torso} position={[0, 0, -0.02]} scale={[0.92, 1.0, 1.08]} castShadow>
-        <meshPhysicalMaterial
-          map={fur.map}
-          bumpMap={fur.bumpMap}
-          bumpScale={0.012}
-          color="#a7f3d0"
-          emissive="#047857"
-          emissiveIntensity={0.22}
-          roughness={0.68}
-          sheen={0.92}
-          sheenRoughness={0.52}
-          sheenColor="#ecfdf5"
-        />
-      </mesh>
-
-      {/* Seated Sculpted Hind Haunches */}
-      {[-0.105, 0.105].map((hx, i) => (
-        <mesh key={`haunch-${i}`} position={[hx, 0.11, -0.05]} scale={[0.72, 0.95, 1.12]}>
-          <sphereGeometry args={[0.115, 20, 16]} />
-          <meshPhysicalMaterial
-            map={fur.map}
-            bumpMap={fur.bumpMap}
-            bumpScale={0.01}
-            color="#99f6e4"
-            roughness={0.68}
-            sheen={0.88}
-            sheenColor="#ecfdf5"
-          />
-        </mesh>
-      ))}
-
-      {/* Silky Ivory-Silver Fluffy Chest Ruff */}
-      <mesh position={[0, 0.3, 0.11]} scale={[0.78, 1.05, 0.52]}>
-        <sphereGeometry args={[0.12, 22, 18]} />
-        <meshPhysicalMaterial
-          color="#f0fdf4"
-          roughness={0.78}
-          sheen={0.95}
-          sheenColor="#ffffff"
-        />
-      </mesh>
-
-      {/* Sacred Glowing Jade Collar + Gold Bell */}
-      <mesh position={[0, 0.43, 0.01]} rotation={[Math.PI / 2 + 0.14, 0, 0]}>
-        <torusGeometry args={[0.105, 0.014, 12, 28]} />
-        <meshBasicMaterial color="#34d399" toneMapped={false} />
-      </mesh>
-      <mesh position={[0, 0.395, 0.118]}>
-        <sphereGeometry args={[0.024, 14, 12]} />
-        <meshPhysicalMaterial color="#fbbf24" metalness={0.95} roughness={0.14} clearcoat={0.8} />
-      </mesh>
-
-      {/* Sculpted Agile Front Legs & Paws */}
-      {[-0.068, 0.068].map((lx, i) => (
-        <mesh key={`fox-leg-${i}`} geometry={geoms.leg} position={[lx, 0.01, 0.095]} castShadow>
-          <meshPhysicalMaterial
-            map={fur.map}
-            color="#d1fae5"
-            roughness={0.66}
-            sheen={0.85}
-            sheenColor="#ffffff"
-          />
-        </mesh>
-      ))}
-
-      {/* 5 Lush Mythical Kitsune Spirit Tails fanning gracefully behind */}
-      {[0, 1, 2, 3, 4].map((idx) => (
+  const renderWingSide = (sign: 1 | -1) => (
+    <group>
+      {wingFeathers.map((f, idx) => (
         <group
-          key={`spirit-tail-${idx}`}
-          ref={(el) => {
-            tailRefs.current[idx] = el;
-          }}
-          position={[(idx - 2) * 0.032, 0.09, -0.14]}
-          scale={[1, idx === 2 ? 1.12 : idx === 1 || idx === 3 ? 0.98 : 0.85, 1]}
+          key={`pf-${sign}-${idx}`}
+          position={[sign * f.x, f.y, f.z]}
+          rotation={[0.18, sign * f.ry, sign * f.rz]}
+          scale={f.s}
         >
-          <mesh geometry={geoms.spiritTail} castShadow>
+          <mesh geometry={primaryFeather}>
             <meshPhysicalMaterial
-              map={fur.map}
-              bumpMap={fur.bumpMap}
-              bumpScale={0.012}
-              color={idx === 2 ? '#d1fae5' : '#99f6e4'}
-              emissive="#10b981"
-              emissiveIntensity={0.32}
-              roughness={0.62}
-              sheen={0.95}
-              sheenColor="#ecfdf5"
+              color={idx >= 4 ? '#fde047' : idx >= 2 ? '#f472b6' : '#c084fc'}
+              emissive={idx >= 3 ? '#f59e0b' : '#d946ef'}
+              emissiveIntensity={hovered ? 1.55 : 0.95}
+              roughness={0.22}
+              metalness={0.35}
+              iridescence={0.95}
+              transparent
+              opacity={0.9}
+              side={THREE.DoubleSide}
             />
           </mesh>
-          {/* Luminous Jade-White Spirit Tip */}
-          <mesh position={[0, 0.52, -0.25]}>
-            <sphereGeometry args={[0.026, 12, 10]} />
-            <meshBasicMaterial color="#d1fae5" toneMapped={false} />
-          </mesh>
+          {idx < 4 && (
+            <mesh geometry={secondaryFeather} position={[sign * -0.02, -0.02, 0.022]} scale={0.82}>
+              <meshPhysicalMaterial
+                color="#f0abfc"
+                emissive="#a855f7"
+                emissiveIntensity={0.75}
+                roughness={0.25}
+                transparent
+                opacity={0.85}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+          )}
         </group>
       ))}
+    </group>
+  );
 
-      {/* Sculpted Anatomical Spirit Fox Head */}
-      <group ref={headRef} position={[0, 0.54, 0.035]}>
-        {/* Cranium & Sculpted Cheeks */}
-        <mesh scale={[1.08, 0.9, 1.02]} castShadow>
-          <sphereGeometry args={[0.125, 28, 22]} />
-          <meshPhysicalMaterial
-            map={fur.map}
-            bumpMap={fur.bumpMap}
-            bumpScale={0.01}
-            color="#a7f3d0"
-            emissive="#047857"
-            emissiveIntensity={0.18}
-            roughness={0.66}
-            sheen={0.9}
-            sheenColor="#ecfdf5"
-          />
-        </mesh>
-        {/* Fluffy Ivory Cheek Whisker Tufts */}
-        {[-0.092, 0.092].map((cx, i) => (
-          <mesh key={`cheek-${i}`} position={[cx, -0.024, 0.04]} scale={[0.92, 0.62, 0.78]}>
-            <sphereGeometry args={[0.064, 16, 14]} />
-            <meshPhysicalMaterial color="#f0fdf4" roughness={0.78} sheen={0.9} />
-          </mesh>
-        ))}
-
-        {/* Tapered Organic Fox Muzzle + Glossy Nose Tip */}
-        <mesh geometry={geoms.snout} position={[0, -0.02, 0.082]}>
-          <meshPhysicalMaterial color="#ecfdf5" roughness={0.72} sheen={0.85} />
-        </mesh>
-        <mesh position={[0, -0.034, 0.242]}>
-          <sphereGeometry args={[0.02, 14, 12]} />
-          <meshPhysicalMaterial color="#0b101a" roughness={0.15} metalness={0.2} clearcoat={1} />
-        </mesh>
-
-        {/* Expressive Almond-Shaped Mythical Spirit Eyes + Golden Forehead Crest */}
-        {[-0.056, 0.056].map((ex, i) => (
-          <group key={`fox-eye-${i}`} position={[ex, 0.024, 0.105]} rotation={[0, ex * 2.4, ex * -1.4]}>
-            <mesh scale={[1.25, 0.72, 0.65]}>
-              <sphereGeometry args={[0.022, 14, 12]} />
-              <meshBasicMaterial color="#6ee7b7" toneMapped={false} />
-            </mesh>
-            <mesh position={[0, 0, 0.013]} scale={[0.35, 0.85, 0.4]}>
-              <sphereGeometry args={[0.016, 10, 8]} />
-              <meshBasicMaterial color="#041210" />
-            </mesh>
-          </group>
-        ))}
-        {/* Sacred Forehead Spirit Mark */}
-        <mesh position={[0, 0.06, 0.115]} rotation={[0, 0, Math.PI / 4]}>
-          <boxGeometry args={[0.024, 0.024, 0.008]} />
-          <meshBasicMaterial color="#fde047" toneMapped={false} />
-        </mesh>
-
-        {/* Sculpted Concave Articulated Fox Ears (Outer Emerald Shell + Recessed Cream Pinna) */}
-        <group ref={leftEarRef} position={[-0.082, 0.092, -0.01]} rotation={[0.14, -0.18, 0.24]}>
-          <mesh geometry={geoms.ear}>
-            <meshPhysicalMaterial map={fur.map} color="#6ee7b7" roughness={0.62} sheen={0.85} />
-          </mesh>
-          <mesh geometry={geoms.ear} position={[0, 0.015, 0.014]} scale={[0.65, 0.76, 0.4]}>
-            <meshStandardMaterial color="#f0fdf4" roughness={0.8} />
-          </mesh>
+  return (
+    <>
+      {/* Sculpted Feathered Phoenix-Flame Wings tracking Torso bone */}
+      <group ref={wingsHostRef} position={[0, 0.72, 0.04]} rotation={[0, -0.24, 0]}>
+        <group ref={rightWingRef} position={[0.09, 0, 0]}>
+          {renderWingSide(1)}
         </group>
-        <group ref={rightEarRef} position={[0.082, 0.092, -0.01]} rotation={[0.14, 0.18, -0.24]}>
-          <mesh geometry={geoms.ear}>
-            <meshPhysicalMaterial map={fur.map} color="#6ee7b7" roughness={0.62} sheen={0.85} />
-          </mesh>
-          <mesh geometry={geoms.ear} position={[0, 0.015, 0.014]} scale={[0.65, 0.76, 0.4]}>
-            <meshStandardMaterial color="#f0fdf4" roughness={0.8} />
-          </mesh>
+        <group ref={leftWingRef} position={[-0.09, 0, 0]}>
+          {renderWingSide(-1)}
         </group>
       </group>
+
+      {/* Spiraled Golden-Crystal Kirin Horn tracking Head bone */}
+      <group ref={hornHostRef}>
+        <mesh geometry={hornGeom}>
+          <meshPhysicalMaterial
+            color="#fef08a"
+            emissive="#fbbf24"
+            emissiveIntensity={hovered ? 2.1 : 1.35}
+            metalness={0.65}
+            roughness={0.14}
+            clearcoat={1}
+            iridescence={0.9}
+          />
+        </mesh>
+      </group>
+    </>
+  );
+};
+
+const CelestialPegasusMascot: React.FC<{ hovered: boolean; furBump: THREE.CanvasTexture }> = ({
+  hovered,
+  furBump,
+}) => {
+  const resolveMaterial = useMemo(
+    () => (_meshName: string, materialName: string): THREE.Material => {
+      if (materialName === 'Eye_Black' || materialName === 'Eye_White') {
+        return new THREE.MeshStandardMaterial({
+          color: '#fef9c3',
+          emissive: '#facc15',
+          emissiveIntensity: 3.1,
+          roughness: 0.1,
+          toneMapped: false,
+        });
+      }
+      if (materialName === 'Hair') {
+        return createMythicalPBRMaterial({
+          cacheKey: 'pegasus-mane',
+          color: '#fde047',
+          emissive: '#ec4899',
+          emissiveIntensity: 1.05,
+          roughness: 0.28,
+          metalness: 0.32,
+          sheen: 1.0,
+          sheenColor: '#fef08a',
+          iridescence: 0.92,
+          bumpMap: furBump,
+          bumpScale: 0.01,
+          rimColor: '#fde047',
+          rimPower: 2.1,
+          rimStrength: 1.15,
+        });
+      }
+      if (materialName === 'Hooves') {
+        return new THREE.MeshPhysicalMaterial({
+          color: '#fbbf24',
+          emissive: '#d97706',
+          emissiveIntensity: 0.48,
+          metalness: 0.94,
+          roughness: 0.16,
+          clearcoat: 0.95,
+        });
+      }
+      if (materialName === 'Main_Light') {
+        return createMythicalPBRMaterial({
+          cacheKey: 'pegasus-blaze',
+          color: '#e9d5ff',
+          emissive: '#a855f7',
+          emissiveIntensity: 0.3,
+          roughness: 0.36,
+          metalness: 0.2,
+          sheen: 0.9,
+          sheenColor: '#fde047',
+          iridescence: 0.75,
+          rimColor: '#fde047',
+          rimPower: 2.3,
+          rimStrength: 0.9,
+        });
+      }
+      if (materialName === 'Muzzle') {
+        return createMythicalPBRMaterial({
+          cacheKey: 'pegasus-muzzle',
+          color: '#2c154a',
+          roughness: 0.38,
+          sheen: 0.9,
+          sheenColor: '#f472b6',
+          rimColor: '#f472b6',
+          rimPower: 2.6,
+          rimStrength: 0.72,
+        });
+      }
+      return createMythicalPBRMaterial({
+        cacheKey: 'pegasus-coat',
+        color: '#3c1e66',
+        emissive: '#220b42',
+        emissiveIntensity: 0.24,
+        roughness: 0.36,
+        metalness: 0.22,
+        sheen: 0.92,
+        sheenColor: '#f472b6',
+        clearcoat: 0.28,
+        iridescence: 0.82,
+        bumpMap: furBump,
+        bumpScale: 0.006,
+        rimColor: '#e879f9',
+        rimPower: 2.4,
+        rimStrength: 0.95,
+      });
+    },
+    [furBump]
+  );
+
+  const idleClips = useMemo(
+    () => ['AnimalArmature|Idle', 'AnimalArmature|Idle_2', 'AnimalArmature|Idle_Headlow'],
+    []
+  );
+
+  return (
+    <group>
+      <MythicalRiggedBeast
+        url="/models/mascots/horse.glb"
+        scale={0.25}
+        baseRotationY={-0.24}
+        idleClips={idleClips}
+        hoverClip="AnimalArmature|Jump_toIdle"
+        hovered={hovered}
+        furBump={furBump}
+        resolveMaterial={resolveMaterial}
+        renderAttachments={(bones) => <PegasusWingsAndHorn bones={bones} hovered={hovered} />}
+      />
+
+      <CelestialEmbers color="#f472b6" count={38} radius={0.68} height={1.45} hovered={hovered} />
     </group>
   );
 };
 
-/* ================= 4. ROTATING 3D ARTIFACT: CINEMA CAMERA RIG (BAN TRUYỀN THÔNG) ================= */
-const CinemaCameraArtifact: React.FC<{ hovered: boolean }> = ({ hovered }) => {
-  const spinRef = useRef<THREE.Group>(null);
-  const reel1Ref = useRef<THREE.Mesh>(null);
-  const reel2Ref = useRef<THREE.Mesh>(null);
-  const recLightRef = useRef<THREE.MeshBasicMaterial>(null);
+/* ================= 3. BAN NHÂN SỰ — LINH HỒ NGỌC BÍCH (CELESTIAL EMERALD SPIRIT FOX) ================= */
+const CelestialFoxMascot: React.FC<{ hovered: boolean; furBump: THREE.CanvasTexture }> = ({
+  hovered,
+  furBump,
+}) => {
+  const pearlRef = useRef<THREE.Group>(null);
 
-  useFrame((state, delta) => {
-    const dt = Math.min(delta, 0.05);
+  const resolveMaterial = useMemo(
+    () => (_meshName: string, materialName: string): THREE.Material => {
+      if (materialName === 'Eyes') {
+        return new THREE.MeshStandardMaterial({
+          color: '#ecfdf5',
+          emissive: '#34d399',
+          emissiveIntensity: 3.3,
+          roughness: 0.1,
+          toneMapped: false,
+        });
+      }
+      if (materialName === 'Black') {
+        return new THREE.MeshPhysicalMaterial({
+          color: '#071a1f',
+          roughness: 0.22,
+          metalness: 0.25,
+          clearcoat: 0.88,
+        });
+      }
+      if (materialName === 'Main_Light') {
+        return createMythicalPBRMaterial({
+          cacheKey: 'fox-light',
+          color: '#c7f9e5',
+          emissive: '#10b981',
+          emissiveIntensity: 0.36,
+          roughness: 0.4,
+          metalness: 0.12,
+          sheen: 1.0,
+          sheenColor: '#ffffff',
+          iridescence: 0.45,
+          bumpMap: furBump,
+          bumpScale: 0.008,
+          rimColor: '#a7f3d0',
+          rimPower: 2.2,
+          rimStrength: 1.05,
+        });
+      }
+      if (materialName === 'Grey') {
+        return createMythicalPBRMaterial({
+          cacheKey: 'fox-trim',
+          color: '#0b2d32',
+          roughness: 0.42,
+          sheen: 0.85,
+          sheenColor: '#34d399',
+          bumpMap: furBump,
+          bumpScale: 0.008,
+          rimColor: '#34d399',
+          rimPower: 2.6,
+          rimStrength: 0.72,
+        });
+      }
+      return createMythicalPBRMaterial({
+        cacheKey: 'fox-coat',
+        color: '#0f5747',
+        emissive: '#06332a',
+        emissiveIntensity: 0.26,
+        roughness: 0.42,
+        metalness: 0.14,
+        sheen: 0.96,
+        sheenColor: '#6ee7b7',
+        iridescence: 0.4,
+        bumpMap: furBump,
+        bumpScale: 0.009,
+        rimColor: '#34d399',
+        rimPower: 2.35,
+        rimStrength: 0.98,
+      });
+    },
+    [furBump]
+  );
+
+  const idleClips = useMemo(
+    () => ['AnimalArmature|Idle', 'AnimalArmature|Idle_2', 'AnimalArmature|Idle_2_HeadLow'],
+    []
+  );
+
+  useFrame((state) => {
     const t = state.clock.elapsedTime;
-
-    if (spinRef.current) {
-      spinRef.current.rotation.y += dt * (hovered ? 1.15 : 0.6);
-      spinRef.current.position.y = 1.42 + Math.sin(t * 1.8) * 0.05;
-      const targetScale = hovered ? 1.09 : 1.0;
-      spinRef.current.scale.setScalar(THREE.MathUtils.lerp(spinRef.current.scale.x, targetScale, dt * 7));
-    }
-    if (reel1Ref.current) reel1Ref.current.rotation.z -= dt * 2.4;
-    if (reel2Ref.current) reel2Ref.current.rotation.z -= dt * 2.4;
-    if (recLightRef.current) {
-      recLightRef.current.opacity = Math.sin(t * 5.0) > 0 ? 1.0 : 0.2;
+    if (pearlRef.current) {
+      const orbitSpeed = hovered ? 1.9 : 1.05;
+      pearlRef.current.position.set(
+        Math.cos(t * orbitSpeed) * 0.46,
+        1.64 + Math.sin(t * 2.1) * 0.06,
+        Math.sin(t * orbitSpeed) * 0.46
+      );
+      pearlRef.current.rotation.y = t * 1.4;
     }
   });
 
   return (
-    <group ref={spinRef} position={[0, 1.42, 0]}>
-      <RoundedBox args={[0.26, 0.24, 0.42]} radius={0.028} smoothness={4}>
-        <meshStandardMaterial color="#101b33" metalness={0.86} roughness={0.2} />
-      </RoundedBox>
-      {[-0.135, 0.135].map((sx, i) => (
-        <mesh key={`cam-stripe-${i}`} position={[sx, 0, 0]}>
-          <boxGeometry args={[0.01, 0.032, 0.34]} />
-          <meshBasicMaterial color="#38bdf8" toneMapped={false} />
-        </mesh>
-      ))}
-      <group position={[0, -0.01, 0.28]} rotation={[Math.PI / 2, 0, 0]}>
+    <group>
+      <MythicalRiggedBeast
+        url="/models/mascots/fox.glb"
+        scale={0.36}
+        baseRotationY={-0.25}
+        idleClips={idleClips}
+        hoverClip="AnimalArmature|Jump_ToIdle"
+        hovered={hovered}
+        furBump={furBump}
+        resolveMaterial={resolveMaterial}
+      />
+
+      {/* Orbiting Sacred Jade Spirit Pearl */}
+      <group ref={pearlRef} position={[0.42, 1.64, 0.15]}>
         <mesh>
-          <cylinderGeometry args={[0.095, 0.088, 0.18, 32]} />
-          <meshStandardMaterial color="#1e293b" metalness={0.9} roughness={0.18} />
-        </mesh>
-        <mesh position={[0, 0.02, 0]}>
-          <torusGeometry args={[0.096, 0.01, 10, 32]} />
-          <meshBasicMaterial color="#00F5FF" toneMapped={false} />
-        </mesh>
-        <mesh position={[0, 0.092, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[0.078, 32]} />
-          <meshStandardMaterial
-            color="#0284c7"
-            emissive="#00F5FF"
-            emissiveIntensity={0.65}
-            metalness={0.9}
+          <sphereGeometry args={[0.052, 20, 16]} />
+          <meshPhysicalMaterial
+            color="#a7f3d0"
+            emissive="#34d399"
+            emissiveIntensity={hovered ? 2.2 : 1.45}
             roughness={0.08}
+            clearcoat={1}
+            iridescence={0.9}
           />
         </mesh>
+        <mesh rotation={[Math.PI / 2.6, 0.4, 0]}>
+          <torusGeometry args={[0.095, 0.007, 10, 32]} />
+          <meshBasicMaterial color="#6ee7b7" toneMapped={false} />
+        </mesh>
       </group>
-      <mesh ref={reel1Ref} position={[0, 0.22, -0.1]} rotation={[0, Math.PI / 2, 0]}>
-        <torusGeometry args={[0.095, 0.022, 12, 32]} />
-        <meshStandardMaterial color="#334155" emissive="#38bdf8" emissiveIntensity={0.25} metalness={0.85} roughness={0.2} />
-      </mesh>
-      <mesh ref={reel2Ref} position={[0, 0.22, 0.1]} rotation={[0, Math.PI / 2, 0]}>
-        <torusGeometry args={[0.085, 0.022, 12, 32]} />
-        <meshStandardMaterial color="#334155" emissive="#00F5FF" emissiveIntensity={0.25} metalness={0.85} roughness={0.2} />
-      </mesh>
-      <mesh position={[0.09, 0.17, 0.18]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.018, 0.018, 0.22, 16]} />
-        <meshStandardMaterial color="#475569" metalness={0.88} roughness={0.24} />
-      </mesh>
-      <mesh position={[-0.22, 0.01, -0.04]} rotation={[0, -0.35, 0]}>
-        <boxGeometry args={[0.16, 0.11, 0.016]} />
-        <meshStandardMaterial color="#091529" emissive="#38bdf8" emissiveIntensity={0.75} roughness={0.2} />
-      </mesh>
-      <mesh position={[0.09, 0.1, 0.215]}>
-        <sphereGeometry args={[0.018, 12, 10]} />
-        <meshBasicMaterial ref={recLightRef} color="#ff2a55" transparent opacity={1} toneMapped={false} />
-      </mesh>
-      <mesh rotation={[Math.PI / 2.2, 0.2, 0]}>
-        <torusGeometry args={[0.36, 0.009, 10, 48]} />
+
+      <CelestialEmbers color="#34d399" count={34} radius={0.62} height={1.2} hovered={hovered} />
+    </group>
+  );
+};
+
+/* ================= 4. BAN TRUYỀN THÔNG — THẦN LỘC QUANG ẢNH (CELESTIAL SOVEREIGN STAG) ================= */
+const StagCrownPrism: React.FC<{ bones: Record<string, THREE.Object3D>; hovered: boolean }> = ({
+  bones,
+  hovered,
+}) => {
+  const prismRef = useRef<THREE.Group>(null);
+  const tmpPos = useMemo(() => new THREE.Vector3(), []);
+
+  useFrame((state, delta) => {
+    const dt = Math.min(delta, 0.05);
+    const t = state.clock.elapsedTime;
+    const hornNode = bones['Stag_Horns'] ?? bones['Head'];
+    const parent = prismRef.current?.parent;
+
+    if (hornNode && prismRef.current && parent) {
+      hornNode.getWorldPosition(tmpPos);
+      parent.worldToLocal(tmpPos);
+      prismRef.current.position.set(tmpPos.x, tmpPos.y + 0.25 + Math.sin(t * 2.1) * 0.028, tmpPos.z + 0.02);
+      prismRef.current.rotation.y += dt * (hovered ? 2.4 : 1.1);
+    }
+  });
+
+  return (
+    <group ref={prismRef} position={[0, 1.15, 0.25]}>
+      <mesh>
+        <octahedronGeometry args={[0.062, 0]} />
         <meshBasicMaterial color="#00F5FF" toneMapped={false} />
       </mesh>
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.125, 0.008, 10, 36]} />
+        <meshBasicMaterial color="#38bdf8" transparent opacity={0.85} toneMapped={false} />
+      </mesh>
+    </group>
+  );
+};
+
+const CelestialStagMascot: React.FC<{ hovered: boolean; furBump: THREE.CanvasTexture }> = ({
+  hovered,
+  furBump,
+}) => {
+  const resolveMaterial = useMemo(
+    () => (meshName: string, materialName: string): THREE.Material => {
+      // Branching 3,232-vertex antlers glow like radiant celestial cyan diamond crystal!
+      if (meshName === 'Stag_Horns') {
+        return createMythicalPBRMaterial({
+          cacheKey: 'stag-crystal-horns',
+          color: '#e0f2fe',
+          emissive: '#00f5ff',
+          emissiveIntensity: 1.25,
+          roughness: 0.12,
+          metalness: 0.35,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.08,
+          iridescence: 0.95,
+          sheen: 0.6,
+          sheenColor: '#ffffff',
+          rimColor: '#ffffff',
+          rimPower: 2.0,
+          rimStrength: 1.2,
+        });
+      }
+      if (materialName === 'Material.011') {
+        // Blazing electric-cyan eyes
+        return new THREE.MeshStandardMaterial({
+          color: '#e0f2fe',
+          emissive: '#00f5ff',
+          emissiveIntensity: 3.4,
+          roughness: 0.08,
+          toneMapped: false,
+        });
+      }
+      if (materialName === 'Material.003') {
+        // Luminous ice-silver throat ruff & chest
+        return createMythicalPBRMaterial({
+          cacheKey: 'stag-chest',
+          color: '#cce9ff',
+          emissive: '#0284c7',
+          emissiveIntensity: 0.34,
+          roughness: 0.38,
+          metalness: 0.16,
+          sheen: 1.0,
+          sheenColor: '#e0f2fe',
+          iridescence: 0.55,
+          bumpMap: furBump,
+          bumpScale: 0.008,
+          rimColor: '#38bdf8',
+          rimPower: 2.2,
+          rimStrength: 1.0,
+        });
+      }
+      if (materialName === 'Material.001') {
+        // Forged chrome-sapphire hooves & muzzle
+        return new THREE.MeshPhysicalMaterial({
+          color: '#1b365d',
+          emissive: '#0369a1',
+          emissiveIntensity: 0.25,
+          metalness: 0.82,
+          roughness: 0.2,
+          clearcoat: 0.9,
+        });
+      }
+      if (materialName === 'Material.010') {
+        // Deep midnight cobalt lower legs & back trim
+        return createMythicalPBRMaterial({
+          cacheKey: 'stag-dark',
+          color: '#0e2244',
+          roughness: 0.42,
+          sheen: 0.88,
+          sheenColor: '#38bdf8',
+          bumpMap: furBump,
+          bumpScale: 0.008,
+          rimColor: '#38bdf8',
+          rimPower: 2.5,
+          rimStrength: 0.78,
+        });
+      }
+      // Primary royal sapphire velvety coat
+      return createMythicalPBRMaterial({
+        cacheKey: 'stag-coat',
+        color: '#193866',
+        emissive: '#0a2247',
+        emissiveIntensity: 0.24,
+        roughness: 0.4,
+        metalness: 0.18,
+        sheen: 0.95,
+        sheenColor: '#7dd3fc',
+        iridescence: 0.45,
+        bumpMap: furBump,
+        bumpScale: 0.008,
+        rimColor: '#00f5ff',
+        rimPower: 2.35,
+        rimStrength: 0.98,
+      });
+    },
+    [furBump]
+  );
+
+  const idleClips = useMemo(
+    () => ['AnimalArmature|Idle', 'AnimalArmature|Idle_2', 'AnimalArmature|Idle_Headlow'],
+    []
+  );
+
+  return (
+    <group>
+      <MythicalRiggedBeast
+        url="/models/mascots/stag.glb"
+        scale={0.265}
+        baseRotationY={0.26}
+        idleClips={idleClips}
+        hoverClip="AnimalArmature|Attack_Headbutt"
+        hovered={hovered}
+        furBump={furBump}
+        resolveMaterial={resolveMaterial}
+        renderAttachments={(bones) => <StagCrownPrism bones={bones} hovered={hovered} />}
+      />
+
+      <CelestialEmbers color="#38bdf8" count={36} radius={0.66} height={1.48} hovered={hovered} />
     </group>
   );
 };
@@ -1359,11 +1231,13 @@ const LeadershipCrownArtifact: React.FC<{ hovered: boolean }> = ({ hovered }) =>
   );
 };
 
+/* ================= HEROIC OBSIDIAN PEDESTAL + INTERACTIVE CONTROLLER ================= */
 const DeptEmblemPedestal: React.FC<{
   cfg: DeptEmblemConfig;
   marbleMaps: { map: THREE.CanvasTexture; roughnessMap: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture };
   metalMaps: { roughnessMap: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture };
-}> = ({ cfg, marbleMaps, metalMaps }) => {
+  furBump: THREE.CanvasTexture;
+}> = ({ cfg, marbleMaps, metalMaps, furBump }) => {
   const { setHoveringInteractive, openExecutiveBoard } = useHeritageStore();
   const [hovered, setHovered] = useState(false);
 
@@ -1388,6 +1262,15 @@ const DeptEmblemPedestal: React.FC<{
 
   const handleOpen = () => openExecutiveBoard(cfg.dept, CURRENT_TERM);
 
+  // Wider heroic royal dais for the 4 quadruped mythical beasts so all four paws/hooves stand solidly
+  const topRadius = cfg.isMascot ? 0.56 : 0.32;
+  const colTopRadius = cfg.isMascot ? 0.45 : 0.27;
+  const colBotRadius = cfg.isMascot ? 0.5 : 0.3;
+  const baseRadius = cfg.isMascot ? 0.58 : 0.36;
+  const ringInner = cfg.isMascot ? 0.6 : 0.36;
+  const ringOuter = cfg.isMascot ? 0.67 : 0.42;
+  const plaqueZ = cfg.isMascot ? 0.52 : 0.32;
+
   return (
     <group
       position={cfg.position}
@@ -1406,22 +1289,22 @@ const DeptEmblemPedestal: React.FC<{
         setHoveringInteractive(false);
       }}
     >
-      {/* Sleek Cylindrical Dark-Obsidian Holo-Pedestal with Lightweight Collider */}
+      {/* Heroic Obsidian & Brushed-Metal Royal Pedestal with Lightweight Collider */}
       <RigidBody type="fixed" colliders={false} position={[0, 0.5, 0]}>
-        <CylinderCollider args={[0.5, 0.34]} />
+        <CylinderCollider args={[0.5, baseRadius]} />
 
         <mesh position={[0, -0.492, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.36, 0.42, 36]} />
+          <ringGeometry args={[ringInner, ringOuter, 44]} />
           <meshBasicMaterial
             color={cfg.accent}
             transparent
-            opacity={hovered ? 0.9 : 0.48}
+            opacity={hovered ? 0.94 : 0.52}
             toneMapped={false}
           />
         </mesh>
 
         <mesh position={[0, -0.45, 0]}>
-          <cylinderGeometry args={[0.35, 0.38, 0.08, 32]} />
+          <cylinderGeometry args={[baseRadius - 0.02, baseRadius + 0.02, 0.08, 36]} />
           <meshStandardMaterial
             color="#0a1222"
             roughnessMap={metalMaps.roughnessMap}
@@ -1431,7 +1314,7 @@ const DeptEmblemPedestal: React.FC<{
         </mesh>
 
         <mesh position={[0, 0.01, 0]} castShadow receiveShadow>
-          <cylinderGeometry args={[0.27, 0.3, 0.88, 32]} />
+          <cylinderGeometry args={[colTopRadius, colBotRadius, 0.88, 36]} />
           <meshStandardMaterial
             map={marbleMaps.map}
             roughnessMap={marbleMaps.roughnessMap}
@@ -1443,38 +1326,40 @@ const DeptEmblemPedestal: React.FC<{
           />
         </mesh>
 
-        <mesh position={[0, 0.47, 0]}>
-          <cylinderGeometry args={[0.32, 0.3, 0.055, 32]} />
+        <mesh position={[0, 0.47, 0]} receiveShadow>
+          <cylinderGeometry args={[topRadius, topRadius - 0.03, 0.06, 40]} />
           <meshStandardMaterial color="#13213a" metalness={0.9} roughness={0.2} />
         </mesh>
-        <mesh position={[0, 0.498, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.2, 0.28, 36]} />
+        <mesh position={[0, 0.501, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[topRadius - 0.11, topRadius - 0.025, 44]} />
           <meshBasicMaterial color={cfg.accent} toneMapped={false} />
         </mesh>
       </RigidBody>
 
       {/* Anti-Glare Front Nameplate Plaque */}
-      <group position={[0, 0.54, 0.32]} rotation={[-0.22, 0, 0]}>
-        <RoundedBox args={[0.56, 0.2, 0.022]} radius={0.01} smoothness={3}>
+      <group position={[0, 0.54, plaqueZ]} rotation={[-0.22, 0, 0]}>
+        <RoundedBox args={[0.58, 0.21, 0.022]} radius={0.01} smoothness={3}>
           <meshStandardMaterial
             color="#121e36"
             metalness={0.86}
             roughness={0.22}
             emissive={cfg.accent}
-            emissiveIntensity={hovered ? 0.36 : 0.12}
+            emissiveIntensity={hovered ? 0.38 : 0.14}
           />
         </RoundedBox>
         <mesh position={[0, 0, 0.013]}>
-          <planeGeometry args={[0.52, 0.172]} />
+          <planeGeometry args={[0.54, 0.178]} />
           <meshBasicMaterial map={plaqueTex} color={hovered ? '#ffffff' : '#dce8f8'} />
         </mesh>
       </group>
 
-      {/* Custom Mythical Sculpted 3D Living Mascot OR Rotating 3D Artifact */}
-      {cfg.kind === 'owl' && <MythicalOwlMascot hovered={hovered} />}
-      {cfg.kind === 'phoenix' && <MythicalPhoenixMascot hovered={hovered} />}
-      {cfg.kind === 'fox' && <MythicalSpiritFoxMascot hovered={hovered} />}
-      {cfg.kind === 'camera' && <CinemaCameraArtifact hovered={hovered} />}
+      {/* 4 Rigged Mythical Living Beasts OR Rotating Golden Leadership Artifact */}
+      <Suspense fallback={null}>
+        {cfg.kind === 'wolf' && <CelestialWolfMascot hovered={hovered} furBump={furBump} />}
+        {cfg.kind === 'pegasus' && <CelestialPegasusMascot hovered={hovered} furBump={furBump} />}
+        {cfg.kind === 'fox' && <CelestialFoxMascot hovered={hovered} furBump={furBump} />}
+        {cfg.kind === 'stag' && <CelestialStagMascot hovered={hovered} furBump={furBump} />}
+      </Suspense>
       {cfg.kind === 'crown' && <LeadershipCrownArtifact hovered={hovered} />}
     </group>
   );
@@ -1483,6 +1368,7 @@ const DeptEmblemPedestal: React.FC<{
 export const DepartmentMascots3D: React.FC = () => {
   const marbleMaps = useMemo(() => createMarbleMaps(), []);
   const metalMaps = useMemo(() => createBrushedMetalMaps(), []);
+  const furBump = useMemo(() => createMythicalFurBumpMap(), []);
 
   useEffect(() => {
     return () => {
@@ -1491,8 +1377,9 @@ export const DepartmentMascots3D: React.FC = () => {
       marbleMaps.bumpMap.dispose();
       metalMaps.roughnessMap.dispose();
       metalMaps.bumpMap.dispose();
+      furBump.dispose();
     };
-  }, [marbleMaps, metalMaps]);
+  }, [furBump, marbleMaps, metalMaps]);
 
   return (
     <group name="department-mascots-and-artifacts-3d">
@@ -1502,6 +1389,7 @@ export const DepartmentMascots3D: React.FC = () => {
           cfg={cfg}
           marbleMaps={marbleMaps}
           metalMaps={metalMaps}
+          furBump={furBump}
         />
       ))}
     </group>

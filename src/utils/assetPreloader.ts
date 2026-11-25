@@ -41,6 +41,20 @@ const CRITICAL_GALLERY_ASSETS: string[] = [
   '/assets/images/tunnel/tx1.webp',
 ];
 
+const CRITICAL_MASCOT_MODELS: string[] = [
+  '/models/mascots/wolf.glb',
+  '/models/mascots/horse.glb',
+  '/models/mascots/fox.glb',
+  '/models/mascots/stag.glb',
+];
+
+function preloadBinaryModel(url: string): Promise<void> {
+  return fetch(url, { cache: 'force-cache' })
+    .then((res) => (res.ok ? res.arrayBuffer() : undefined))
+    .then(() => undefined)
+    .catch(() => undefined);
+}
+
 function preloadSingleImage(url: string): Promise<void> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -65,9 +79,9 @@ function preloadSingleImage(url: string): Promise<void> {
  */
 export function preloadMuseumAssets(
   onProgress: (ratio: number) => void,
-  timeoutMs = 3600
+  timeoutMs = 5200
 ): Promise<void> {
-  const total = CRITICAL_GALLERY_ASSETS.length;
+  const total = CRITICAL_GALLERY_ASSETS.length + CRITICAL_MASCOT_MODELS.length;
   let completed = 0;
   let settled = false;
 
@@ -82,8 +96,17 @@ export function preloadMuseumAssets(
     const safetyTimer = window.setTimeout(finish, timeoutMs);
 
     const runBatches = async () => {
+      // Kick off the 4 rigged mythical mascot GLB models concurrently first so GPU parse starts early
+      const modelPromises = CRITICAL_MASCOT_MODELS.map(async (url) => {
+        await preloadBinaryModel(url);
+        completed += 1;
+        if (!settled) {
+          onProgress(Math.min(1, completed / total));
+        }
+      });
+
       const batchSize = 6;
-      for (let i = 0; i < total; i += batchSize) {
+      for (let i = 0; i < CRITICAL_GALLERY_ASSETS.length; i += batchSize) {
         if (settled) return;
         const slice = CRITICAL_GALLERY_ASSETS.slice(i, i + batchSize);
         await Promise.all(
@@ -96,6 +119,8 @@ export function preloadMuseumAssets(
           })
         );
       }
+
+      await Promise.all(modelPromises);
       window.clearTimeout(safetyTimer);
       finish();
     };

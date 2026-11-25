@@ -10,96 +10,220 @@ function makeRand(seedInit: number) {
 }
 
 /**
- * Generates a smooth variable-radius organic tubular mesh along a 3D CatmullRomCurve3.
- * Used for anatomical necks, curved raptor beaks, mythical spirit fox tails, talons, and crests.
+ * Welds vertex normals across coincident (x, y, z) positions WITHOUT modifying vertex count,
+ * index buffer, UVs, skinIndex, skinWeight, or morphAttributes.
+ *
+ * This converts flat-shaded / faceted low-poly SkinnedMesh animals into silky-smooth,
+ * organic, muscular sculpted creatures while preserving 100% of skeletal bone rigging.
  */
-export function createTaperedTubeGeometry(
-  points: THREE.Vector3[],
-  radiusFn: (t: number) => number,
-  tubularSegments = 28,
-  radialSegments = 14,
-  scaleX = 1,
-  scaleY = 1
+export function smoothSkinnedGeometryNormals(
+  sourceGeometry: THREE.BufferGeometry,
+  quantizePrecision = 20000
 ): THREE.BufferGeometry {
-  const curve = new THREE.CatmullRomCurve3(points);
-  const frames = curve.computeFrenetFrames(tubularSegments, false);
-  const positions: number[] = [];
-  const uvs: number[] = [];
-  const indices: number[] = [];
+  const geom = sourceGeometry.clone();
+  const posAttr = geom.getAttribute('position');
+  if (!posAttr) return geom;
 
-  const vertex = new THREE.Vector3();
-  const center = new THREE.Vector3();
+  const count = posAttr.count;
+  const accumMap = new Map<string, THREE.Vector3>();
+  const vertKeys = new Array<string>(count);
 
-  for (let i = 0; i <= tubularSegments; i += 1) {
-    const t = i / tubularSegments;
-    curve.getPointAt(t, center);
-    const N = frames.normals[i];
-    const B = frames.binormals[i];
-    const r = Math.max(0.001, radiusFn(t));
-
-    for (let j = 0; j <= radialSegments; j += 1) {
-      const v = (j / radialSegments) * Math.PI * 2;
-      const cos = Math.cos(v) * scaleX;
-      const sin = Math.sin(v) * scaleY;
-
-      vertex.x = center.x + r * (cos * N.x + sin * B.x);
-      vertex.y = center.y + r * (cos * N.y + sin * B.y);
-      vertex.z = center.z + r * (cos * N.z + sin * B.z);
-
-      positions.push(vertex.x, vertex.y, vertex.z);
-      uvs.push(j / radialSegments, t);
+  for (let i = 0; i < count; i += 1) {
+    const x = posAttr.getX(i);
+    const y = posAttr.getY(i);
+    const z = posAttr.getZ(i);
+    const key = `${Math.round(x * quantizePrecision)}_${Math.round(y * quantizePrecision)}_${Math.round(z * quantizePrecision)}`;
+    vertKeys[i] = key;
+    if (!accumMap.has(key)) {
+      accumMap.set(key, new THREE.Vector3());
     }
   }
 
-  const stride = radialSegments + 1;
-  for (let i = 0; i < tubularSegments; i += 1) {
-    for (let j = 0; j < radialSegments; j += 1) {
-      const a = i * stride + j;
-      const b = (i + 1) * stride + j;
-      const c = (i + 1) * stride + (j + 1);
-      const d = i * stride + (j + 1);
-      indices.push(a, b, d);
-      indices.push(b, c, d);
-    }
+  const indexAttr = geom.getIndex();
+  const triCount = indexAttr ? indexAttr.count / 3 : count / 3;
+
+  const vA = new THREE.Vector3();
+  const vB = new THREE.Vector3();
+  const vC = new THREE.Vector3();
+  const cb = new THREE.Vector3();
+  const ab = new THREE.Vector3();
+
+  for (let t = 0; t < triCount; t += 1) {
+    const i0 = indexAttr ? indexAttr.getX(t * 3) : t * 3;
+    const i1 = indexAttr ? indexAttr.getX(t * 3 + 1) : t * 3 + 1;
+    const i2 = indexAttr ? indexAttr.getX(t * 3 + 2) : t * 3 + 2;
+
+    vA.fromBufferAttribute(posAttr, i0);
+    vB.fromBufferAttribute(posAttr, i1);
+    vC.fromBufferAttribute(posAttr, i2);
+
+    // Area-weighted face normal (cross product without normalizing preserves area weighting)
+    cb.subVectors(vC, vB);
+    ab.subVectors(vA, vB);
+    cb.cross(ab);
+
+    accumMap.get(vertKeys[i0])!.add(cb);
+    accumMap.get(vertKeys[i1])!.add(cb);
+    accumMap.get(vertKeys[i2])!.add(cb);
   }
 
-  const geom = new THREE.BufferGeometry();
-  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-  geom.setIndex(indices);
-  geom.computeVertexNormals();
+  const normals = new Float32Array(count * 3);
+  accumMap.forEach((vec) => {
+    if (vec.lengthSq() > 1e-12) {
+      vec.normalize();
+    } else {
+      vec.set(0, 1, 0);
+    }
+  });
+
+  for (let i = 0; i < count; i += 1) {
+    const n = accumMap.get(vertKeys[i])!;
+    normals[i * 3] = n.x;
+    normals[i * 3 + 1] = n.y;
+    normals[i * 3 + 2] = n.z;
+  }
+
+  geom.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
   return geom;
 }
 
 /**
- * Generates an organically curved, tapered avian feather blade (with gentle camber arc)
- * so Owl & Phoenix wings look like real layered mythical feathers instead of flat boxes.
+ * Generates a fine, seamless directional fur / velvet micro-grain bumpMap (512x512)
+ * so mythical beast coats catch realistic soft anisotropic sheen instead of looking plasticky.
+ */
+export function createMythicalFurBumpMap(): THREE.CanvasTexture {
+  const size = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  if (ctx) {
+    ctx.fillStyle = '#808080';
+    ctx.fillRect(0, 0, size, size);
+    const rand = makeRand(90210);
+
+    for (let i = 0; i < 4200; i += 1) {
+      const x = rand() * size;
+      const y = rand() * size;
+      const len = 8 + rand() * 18;
+      const drift = (rand() - 0.5) * 4;
+      const bright = Math.floor(85 + rand() * 125);
+      ctx.strokeStyle = `rgba(${bright},${bright},${bright},0.32)`;
+      ctx.lineWidth = 0.8 + rand() * 1.1;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.quadraticCurveTo(x + drift * 0.5, y + len * 0.5, x + drift, y + len);
+      ctx.stroke();
+    }
+  }
+
+  return finalizeCrispTexture(canvas, { anisotropy: 4, srgb: false, repeatX: 4, repeatY: 4 });
+}
+
+export interface MythicalMaterialOptions {
+  cacheKey: string;
+  color: string;
+  emissive?: string;
+  emissiveIntensity?: number;
+  roughness?: number;
+  metalness?: number;
+  sheen?: number;
+  sheenRoughness?: number;
+  sheenColor?: string;
+  clearcoat?: number;
+  clearcoatRoughness?: number;
+  iridescence?: number;
+  iridescenceIOR?: number;
+  bumpMap?: THREE.Texture;
+  bumpScale?: number;
+  rimColor?: string;
+  rimPower?: number;
+  rimStrength?: number;
+}
+
+/**
+ * Creates a museum-grade MeshPhysicalMaterial enhanced with a GPU Fresnel celestial rim glow
+ * via onBeforeCompile so mythical beasts radiate regal presence against the dark obsidian hall.
+ */
+export function createMythicalPBRMaterial(opts: MythicalMaterialOptions): THREE.MeshPhysicalMaterial {
+  const mat = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(opts.color),
+    emissive: new THREE.Color(opts.emissive ?? '#000000'),
+    emissiveIntensity: opts.emissiveIntensity ?? 0,
+    roughness: opts.roughness ?? 0.44,
+    metalness: opts.metalness ?? 0.14,
+    sheen: opts.sheen ?? 0.85,
+    sheenRoughness: opts.sheenRoughness ?? 0.38,
+    sheenColor: new THREE.Color(opts.sheenColor ?? opts.rimColor ?? '#ffffff'),
+    clearcoat: opts.clearcoat ?? 0.15,
+    clearcoatRoughness: opts.clearcoatRoughness ?? 0.35,
+    iridescence: opts.iridescence ?? 0.25,
+    iridescenceIOR: opts.iridescenceIOR ?? 1.38,
+    bumpMap: opts.bumpMap ?? null,
+    bumpScale: opts.bumpScale ?? 0.008,
+  });
+
+  if (opts.rimColor && (opts.rimStrength ?? 0) > 0) {
+    const rimCol = new THREE.Color(opts.rimColor);
+    const rimPow = opts.rimPower ?? 2.8;
+    const rimStr = opts.rimStrength ?? 0.65;
+
+    mat.customProgramCacheKey = () => `mythical-rim-${opts.cacheKey}`;
+    mat.onBeforeCompile = (shader) => {
+      shader.uniforms.uMythRimColor = { value: rimCol };
+      shader.uniforms.uMythRimPower = { value: rimPow };
+      shader.uniforms.uMythRimStrength = { value: rimStr };
+
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          '#include <common>',
+          `#include <common>
+uniform vec3 uMythRimColor;
+uniform float uMythRimPower;
+uniform float uMythRimStrength;`
+        )
+        .replace(
+          '#include <dithering_fragment>',
+          `vec3 mythViewDir = normalize(vViewPosition);
+float mythFresnel = pow(clamp(1.0 - abs(dot(normalize(normal), mythViewDir)), 0.0, 1.0), uMythRimPower);
+gl_FragColor.rgb += uMythRimColor * mythFresnel * uMythRimStrength;
+#include <dithering_fragment>`
+        );
+    };
+  }
+
+  return mat;
+}
+
+/**
+ * Generates an organically curved, tapered avian feather blade (with gentle aerodynamic camber)
+ * used for the Celestial Pegasus's radiant feathered energy wings.
  */
 export function createSculptedFeatherGeometry(
-  length = 0.24,
-  width = 0.055,
-  arch = 0.025
+  length = 0.32,
+  width = 0.072,
+  arch = 0.032
 ): THREE.BufferGeometry {
   const shape = new THREE.Shape();
   shape.moveTo(0, 0);
-  shape.bezierCurveTo(width * 0.58, length * 0.2, width * 0.54, length * 0.72, 0, length);
-  shape.bezierCurveTo(-width * 0.54, length * 0.72, -width * 0.58, length * 0.2, 0, 0);
+  shape.bezierCurveTo(width * 0.62, length * 0.22, width * 0.52, length * 0.75, 0, length);
+  shape.bezierCurveTo(-width * 0.52, length * 0.75, -width * 0.62, length * 0.22, 0, 0);
 
   const geom = new THREE.ExtrudeGeometry(shape, {
-    depth: 0.005,
+    depth: 0.006,
     bevelEnabled: true,
-    bevelThickness: 0.0025,
-    bevelSize: 0.002,
+    bevelThickness: 0.003,
+    bevelSize: 0.0022,
     bevelSegments: 2,
-    curveSegments: 14,
+    curveSegments: 16,
   });
 
-  // Apply gentle natural aerodynamic feather camber along Y
   const pos = geom.attributes.position;
   for (let i = 0; i < pos.count; i += 1) {
     const y = pos.getY(i);
     const t = THREE.MathUtils.clamp(y / Math.max(0.001, length), 0, 1);
-    const bendZ = Math.sin(t * Math.PI) * arch - t * t * arch * 0.55;
+    const bendZ = Math.sin(t * Math.PI) * arch - t * t * arch * 0.5;
     pos.setZ(i, pos.getZ(i) + bendZ);
   }
   pos.needsUpdate = true;
@@ -108,218 +232,25 @@ export function createSculptedFeatherGeometry(
 }
 
 /**
- * Procedural scalloped Great Horned Owl plumage diffuse + bump maps (rich bronze/midnight indigo + warm gold barring)
+ * Generates a spiraled golden-crystal Kirin/Pegasus horn geometry.
  */
-export function createOwlPlumageMaps(): { map: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture } {
-  const size = 512;
-  const dCanvas = document.createElement('canvas');
-  dCanvas.width = size;
-  dCanvas.height = size;
-  const dCtx = dCanvas.getContext('2d');
+export function createSpiraledHornGeometry(length = 0.34, baseRadius = 0.026): THREE.BufferGeometry {
+  const geom = new THREE.ConeGeometry(baseRadius, length, 20, 28);
+  geom.translate(0, length / 2, 0);
 
-  const bCanvas = document.createElement('canvas');
-  bCanvas.width = size;
-  bCanvas.height = size;
-  const bCtx = bCanvas.getContext('2d');
-
-  if (dCtx && bCtx) {
-    const bg = dCtx.createLinearGradient(0, 0, 0, size);
-    bg.addColorStop(0, '#1e2c45');
-    bg.addColorStop(0.55, '#2b3954');
-    bg.addColorStop(1, '#1a2438');
-    dCtx.fillStyle = bg;
-    dCtx.fillRect(0, 0, size, size);
-
-    bCtx.fillStyle = '#787878';
-    bCtx.fillRect(0, 0, size, size);
-
-    const rand = makeRand(7331);
-    const rows = 18;
-    const cols = 14;
-    const cellW = size / cols;
-    const cellH = size / rows;
-
-    for (let r = 0; r < rows; r += 1) {
-      const offset = (r % 2) * (cellW * 0.5);
-      for (let c = -1; c <= cols; c += 1) {
-        const cx = c * cellW + offset;
-        const cy = r * cellH;
-        const shade = rand();
-        const featherGrad = dCtx.createRadialGradient(cx, cy - cellH * 0.2, 2, cx, cy, cellW * 0.72);
-        if (shade > 0.65) {
-          featherGrad.addColorStop(0, '#3e4c6b');
-          featherGrad.addColorStop(0.75, '#26344f');
-          featherGrad.addColorStop(1, '#fb923c');
-        } else {
-          featherGrad.addColorStop(0, '#2d3c59');
-          featherGrad.addColorStop(0.8, '#1b263c');
-          featherGrad.addColorStop(1, '#d97706');
-        }
-
-        dCtx.fillStyle = featherGrad;
-        dCtx.beginPath();
-        dCtx.arc(cx, cy, cellW * 0.56, 0, Math.PI);
-        dCtx.closePath();
-        dCtx.fill();
-
-        dCtx.strokeStyle = 'rgba(253, 186, 116, 0.35)';
-        dCtx.lineWidth = 1.2;
-        dCtx.stroke();
-
-        // Matching scalloped feather bump relief
-        const bGrad = bCtx.createRadialGradient(cx, cy - 3, 2, cx, cy, cellW * 0.65);
-        bGrad.addColorStop(0, '#d8d8d8');
-        bGrad.addColorStop(0.78, '#888888');
-        bGrad.addColorStop(1, '#282828');
-        bCtx.fillStyle = bGrad;
-        bCtx.beginPath();
-        bCtx.arc(cx, cy, cellW * 0.56, 0, Math.PI);
-        bCtx.closePath();
-        bCtx.fill();
-      }
-    }
+  const pos = geom.attributes.position;
+  for (let i = 0; i < pos.count; i += 1) {
+    const x = pos.getX(i);
+    const y = pos.getY(i);
+    const z = pos.getZ(i);
+    const t = THREE.MathUtils.clamp(y / length, 0, 1);
+    const angle = Math.atan2(z, x);
+    const flute = 1 + Math.sin(angle * 3 + t * Math.PI * 10) * 0.14 * (1 - t * 0.65);
+    // Gentle heroic backward/upward sweep
+    const curveZ = -Math.sin(t * Math.PI * 0.5) * 0.028;
+    pos.setXYZ(i, x * flute, y, z * flute + curveZ);
   }
-
-  return {
-    map: finalizeCrispTexture(dCanvas, { anisotropy: 4, srgb: true, repeatX: 2, repeatY: 2 }),
-    bumpMap: finalizeCrispTexture(bCanvas, { anisotropy: 4, srgb: false, repeatX: 2, repeatY: 2 }),
-  };
-}
-
-/**
- * Procedural Celestial Phoenix iridescent flame-feather maps (royal violet -> magenta -> molten gold barbs)
- */
-export function createPhoenixPlumageMaps(): { map: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture } {
-  const size = 512;
-  const dCanvas = document.createElement('canvas');
-  dCanvas.width = size;
-  dCanvas.height = size;
-  const dCtx = dCanvas.getContext('2d');
-
-  const bCanvas = document.createElement('canvas');
-  bCanvas.width = size;
-  bCanvas.height = size;
-  const bCtx = bCanvas.getContext('2d');
-
-  if (dCtx && bCtx) {
-    const bg = dCtx.createLinearGradient(0, 0, 0, size);
-    bg.addColorStop(0, '#581c87');
-    bg.addColorStop(0.5, '#9333ea');
-    bg.addColorStop(1, '#db2777');
-    dCtx.fillStyle = bg;
-    dCtx.fillRect(0, 0, size, size);
-
-    bCtx.fillStyle = '#7a7a7a';
-    bCtx.fillRect(0, 0, size, size);
-
-    const rows = 20;
-    const cols = 16;
-    const cellW = size / cols;
-    const cellH = size / rows;
-
-    for (let r = 0; r < rows; r += 1) {
-      const offset = (r % 2) * (cellW * 0.5);
-      for (let c = -1; c <= cols; c += 1) {
-        const cx = c * cellW + offset;
-        const cy = r * cellH;
-        const grad = dCtx.createLinearGradient(cx, cy - cellH, cx, cy + cellH * 0.6);
-        grad.addColorStop(0, '#4c1d95');
-        grad.addColorStop(0.55, '#c026d3');
-        grad.addColorStop(0.88, '#fb7185');
-        grad.addColorStop(1, '#fde047');
-
-        dCtx.fillStyle = grad;
-        dCtx.beginPath();
-        dCtx.moveTo(cx - cellW * 0.48, cy);
-        dCtx.quadraticCurveTo(cx, cy + cellH * 1.15, cx + cellW * 0.48, cy);
-        dCtx.closePath();
-        dCtx.fill();
-
-        // Central golden feather rachis (shaft)
-        dCtx.strokeStyle = 'rgba(254, 240, 138, 0.55)';
-        dCtx.lineWidth = 1.1;
-        dCtx.beginPath();
-        dCtx.moveTo(cx, cy - cellH * 0.15);
-        dCtx.lineTo(cx, cy + cellH * 0.72);
-        dCtx.stroke();
-
-        bCtx.fillStyle = '#c8c8c8';
-        bCtx.beginPath();
-        bCtx.moveTo(cx - cellW * 0.44, cy);
-        bCtx.quadraticCurveTo(cx, cy + cellH * 1.05, cx + cellW * 0.44, cy);
-        bCtx.closePath();
-        bCtx.fill();
-        bCtx.strokeStyle = '#303030';
-        bCtx.lineWidth = 1.5;
-        bCtx.stroke();
-      }
-    }
-  }
-
-  return {
-    map: finalizeCrispTexture(dCanvas, { anisotropy: 4, srgb: true, repeatX: 2, repeatY: 2 }),
-    bumpMap: finalizeCrispTexture(bCanvas, { anisotropy: 4, srgb: false, repeatX: 2, repeatY: 2 }),
-  };
-}
-
-/**
- * Procedural plush Spirit Fox fur stroke diffuse + bump maps (emerald-jade & silver-ivory velvet fur)
- */
-export function createFoxFurMaps(): { map: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture } {
-  const size = 512;
-  const dCanvas = document.createElement('canvas');
-  dCanvas.width = size;
-  dCanvas.height = size;
-  const dCtx = dCanvas.getContext('2d');
-
-  const bCanvas = document.createElement('canvas');
-  bCanvas.width = size;
-  bCanvas.height = size;
-  const bCtx = bCanvas.getContext('2d');
-
-  if (dCtx && bCtx) {
-    const bg = dCtx.createLinearGradient(0, 0, 0, size);
-    bg.addColorStop(0, '#0f766e');
-    bg.addColorStop(0.5, '#14b8a6');
-    bg.addColorStop(1, '#0d5e58');
-    dCtx.fillStyle = bg;
-    dCtx.fillRect(0, 0, size, size);
-
-    bCtx.fillStyle = '#808080';
-    bCtx.fillRect(0, 0, size, size);
-
-    const rand = makeRand(9187);
-    // Thousands of fine directional velvet fur hairs
-    for (let i = 0; i < 4200; i += 1) {
-      const x = rand() * size;
-      const y = rand() * size;
-      const len = 10 + rand() * 18;
-      const sway = (rand() - 0.5) * 4;
-      const tone = rand();
-
-      dCtx.strokeStyle =
-        tone > 0.82
-          ? 'rgba(167, 243, 208, 0.48)'
-          : tone > 0.45
-          ? 'rgba(45, 212, 191, 0.42)'
-          : 'rgba(13, 74, 70, 0.48)';
-      dCtx.lineWidth = 1.2 + rand() * 1.1;
-      dCtx.beginPath();
-      dCtx.moveTo(x, y);
-      dCtx.lineTo(x + sway, y + len);
-      dCtx.stroke();
-
-      bCtx.strokeStyle = tone > 0.5 ? 'rgba(210,210,210,0.45)' : 'rgba(55,55,55,0.45)';
-      bCtx.lineWidth = 1.2;
-      bCtx.beginPath();
-      bCtx.moveTo(x, y);
-      bCtx.lineTo(x + sway, y + len);
-      bCtx.stroke();
-    }
-  }
-
-  return {
-    map: finalizeCrispTexture(dCanvas, { anisotropy: 4, srgb: true, repeatX: 2, repeatY: 2 }),
-    bumpMap: finalizeCrispTexture(bCanvas, { anisotropy: 4, srgb: false, repeatX: 2, repeatY: 2 }),
-  };
+  pos.needsUpdate = true;
+  geom.computeVertexNormals();
+  return geom;
 }
