@@ -28,7 +28,18 @@ interface PhotoPedestalConfig {
  * Max top height is ~0.83m (below all wall board edges) and all 5 department trees & Club Shirt remain 100% unobstructed.
  */
 const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
-  // ================= 1. LEFT WALL STRAIGHT ROW (10 pedestals, x = -15.45, step = 2.00m) =================
+  // ================= 1. LEFT WALL STRAIGHT ROW (10 pedestals + 1 BCM feature pedestal) =================
+  {
+    id: 'pedestal-bcm-1',
+    position: [-14.72, 0, -15.1],
+    rotationY: Math.PI / 2,
+    tag: 'BAN CHUYÊN MÔN • BCM',
+    title: 'Tập Thể Ban Chuyên Môn TechTonic',
+    description:
+      'Đội ngũ nòng cốt dẫn dắt các buổi đào tạo học thuật FE/BE/AI & Data, dự án Product Team và đội tuyển thi đấu ICPC - OLP, NCKH tại DUE.',
+    image: '/assets/images/gallery/bcm_team.jpg',
+    accent: '#fb923c',
+  },
   {
     id: 'pedestal-lw-1',
     position: [-15.45, 0, -11.8],
