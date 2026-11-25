@@ -312,11 +312,11 @@ const PortraitCard: React.FC<{
           dw = PORTRAIT_CANVAS_H * imgRatio;
           dx = (PORTRAIT_CANVAS_W - dw) / 2;
         }
-        ctx.filter = 'contrast(1.07) saturate(1.05)';
+        ctx.filter = 'brightness(0.93) contrast(1.04) saturate(1.04)';
         ctx.drawImage(img, 0, 0, img.width, img.height, dx, dy, dw, dh);
         ctx.filter = 'none';
       }
-      setPhotoTex(finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true }));
+      setPhotoTex(finalizeCrispTexture(canvas, { anisotropy: 4, srgb: true }));
     };
     img.src = member.avatar;
 
@@ -378,29 +378,21 @@ const PortraitCard: React.FC<{
         />
       </RoundedBox>
 
+      {/* Anti-glare museum portrait plane: immune to harsh spotlight specular blowout */}
       <mesh position={[0, photoY, 0.006]}>
         <planeGeometry args={[innerW, photoH]} />
-        <meshStandardMaterial
+        <meshBasicMaterial
+          key={photoTex ? 'portrait-ready' : 'portrait-fallback'}
           map={photoTex ?? fallbackTex}
-          color="#e2ecf8"
-          emissive="#ffffff"
-          emissiveMap={photoTex ?? fallbackTex}
-          emissiveIntensity={hovered ? 0.78 : 0.66}
-          roughness={0.92}
-          metalness={0}
+          color={hovered ? '#dfe9f6' : '#bcc8d8'}
         />
       </mesh>
 
       <mesh position={[0, labelY, 0.006]}>
         <planeGeometry args={[innerW, labelH]} />
-        <meshStandardMaterial
+        <meshBasicMaterial
           map={labelTex}
-          color="#e4eef9"
-          emissive="#ffffff"
-          emissiveMap={labelTex}
-          emissiveIntensity={hovered ? 0.78 : 0.66}
-          roughness={0.9}
-          metalness={0}
+          color={hovered ? '#f4f8ff' : '#d8e3f2'}
         />
       </mesh>
     </group>
@@ -441,10 +433,10 @@ const DepartmentPortraitTree: React.FC<{
   useFrame((state) => {
     const pulse = Math.sin(state.clock.elapsedTime * 1.45 + phaseOffset) * 0.5 + 0.5;
     if (outerBeamMatRef.current) {
-      outerBeamMatRef.current.opacity = 0.11 + pulse * 0.035;
+      outerBeamMatRef.current.opacity = 0.045 + pulse * 0.018;
     }
     if (wallAuraMatRef.current) {
-      wallAuraMatRef.current.opacity = 0.58 + pulse * 0.14;
+      wallAuraMatRef.current.opacity = 0.34 + pulse * 0.08;
     }
   });
 
@@ -503,29 +495,15 @@ const DepartmentPortraitTree: React.FC<{
           <meshBasicMaterial color={config.accent} toneMapped={false} />
         </mesh>
 
-        {/* Outer Colored Stage Beam Cone (fades naturally before reaching portraits so zero milky washout) */}
-        <mesh position={[0, -2.05, 0]}>
-          <cylinderGeometry args={[0.15, beamRadiusBottom * 0.88, 3.7, 36, 1, true]} />
+        {/* Subtle Upper Colored Stage Beam Cone (fades out cleanly above Row 1 portraits — ZERO haze/glare over faces!) */}
+        <mesh position={[0, -1.05, 0]}>
+          <cylinderGeometry args={[0.15, beamRadiusBottom * 0.62, 1.75, 32, 1, true]} />
           <meshBasicMaterial
             ref={outerBeamMatRef}
             color={config.stageGlow}
             alphaMap={beamAlphaTex}
             transparent
-            opacity={0.085}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-
-        {/* Inner Crisp Core Stage Beam */}
-        <mesh position={[0, -1.9, 0]}>
-          <cylinderGeometry args={[0.085, beamRadiusBottom * 0.46, 3.4, 28, 1, true]} />
-          <meshBasicMaterial
-            color="#ffffff"
-            alphaMap={beamAlphaTex}
-            transparent
-            opacity={0.036}
+            opacity={0.05}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
             side={THREE.DoubleSide}
