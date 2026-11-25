@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { RoundedBox } from '@react-three/drei';
+import { MeshReflectorMaterial, RoundedBox } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import {
@@ -99,22 +99,15 @@ export const MuseumRoom: React.FC = () => {
 
   return (
     <group>
-      {/* ================= HONED TERRAZZO FLOOR WITH PBR BUMP & NEON REFLECTIONS ================= */}
+      {/* ================= REAL-TIME REFLECTIVE HONED TERRAZZO FLOOR ================= */}
       <RigidBody type="fixed" friction={1} restitution={0}>
-        <mesh position={[0, -0.05, -5]} receiveShadow>
+        {/* Invisible physics floor slab for hall */}
+        <mesh position={[0, -0.055, -5]}>
           <boxGeometry args={[34, 0.1, 28]} />
-          <meshStandardMaterial
-            map={floorMaps.map}
-            roughnessMap={floorMaps.roughnessMap}
-            bumpMap={floorMaps.bumpMap}
-            bumpScale={0.008}
-            color="#b8cce8"
-            roughness={0.32}
-            metalness={0.32}
-            envMapIntensity={1.25}
-          />
+          <meshStandardMaterial color="#0b111c" roughness={0.85} />
         </mesh>
 
+        {/* Tunnel Floor */}
         <mesh position={[0, -0.05, 18.5]} receiveShadow>
           <boxGeometry args={[6, 0.1, 20.4]} />
           <meshStandardMaterial
@@ -122,13 +115,35 @@ export const MuseumRoom: React.FC = () => {
             roughnessMap={floorMaps.roughnessMap}
             bumpMap={floorMaps.bumpMap}
             bumpScale={0.008}
-            color="#b0c4e2"
-            roughness={0.34}
-            metalness={0.3}
-            envMapIntensity={1.2}
+            color="#b4c8e4"
+            roughness={0.44}
+            metalness={0.22}
+            envMapIntensity={0.65}
           />
         </mesh>
       </RigidBody>
+
+      {/* Main Hall Planar Real-Time Blurred Reflector Floor (moves naturally with player camera) */}
+      <mesh position={[0, 0.002, -5]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[34, 28]} />
+        <MeshReflectorMaterial
+          blur={[360, 100]}
+          resolution={512}
+          mixBlur={0.94}
+          mixStrength={0.48}
+          roughness={0.56}
+          depthScale={0.85}
+          minDepthThreshold={0.4}
+          maxDepthThreshold={1.35}
+          color="#162238"
+          metalness={0.28}
+          mirror={0.45}
+          map={floorMaps.map}
+          roughnessMap={floorMaps.roughnessMap}
+          bumpMap={floorMaps.bumpMap}
+          bumpScale={0.005}
+        />
+      </mesh>
 
       {/* ================= CEILING, COFFER BEAMS & NEON LIGHT CONES ================= */}
       <mesh position={[0, 6.5, 5]}>

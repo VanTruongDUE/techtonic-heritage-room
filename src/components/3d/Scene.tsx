@@ -8,6 +8,7 @@ import { CentralIsland } from './Exhibits/CentralIsland';
 import { InteractiveCorner } from './Exhibits/InteractiveCorner';
 import { TunnelGallery } from './Exhibits/TunnelGallery';
 import { MemberPortraitGallery } from './Exhibits/MemberPortraitGallery';
+import { PhotoPedestalGallery } from './Exhibits/PhotoPedestalGallery';
 import { PlayerController } from './PlayerController';
 import { HallParticleField, OrgConstellationOrbit } from './Effects/AmbientMotion';
 import { CodeCosmosOrbit } from './Effects/CodeCosmosOrbit';
@@ -35,6 +36,7 @@ export const Scene: React.FC = () => {
         <InteractiveCorner />
         <TunnelGallery />
         <MemberPortraitGallery />
+        <PhotoPedestalGallery />
         <PlayerController initialPosition={[0, 1.4, 25.8]} />
       </Physics>
     </Suspense>

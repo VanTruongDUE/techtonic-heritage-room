@@ -57,53 +57,37 @@ export const StudioLights: React.FC = () => {
 
   return (
     <group>
-      {/* Neon-tinted HDR Reflection Rig for glossy floor, marble plinths, metal frames & vitrines */}
-      <Environment resolution={256} frames={1} environmentIntensity={0.62}>
+      {/* Soft Overhead Gallery Reflection Rig (no harsh wall-level rectangular Lightformer slabs on the floor) */}
+      <Environment resolution={256} frames={1} environmentIntensity={0.48}>
         <Lightformer
-          form="rect"
-          intensity={2.4}
-          color="#00F0FF"
-          position={[0, 8, -5]}
+          form="circle"
+          intensity={1.15}
+          color="#bae6fd"
+          position={[0, 11, -5]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[20, 4, 1]}
+          scale={[14, 14, 1]}
         />
         <Lightformer
           form="ring"
-          intensity={2.6}
-          color="#fbbf24"
-          position={[0, 7.2, -5]}
+          intensity={1.4}
+          color="#fde68a"
+          position={[0, 9.5, -5]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[5.5, 5.5, 1]}
+          scale={[5, 5, 1]}
         />
         <Lightformer
-          form="rect"
-          intensity={2.0}
-          color="#a855f7"
-          position={[-14, 3.6, -4]}
-          rotation={[0, Math.PI / 2, 0]}
-          scale={[22, 2.2, 1]}
-        />
-        <Lightformer
-          form="rect"
-          intensity={2.0}
-          color="#38bdf8"
-          position={[14, 3.6, -4]}
-          rotation={[0, -Math.PI / 2, 0]}
-          scale={[22, 2.2, 1]}
-        />
-        <Lightformer
-          form="rect"
-          intensity={1.6}
-          color="#00F0FF"
-          position={[0, 7.5, 13]}
+          form="circle"
+          intensity={0.95}
+          color="#7dd3fc"
+          position={[0, 10, 15]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[3, 12, 1]}
+          scale={[8, 8, 1]}
         />
         <Lightformer
           form="rect"
-          intensity={0.35}
+          intensity={0.28}
           color="#091020"
-          position={[0, -4, -4]}
+          position={[0, -5, -4]}
           rotation={[-Math.PI / 2, 0, 0]}
           scale={[34, 34, 1]}
         />

@@ -44,8 +44,8 @@ const DEPT_WALL_TREES: DeptWallTreeConfig[] = [
     dept: 'Ban Chuyên Môn',
     title: 'BAN CHUYÊN MÔN • NHIỆM KỲ 2026–2027',
     description: 'Tổ chức hoạt động học thuật chuyên sâu, dự án FE/BE/AI & định hướng thi đấu',
-    accent: '#00E5FF',
-    stageGlow: '#00F0FF',
+    accent: '#fb923c',
+    stageGlow: '#f97316',
     position: [-16.52, 0, -15.1],
     rotationY: Math.PI / 2,
     bannerWidth: 4.5,
@@ -56,8 +56,8 @@ const DEPT_WALL_TREES: DeptWallTreeConfig[] = [
     dept: 'Ban Truyền Thông',
     title: 'BAN TRUYỀN THÔNG • NHIỆM KỲ 2026–2027',
     description: 'Sáng tạo nội dung, thiết kế ấn phẩm & lan tỏa hình ảnh CLB đến cộng đồng',
-    accent: '#fb923c',
-    stageGlow: '#f97316',
+    accent: '#38bdf8',
+    stageGlow: '#00E5FF',
     position: [-5.8, 0, 8.05],
     rotationY: Math.PI,
     bannerWidth: 4.8,
@@ -190,15 +190,34 @@ function createStageGlowTexture(hexColor: string, intensityAlpha = 0.88): THREE.
     const r = Math.round(col.r * 255);
     const g = Math.round(col.g * 255);
     const b = Math.round(col.b * 255);
-    const grad = ctx.createRadialGradient(128, 128, 6, 128, 128, 126);
+    const grad = ctx.createRadialGradient(128, 128, 4, 128, 128, 124);
     grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${intensityAlpha})`);
-    grad.addColorStop(0.32, `rgba(${r}, ${g}, ${b}, ${(intensityAlpha * 0.52).toFixed(3)})`);
-    grad.addColorStop(0.68, `rgba(${r}, ${g}, ${b}, ${(intensityAlpha * 0.16).toFixed(3)})`);
+    grad.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, ${(intensityAlpha * 0.56).toFixed(3)})`);
+    grad.addColorStop(0.65, `rgba(${r}, ${g}, ${b}, ${(intensityAlpha * 0.2).toFixed(3)})`);
     grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 256, 256);
   }
   return finalizeCrispTexture(canvas, { anisotropy: 8, srgb: true });
+}
+
+function createBeamGradientAlphaTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    const grad = ctx.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.96)');
+    grad.addColorStop(0.28, 'rgba(200, 200, 200, 0.65)');
+    grad.addColorStop(0.68, 'rgba(110, 110, 110, 0.22)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 64, 256);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  return tex;
 }
 
 const ConnectorLine: React.FC<{
@@ -397,27 +416,29 @@ const DepartmentPortraitTree: React.FC<{
     [config.title, config.description, config.accent]
   );
   const stageGlowTex = useMemo(
-    () => createStageGlowTexture(config.stageGlow, 0.9),
+    () => createStageGlowTexture(config.stageGlow, 0.94),
     [config.stageGlow]
   );
+  const beamAlphaTex = useMemo(() => createBeamGradientAlphaTexture(), []);
 
   useEffect(() => {
     return () => {
       bannerTex.dispose();
       stageGlowTex.dispose();
+      beamAlphaTex.dispose();
     };
-  }, [bannerTex, stageGlowTex]);
+  }, [bannerTex, stageGlowTex, beamAlphaTex]);
 
   useFrame((state) => {
     const pulse = Math.sin(state.clock.elapsedTime * 1.45 + phaseOffset) * 0.5 + 0.5;
     if (colorSpotRef.current) {
-      colorSpotRef.current.intensity = 38 + pulse * 8;
+      colorSpotRef.current.intensity = 52 + pulse * 10;
     }
     if (outerBeamMatRef.current) {
-      outerBeamMatRef.current.opacity = 0.07 + pulse * 0.025;
+      outerBeamMatRef.current.opacity = 0.13 + pulse * 0.035;
     }
     if (wallAuraMatRef.current) {
-      wallAuraMatRef.current.opacity = 0.32 + pulse * 0.09;
+      wallAuraMatRef.current.opacity = 0.42 + pulse * 0.1;
     }
   });
 
@@ -479,14 +500,15 @@ const DepartmentPortraitTree: React.FC<{
           <meshBasicMaterial color={config.accent} toneMapped={false} />
         </mesh>
 
-        {/* Outer Colored Stage Beam Cone */}
-        <mesh position={[0, -2.48, 0]}>
-          <cylinderGeometry args={[0.15, beamRadiusBottom, 4.55, 36, 1, true]} />
+        {/* Outer Colored Stage Beam Cone (natural top-to-bottom fade via alphaMap) */}
+        <mesh position={[0, -2.55, 0]}>
+          <cylinderGeometry args={[0.15, beamRadiusBottom * 1.08, 4.7, 36, 1, true]} />
           <meshBasicMaterial
             ref={outerBeamMatRef}
             color={config.stageGlow}
+            alphaMap={beamAlphaTex}
             transparent
-            opacity={0.075}
+            opacity={0.14}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
             side={THREE.DoubleSide}
@@ -494,12 +516,13 @@ const DepartmentPortraitTree: React.FC<{
         </mesh>
 
         {/* Inner Crisp Core Stage Beam */}
-        <mesh position={[0, -2.42, 0]}>
-          <cylinderGeometry args={[0.08, beamRadiusBottom * 0.56, 4.4, 28, 1, true]} />
+        <mesh position={[0, -2.45, 0]}>
+          <cylinderGeometry args={[0.085, beamRadiusBottom * 0.6, 4.5, 28, 1, true]} />
           <meshBasicMaterial
             color="#ffffff"
+            alphaMap={beamAlphaTex}
             transparent
-            opacity={0.042}
+            opacity={0.075}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
             side={THREE.DoubleSide}
@@ -507,63 +530,75 @@ const DepartmentPortraitTree: React.FC<{
         </mesh>
       </group>
 
+      {/* Architectural Stage Backdrop Bay + Neon Vertical Side Blades so each Dept Pops */}
+      <mesh position={[0, 2.66, -0.045]}>
+        <boxGeometry args={[config.bannerWidth + 0.36, 4.58, 0.04]} />
+        <meshStandardMaterial color="#0b1322" roughness={0.62} metalness={0.35} />
+      </mesh>
+      {[-(config.bannerWidth + 0.36) / 2, (config.bannerWidth + 0.36) / 2].map((bx) => (
+        <mesh key={`stage-blade-${bx}`} position={[bx, 2.66, -0.015]}>
+          <boxGeometry args={[0.026, 4.46, 0.025]} />
+          <meshBasicMaterial color={config.stageGlow} toneMapped={false} />
+        </mesh>
+      ))}
+
       {/* Real Colored Stage Wash SpotLight + Soft White Key SpotLight (anti-glare balance) */}
       <spotLight
         ref={colorSpotRef}
         position={[0, 5.72, 2.72]}
         target={stageTargetRef.current}
-        intensity={42}
-        distance={14}
-        decay={1.7}
-        angle={isWideTree ? 0.64 : 0.5}
-        penumbra={0.78}
+        intensity={54}
+        distance={15}
+        decay={1.65}
+        angle={isWideTree ? 0.66 : 0.54}
+        penumbra={0.86}
         color={config.stageGlow}
       />
       <spotLight
         position={[0, 5.72, 2.72]}
         target={stageTargetRef.current}
-        intensity={22}
-        distance={12}
+        intensity={25}
+        distance={13}
         decay={1.8}
-        angle={isWideTree ? 0.52 : 0.4}
-        penumbra={0.76}
+        angle={isWideTree ? 0.54 : 0.42}
+        penumbra={0.82}
         color="#f8fafc"
       />
-      {/* Gentle Overhead Stage Wash Fill without frontal glare hotspot */}
+      {/* Soft Floor/Stage Uplight Glow for vivid department identity */}
       <pointLight
-        position={[0, 3.8, 2.25]}
-        intensity={3.5}
-        distance={8.0}
+        position={[0, 0.9, 1.45]}
+        intensity={5.5}
+        distance={6.5}
         decay={2}
-        color={config.accent}
+        color={config.stageGlow}
       />
 
       {/* Wall Radial Colored Stage Halo behind Tree */}
-      <mesh position={[0, 2.65, -0.02]}>
-        <planeGeometry args={[config.bannerWidth + 2.1, 5.1]} />
+      <mesh position={[0, 2.65, -0.018]}>
+        <planeGeometry args={[config.bannerWidth + 2.4, 5.3]} />
         <meshBasicMaterial
           ref={wallAuraMatRef}
           map={stageGlowTex}
           transparent
-          opacity={0.32}
+          opacity={0.44}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
       </mesh>
 
-      {/* Floor Stage Light Puddle & Edge Marker Strip in Front of Tree */}
-      <mesh position={[0, 0.013, 1.1]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[config.bannerWidth + 1.1, 3.2]} />
+      {/* Floor Stage Light Puddle & Glowing Edge Bar */}
+      <mesh position={[0, 0.015, 1.15]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[config.bannerWidth + 1.2, 3.4]} />
         <meshBasicMaterial
           map={stageGlowTex}
           transparent
-          opacity={0.52}
+          opacity={0.46}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
       </mesh>
-      <mesh position={[0, 0.016, 0.05]}>
-        <boxGeometry args={[config.bannerWidth - 0.1, 0.02, 0.04]} />
+      <mesh position={[0, 0.02, 0.05]}>
+        <boxGeometry args={[config.bannerWidth + 0.16, 0.022, 0.04]} />
         <meshBasicMaterial color={config.stageGlow} toneMapped={false} />
       </mesh>
       {/* Wall Section Title Banner comfortably at eye-visible upper height */}
