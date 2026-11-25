@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { CLUB_PROFILE } from '../../../data/heritageSeed';
 import { createBrushedMetalMaps } from '../utils/proceduralMaterials';
+import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
 import { ClubShirtExhibit } from './ClubShirtExhibit';
 import type { ExhibitItem, HoverPreview } from '../../../types/heritage';
 
@@ -77,7 +78,7 @@ const MuseumWallBoard: React.FC<MuseumWallBoardProps> = ({
         </mesh>
         <mesh position={[0, -0.024, 0]}>
           <boxGeometry args={[Math.min(fw * 0.42, 2.65), 0.008, 0.024]} />
-          <meshBasicMaterial color="#e0f2fe" />
+          <meshBasicMaterial color="#00F0FF" toneMapped={false} />
         </mesh>
       </group>
       <mesh
@@ -93,7 +94,14 @@ const MuseumWallBoard: React.FC<MuseumWallBoardProps> = ({
         onPointerOut={() => onHover(false)}
       >
         <planeGeometry args={planeArgs} />
-        <meshBasicMaterial map={texture} />
+        <meshStandardMaterial
+          map={texture}
+          emissive="#ffffff"
+          emissiveMap={texture}
+          emissiveIntensity={0.34}
+          roughness={0.44}
+          metalness={0.04}
+        />
       </mesh>
     </group>
   );
@@ -148,10 +156,7 @@ export const PerimeterGallery: React.FC = () => {
 
   // Left Wall Bay 1: 5 Milestones alternating above/below timeline axis so zero labels overlap
   const timelineTexture = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 2048;
-    canvas.height = 1024;
-    const ctx = canvas.getContext('2d');
+    const { canvas, ctx } = createHiResCanvas(2048, 1024, 1.5);
     if (ctx) {
       ctx.fillStyle = '#0c1322';
       ctx.fillRect(0, 0, 2048, 1024);
@@ -228,17 +233,12 @@ export const PerimeterGallery: React.FC = () => {
       ctx.font = '500 22px "JetBrains Mono", monospace';
       ctx.fillText('• Nhấp hoặc nhấn [E] để xem chi tiết từng cột mốc lịch sử', 80, 956);
     }
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.anisotropy = 16;
-    return texture;
+    return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, [timelineMilestones]);
 
   // Left Wall Bay 2: 6 Fixed Term Events (clean 3x2 grid with Goal & Audience)
   const activityTexture = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1680;
-    canvas.height = 1024;
-    const ctx = canvas.getContext('2d');
+    const { canvas, ctx } = createHiResCanvas(1680, 1024, 1.75);
     if (ctx) {
       ctx.fillStyle = '#0c1322';
       ctx.fillRect(0, 0, 1680, 1024);
@@ -303,17 +303,12 @@ export const PerimeterGallery: React.FC = () => {
       ctx.font = '500 20px "JetBrains Mono", monospace';
       ctx.fillText('• Nhấp hoặc nhấn [E] để xem chi tiết chuỗi sự kiện & tuyển thành viên', 60, 964);
     }
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.anisotropy = 16;
-    return texture;
+    return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, [activityHighlights]);
 
   // Right Wall Bay 1: 3-Term BCN Leadership & 4 Functional Departments
   const shirtPlaqueTexture = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1440;
-    canvas.height = 760;
-    const ctx = canvas.getContext('2d');
+    const { canvas, ctx } = createHiResCanvas(1440, 760, 2);
     if (ctx) {
       ctx.fillStyle = '#0c1322';
       ctx.fillRect(0, 0, 1440, 760);
@@ -374,17 +369,12 @@ export const PerimeterGallery: React.FC = () => {
       ctx.font = '600 22px "JetBrains Mono", monospace';
       ctx.fillText('→ Nhấp vào Áo CLB hoặc bảng này / nhấn [E] để tra cứu 26 hồ sơ BCN & Co-Founders', 68, 696);
     }
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.anisotropy = 16;
-    return texture;
+    return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, []);
 
   // Right Wall Bay 2: All 5 Weekly Academic Tracks (3 top + 2 bottom balanced cards)
   const academicTexture = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1440;
-    canvas.height = 800;
-    const ctx = canvas.getContext('2d');
+    const { canvas, ctx } = createHiResCanvas(1440, 800, 2);
     if (ctx) {
       ctx.fillStyle = '#0c1322';
       ctx.fillRect(0, 0, 1440, 800);
@@ -432,17 +422,12 @@ export const PerimeterGallery: React.FC = () => {
       ctx.font = '500 22px "JetBrains Mono", monospace';
       ctx.fillText('• Nhấp / [E] để xem chi tiết lộ trình FE, BE, AI & Data, CSLT & CSDL', 68, 732);
     }
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.anisotropy = 16;
-    return tex;
+    return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, []);
 
   // Front-Left Wall: Partners, TechXplore Recruitment 3 Steps & Contact Info
   const partnersContactTexture = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1440;
-    canvas.height = 760;
-    const ctx = canvas.getContext('2d');
+    const { canvas, ctx } = createHiResCanvas(1440, 760, 2);
     if (ctx) {
       ctx.fillStyle = '#0c1322';
       ctx.fillRect(0, 0, 1440, 760);
@@ -532,17 +517,12 @@ export const PerimeterGallery: React.FC = () => {
       ctx.font = '500 22px "JetBrains Mono", monospace';
       ctx.fillText('• Nhấp hoặc nhấn [E] để mở liên kết chính thức & thông tin tuyển thành viên', 68, 706);
     }
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.anisotropy = 16;
-    return tex;
+    return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, []);
 
   // Front-Right Wall: Member Testimonials
   const testimonialsTexture = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1440;
-    canvas.height = 760;
-    const ctx = canvas.getContext('2d');
+    const { canvas, ctx } = createHiResCanvas(1440, 760, 2);
     if (ctx) {
       ctx.fillStyle = '#0c1322';
       ctx.fillRect(0, 0, 1440, 760);
@@ -586,9 +566,7 @@ export const PerimeterGallery: React.FC = () => {
       ctx.font = '500 22px "JetBrains Mono", monospace';
       ctx.fillText('• Nhấp / [E] để xem danh sách Ban Chủ Nhiệm & Mentor các nhiệm kỳ', 68, 706);
     }
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.anisotropy = 16;
-    return tex;
+    return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, []);
 
   useEffect(() => {

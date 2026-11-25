@@ -67,10 +67,17 @@ export const InteractiveCorner: React.FC = () => {
 
   const videoTexture = useMemo(() => {
     const canvas = document.createElement('canvas');
-    canvas.width = 1024;
-    canvas.height = 576;
+    canvas.width = 1536;
+    canvas.height = 864;
+    const initCtx = canvas.getContext('2d');
+    if (initCtx) {
+      initCtx.scale(1.5, 1.5);
+      initCtx.imageSmoothingEnabled = true;
+      initCtx.imageSmoothingQuality = 'high';
+    }
     canvasRef.current = canvas;
     const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
     tex.minFilter = THREE.LinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.anisotropy = 16;
@@ -204,10 +211,10 @@ export const InteractiveCorner: React.FC = () => {
           roughness={0.25}
         />
       </RoundedBox>
-      {/* Subtle wall wash ambient rail behind screen */}
+      {/* Neon wall wash ambient rail behind screen */}
       <mesh position={[0, 3.05, -1.96]}>
-        <planeGeometry args={[7.6, 4.55]} />
-        <meshBasicMaterial color="#0ea5e9" transparent opacity={0.14} />
+        <planeGeometry args={[7.8, 4.7]} />
+        <meshBasicMaterial color="#00F0FF" transparent opacity={0.22} toneMapped={false} />
       </mesh>
       <RoundedBox position={[0, 3.05, -1.73]} args={[7.08, 4.05, 0.04]} radius={0.02} smoothness={4}>
         <meshStandardMaterial color="#0b101b" roughness={0.5} metalness={0.3} />
@@ -436,11 +443,11 @@ export const InteractiveCorner: React.FC = () => {
         </group>
 
         <pointLight
-          position={[0, 0.45, 0.15]}
-          intensity={isBookHovered ? 5.5 : 3.2}
-          distance={3.2}
-          decay={1.2}
-          color="#e0f2fe"
+          position={[0, 0.55, 0.2]}
+          intensity={isBookHovered ? 7.5 : 4.8}
+          distance={4.2}
+          decay={2}
+          color="#38bdf8"
         />
       </group>
     </group>

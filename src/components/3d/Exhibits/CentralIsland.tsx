@@ -10,6 +10,7 @@ import {
   createMarbleMaps,
   createPedestalPlaqueTexture,
 } from '../utils/proceduralMaterials';
+import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
 import type { ExhibitItem } from '../../../types/heritage';
 
 const PEDESTAL_SLOTS: Array<{
@@ -278,15 +279,12 @@ export const CentralIsland: React.FC = () => {
   );
 
   const centerMedallionTex = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d');
+    const { canvas, ctx } = createHiResCanvas(512, 512, 2);
     if (ctx) {
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(0, 0, 512, 512);
 
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.72)';
       ctx.lineWidth = 6;
       ctx.beginPath();
       ctx.arc(256, 256, 232, 0, Math.PI * 2);
@@ -306,9 +304,7 @@ export const CentralIsland: React.FC = () => {
       ctx.font = '600 20px "JetBrains Mono", monospace';
       ctx.fillText('HALL OF FAME • 360°', 256, 288);
     }
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.anisotropy = 8;
-    return tex;
+    return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, []);
 
   useEffect(() => {
@@ -379,7 +375,7 @@ export const CentralIsland: React.FC = () => {
         </mesh>
         <mesh position={[0, 0.176, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[4.42, 4.46, 64]} />
-          <meshBasicMaterial color="#38bdf8" />
+          <meshBasicMaterial color="#00F0FF" toneMapped={false} />
         </mesh>
       </RigidBody>
 
@@ -449,7 +445,14 @@ export const CentralIsland: React.FC = () => {
                 </RoundedBox>
                 <mesh position={[0, 0, 0.016]}>
                   <planeGeometry args={[0.74, 0.21]} />
-                  <meshBasicMaterial map={ex.plaqueTex} />
+                  <meshStandardMaterial
+                    map={ex.plaqueTex}
+                    emissive="#ffffff"
+                    emissiveMap={ex.plaqueTex}
+                    emissiveIntensity={0.32}
+                    roughness={0.34}
+                    metalness={0.1}
+                  />
                 </mesh>
               </group>
             )}
@@ -545,9 +548,9 @@ export const CentralIsland: React.FC = () => {
             {/* Focused soft vitrine interior illumination */}
             <pointLight
               position={[ex.position[0], 1.95, ex.position[2]]}
-              intensity={isHovered ? 4.8 : 3.0}
-              distance={2.8}
-              decay={1.2}
+              intensity={isHovered ? 6.5 : 4.2}
+              distance={3.2}
+              decay={2}
               color={ex.color}
             />
           </group>

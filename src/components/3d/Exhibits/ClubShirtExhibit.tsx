@@ -9,6 +9,7 @@ import {
   createMarbleMaps,
   createPedestalPlaqueTexture,
 } from '../utils/proceduralMaterials';
+import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
 
 interface ClubShirtExhibitProps {
   onInteract: () => void;
@@ -204,10 +205,7 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
 
   // Chest hexagon crest + back "TECHTONIC" print textures
   const chestBadgeTex = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d');
+    const { canvas, ctx } = createHiResCanvas(256, 256, 2);
     if (ctx) {
       ctx.clearRect(0, 0, 256, 256);
       ctx.strokeStyle = '#38bdf8';
@@ -235,16 +233,11 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
       ctx.lineTo(128, 174);
       ctx.stroke();
     }
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.anisotropy = 8;
-    return tex;
+    return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, []);
 
   const backPrintTex = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 160;
-    const ctx = canvas.getContext('2d');
+    const { canvas, ctx } = createHiResCanvas(512, 160, 2);
     if (ctx) {
       ctx.clearRect(0, 0, 512, 160);
       ctx.textAlign = 'center';
@@ -255,9 +248,7 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
       ctx.font = '600 22px "JetBrains Mono", monospace';
       ctx.fillText('DREAM IT • CODE IT', 256, 126);
     }
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.anisotropy = 8;
-    return tex;
+    return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, []);
 
   useEffect(() => {
@@ -318,15 +309,15 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
         {[-1.56, 1.56].map((rx) => (
           <mesh key={`alcove-rib-${rx}`} position={[rx, 0, 0.08]}>
             <boxGeometry args={[0.03, 3.55, 0.03]} />
-            <meshBasicMaterial color="#38bdf8" />
+            <meshBasicMaterial color="#00F0FF" toneMapped={false} />
           </mesh>
         ))}
         <mesh position={[0, 1.82, 0.08]}>
           <boxGeometry args={[3.15, 0.03, 0.03]} />
-          <meshBasicMaterial color="#7dd3fc" />
+          <meshBasicMaterial color="#00F0FF" toneMapped={false} />
         </mesh>
       </group>
-      <pointLight position={[12.8, 2.0, -4]} intensity={9} distance={6.5} decay={1.2} color="#e0f2fe" />
+      <pointLight position={[12.8, 2.2, -4]} intensity={10} distance={7.5} decay={2} color="#38bdf8" />
 
       {/* ================= LAYERED MARBLE PEDESTAL WITH PHYSICS ================= */}
       <RigidBody type="fixed" position={[14.5, 0.45, -4]}>
@@ -406,7 +397,14 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
         </RoundedBox>
         <mesh position={[0, 0, 0.024]}>
           <planeGeometry args={[0.98, 0.28]} />
-          <meshBasicMaterial map={plaqueMap} />
+          <meshStandardMaterial
+            map={plaqueMap}
+            emissive="#ffffff"
+            emissiveMap={plaqueMap}
+            emissiveIntensity={0.32}
+            roughness={0.34}
+            metalness={0.12}
+          />
         </mesh>
       </group>
 

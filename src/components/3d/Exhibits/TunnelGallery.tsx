@@ -3,6 +3,7 @@ import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { createBrushedMetalMaps } from '../utils/proceduralMaterials';
+import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
 import type { ExhibitItem, HoverPreview } from '../../../types/heritage';
 
 interface TunnelFrameConfig {
@@ -162,10 +163,7 @@ function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxW: number): s
 }
 
 function buildInfoPlaqueTexture(item: TunnelFrameConfig): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 640; // exact 1.60 aspect ratio matching 2.24 x 1.40 plane
-  const ctx = canvas.getContext('2d');
+  const { canvas, ctx } = createHiResCanvas(1024, 640, 1.75); // exact 1.60 aspect ratio matching 2.24 x 1.40 plane
   if (ctx) {
     const grad = ctx.createLinearGradient(0, 0, 1024, 640);
     grad.addColorStop(0, '#0c1628');
@@ -213,16 +211,11 @@ function buildInfoPlaqueTexture(item: TunnelFrameConfig): THREE.CanvasTexture {
       by += Math.max(1, bLines.slice(0, 2).length) * 34 + 22;
     });
   }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.anisotropy = 16;
-  return tex;
+  return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
 }
 
 function buildCaptionStripTexture(item: TunnelFrameConfig): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 148;
-  const ctx = canvas.getContext('2d');
+  const { canvas, ctx } = createHiResCanvas(1024, 148, 2);
   if (ctx) {
     ctx.fillStyle = '#0c1424';
     ctx.fillRect(0, 0, 1024, 148);
@@ -243,9 +236,7 @@ function buildCaptionStripTexture(item: TunnelFrameConfig): THREE.CanvasTexture 
     ctx.font = '400 21px Inter, sans-serif';
     ctx.fillText(item.subtitle, 28, 124, 968);
   }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.anisotropy = 16;
-  return tex;
+  return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
 }
 
 const TunnelFrame: React.FC<{
@@ -271,10 +262,7 @@ const TunnelFrame: React.FC<{
       if (cancelled) return;
       const w = 1024;
       const h = 640;
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
+      const { canvas, ctx } = createHiResCanvas(w, h, 1.75);
       if (ctx) {
         const targetRatio = w / h;
         const imgRatio = img.width / img.height;
@@ -291,10 +279,7 @@ const TunnelFrame: React.FC<{
         }
         ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
       }
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.anisotropy = 16;
-      setPhotoTex(tex);
+      setPhotoTex(finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true }));
     };
     img.src = item.image;
     return () => {
@@ -359,6 +344,14 @@ const TunnelFrame: React.FC<{
         />
       </RoundedBox>
 
+      {/* Neon side accent edge trim */}
+      {[-1.22, 1.22].map((nx) => (
+        <mesh key={`frame-neon-${nx}`} position={[nx, 0, 0]}>
+          <boxGeometry args={[0.018, item.kind === 'photo' ? 1.72 : 1.44, 0.025]} />
+          <meshBasicMaterial color={item.accent} toneMapped={false} />
+        </mesh>
+      ))}
+
       {/* Picture light bar above frame */}
       <group position={[0, item.kind === 'photo' ? 0.99 : 0.85, 0.16]}>
         <mesh rotation={[0, 0, Math.PI / 2]}>
@@ -367,7 +360,7 @@ const TunnelFrame: React.FC<{
         </mesh>
         <mesh position={[0, -0.018, 0]}>
           <boxGeometry args={[1.25, 0.008, 0.02]} />
-          <meshBasicMaterial color="#e0f2fe" />
+          <meshBasicMaterial color={item.accent} toneMapped={false} />
         </mesh>
       </group>
 
@@ -386,9 +379,23 @@ const TunnelFrame: React.FC<{
       >
         <planeGeometry args={[2.24, 1.4]} />
         {item.kind === 'photo' && photoTex ? (
-          <meshBasicMaterial map={photoTex} />
+          <meshStandardMaterial
+            map={photoTex}
+            emissive="#ffffff"
+            emissiveMap={photoTex}
+            emissiveIntensity={0.28}
+            roughness={0.38}
+            metalness={0.05}
+          />
         ) : (
-          <meshBasicMaterial map={infoTex ?? captionTex} />
+          <meshStandardMaterial
+            map={infoTex ?? captionTex}
+            emissive="#ffffff"
+            emissiveMap={infoTex ?? captionTex}
+            emissiveIntensity={0.32}
+            roughness={0.42}
+            metalness={0.04}
+          />
         )}
       </mesh>
 
@@ -402,7 +409,14 @@ const TunnelFrame: React.FC<{
           }}
         >
           <planeGeometry args={[2.24, 0.32]} />
-          <meshBasicMaterial map={captionTex} />
+          <meshStandardMaterial
+            map={captionTex}
+            emissive="#ffffff"
+            emissiveMap={captionTex}
+            emissiveIntensity={0.32}
+            roughness={0.42}
+            metalness={0.04}
+          />
         </mesh>
       )}
     </group>

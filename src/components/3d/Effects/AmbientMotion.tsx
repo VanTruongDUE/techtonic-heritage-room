@@ -28,8 +28,14 @@ export const HallParticleField: React.FC = () => {
   const pointsRef = useRef<THREE.Points>(null);
   const count = reducedMotion ? 60 : 220;
 
-  const positions = useMemo(() => {
+  const { positions, colors } = useMemo(() => {
     const arr = new Float32Array(count * 3);
+    const colArr = new Float32Array(count * 3);
+    const palette = [
+      new THREE.Color('#00F0FF'),
+      new THREE.Color('#38bdf8'),
+      new THREE.Color('#c084fc'),
+    ];
     let seed = 20250409;
     const rand = () => {
       seed = (seed * 16807) % 2147483647;
@@ -39,8 +45,13 @@ export const HallParticleField: React.FC = () => {
       arr[i * 3] = (rand() - 0.5) * 30;
       arr[i * 3 + 1] = 0.8 + rand() * 5.0;
       arr[i * 3 + 2] = -17 + rand() * 44;
+
+      const c = palette[i % palette.length];
+      colArr[i * 3] = c.r;
+      colArr[i * 3 + 1] = c.g;
+      colArr[i * 3 + 2] = c.b;
     }
-    return arr;
+    return { positions: arr, colors: colArr };
   }, [count]);
 
   // Smooth circular radial glow sprite so particles never render as hard squares
@@ -76,15 +87,16 @@ export const HallParticleField: React.FC = () => {
     <points ref={pointsRef}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+        <bufferAttribute attach="attributes-color" args={[colors, 3]} />
       </bufferGeometry>
       <pointsMaterial
         map={spriteTexture}
+        vertexColors
         alphaTest={0.01}
         blending={THREE.AdditiveBlending}
-        color="#bae6fd"
         depthWrite={false}
-        opacity={0.42}
-        size={0.07}
+        opacity={0.56}
+        size={0.08}
         sizeAttenuation
         transparent
       />

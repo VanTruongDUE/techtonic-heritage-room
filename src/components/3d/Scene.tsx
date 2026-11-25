@@ -6,7 +6,6 @@ import { CenterWall } from './Exhibits/CenterWall';
 import { PerimeterGallery } from './Exhibits/PerimeterGallery';
 import { CentralIsland } from './Exhibits/CentralIsland';
 import { InteractiveCorner } from './Exhibits/InteractiveCorner';
-import { ExecutiveOrgTree } from './Exhibits/ExecutiveOrgTree';
 import { TunnelGallery } from './Exhibits/TunnelGallery';
 import { MemberPortraitGallery } from './Exhibits/MemberPortraitGallery';
 import { PlayerController } from './PlayerController';
@@ -15,8 +14,8 @@ import { HallParticleField, OrgConstellationOrbit } from './Effects/AmbientMotio
 export const Scene: React.FC = () => {
   return (
     <Suspense fallback={null}>
-      <color attach="background" args={['#080d17']} />
-      <fog attach="fog" args={['#080d17', 38, 85]} />
+      <color attach="background" args={['#050811']} />
+      <fog attach="fog" args={['#050811', 48, 115]} />
 
       {/* Lighting System outside Physics */}
       <StudioLights />
@@ -32,7 +31,6 @@ export const Scene: React.FC = () => {
         <PerimeterGallery />
         <CentralIsland />
         <InteractiveCorner />
-        <ExecutiveOrgTree />
         <TunnelGallery />
         <MemberPortraitGallery />
         <PlayerController initialPosition={[0, 1.4, 25.8]} />

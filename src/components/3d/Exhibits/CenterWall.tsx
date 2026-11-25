@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { CLUB_PROFILE } from '../../../data/heritageSeed';
 import { useReducedMotionPreference } from '../Effects/AmbientMotion';
+import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
 import type { ExhibitItem, HoverPreview } from '../../../types/heritage';
 
 const MISSION_EXHIBIT: ExhibitItem = {
@@ -135,10 +136,7 @@ export const CenterWall: React.FC = () => {
 
   // Detailed side-by-side Vision & Mission texture directly readable before clicking
   const textTexture = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 2048;
-    canvas.height = 1024;
-    const ctx = canvas.getContext('2d');
+    const { canvas, ctx } = createHiResCanvas(2048, 1024, 1.5);
     if (ctx) {
       ctx.clearRect(0, 0, 2048, 1024);
 
@@ -205,17 +203,12 @@ export const CenterWall: React.FC = () => {
         724
       );
     }
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.anisotropy = 16;
-    return texture;
+    return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, []);
 
   // Back-left wing panel: Full detailed 7 Core Values + Club Metrics + Benefits
   const valuesBoardTexture = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1520;
-    canvas.height = 1100;
-    const ctx = canvas.getContext('2d');
+    const { canvas, ctx } = createHiResCanvas(1520, 1100, 2);
     if (ctx) {
       ctx.fillStyle = '#0c1322';
       ctx.fillRect(0, 0, 1520, 1100);
@@ -294,9 +287,7 @@ export const CenterWall: React.FC = () => {
       ctx.font = '500 21px "JetBrains Mono", monospace';
       ctx.fillText('• Nhấp hoặc nhấn [E] để xem đầy đủ Giá trị cốt lõi & Lợi ích', 68, 1020);
     }
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.anisotropy = 16;
-    return tex;
+    return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
   }, []);
 
   useEffect(() => {
@@ -351,11 +342,11 @@ export const CenterWall: React.FC = () => {
 
       <mesh position={[0, 6.08, 0.04]}>
         <boxGeometry args={[20.2, 0.06, 0.08]} />
-        <meshStandardMaterial color="#64748b" metalness={0.85} roughness={0.25} />
+        <meshStandardMaterial color="#00F0FF" emissive="#00F0FF" emissiveIntensity={1.6} toneMapped={false} />
       </mesh>
       <mesh position={[0, 0.62, 0.04]}>
         <boxGeometry args={[20.2, 0.06, 0.08]} />
-        <meshStandardMaterial color="#64748b" metalness={0.85} roughness={0.25} />
+        <meshStandardMaterial color="#38bdf8" emissive="#0ea5e9" emissiveIntensity={1.1} toneMapped={false} />
       </mesh>
 
       {/* Wireframe Geometric Halo around Emblem (inspired by events-hero-scene) */}
@@ -444,7 +435,15 @@ export const CenterWall: React.FC = () => {
         onPointerOut={() => setHoveringInteractive(false)}
       >
         <planeGeometry args={[14.8, 7.4]} />
-        <meshBasicMaterial map={textTexture} transparent />
+        <meshStandardMaterial
+          map={textTexture}
+          transparent
+          emissive="#ffffff"
+          emissiveMap={textTexture}
+          emissiveIntensity={0.42}
+          roughness={0.42}
+          metalness={0.05}
+        />
       </mesh>
 
       {/* Back-Left Wing: Framed 7 Core Values & Metrics Board with Corner Bolts */}
@@ -452,6 +451,10 @@ export const CenterWall: React.FC = () => {
         <RoundedBox position={[0, 0, -0.05]} args={[5.72, 4.22, 0.1]} radius={0.04} smoothness={4} castShadow>
           <meshStandardMaterial color="#334155" metalness={0.86} roughness={0.22} />
         </RoundedBox>
+        <mesh position={[0, 2.09, 0.005]}>
+          <boxGeometry args={[5.5, 0.024, 0.02]} />
+          <meshBasicMaterial color="#38bdf8" toneMapped={false} />
+        </mesh>
         {[
           [-2.74, 1.98],
           [2.74, 1.98],
@@ -481,7 +484,14 @@ export const CenterWall: React.FC = () => {
           onPointerOut={() => setHoveringInteractive(false)}
         >
           <planeGeometry args={[5.4, 3.9]} />
-          <meshBasicMaterial map={valuesBoardTexture} />
+          <meshStandardMaterial
+            map={valuesBoardTexture}
+            emissive="#ffffff"
+            emissiveMap={valuesBoardTexture}
+            emissiveIntensity={0.34}
+            roughness={0.44}
+            metalness={0.04}
+          />
         </mesh>
       </group>
     </group>

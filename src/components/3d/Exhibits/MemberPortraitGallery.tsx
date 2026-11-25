@@ -3,6 +3,7 @@ import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { createBrushedMetalMaps } from '../utils/proceduralMaterials';
+import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
 import type { Department, ExecutiveMember, HoverPreview } from '../../../types/heritage';
 
 const CURRENT_TERM = 'Nhiệm kỳ 2026 - 2027';
@@ -98,10 +99,7 @@ function getInitials(name: string): string {
 }
 
 function createBannerTexture(title: string, description: string, accent: string): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1152;
-  canvas.height = 136;
-  const ctx = canvas.getContext('2d');
+  const { canvas, ctx } = createHiResCanvas(1152, 136, 2);
   if (ctx) {
     ctx.fillStyle = '#0c1526';
     ctx.fillRect(0, 0, 1152, 136);
@@ -122,16 +120,11 @@ function createBannerTexture(title: string, description: string, accent: string)
     ctx.font = '500 22px Inter, sans-serif';
     ctx.fillText(description, 576, 104, 1080);
   }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.anisotropy = 16;
-  return tex;
+  return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
 }
 
 function createPortraitFallbackTexture(member: ExecutiveMember, accent: string): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = PORTRAIT_CANVAS_W;
-  canvas.height = PORTRAIT_CANVAS_H;
-  const ctx = canvas.getContext('2d');
+  const { canvas, ctx } = createHiResCanvas(PORTRAIT_CANVAS_W, PORTRAIT_CANVAS_H, 2);
   if (ctx) {
     const grad = ctx.createLinearGradient(0, 0, PORTRAIT_CANVAS_W, PORTRAIT_CANVAS_H);
     grad.addColorStop(0, '#0f1b31');
@@ -156,16 +149,11 @@ function createPortraitFallbackTexture(member: ExecutiveMember, accent: string):
     ctx.font = '600 24px "JetBrains Mono", monospace';
     ctx.fillText('TECHTONIC CLUB', PORTRAIT_CANVAS_W / 2, 570);
   }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.anisotropy = 8;
-  return tex;
+  return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
 }
 
 function createPortraitLabelTexture(member: ExecutiveMember, accent: string): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = 568;
-  canvas.height = 148;
-  const ctx = canvas.getContext('2d');
+  const { canvas, ctx } = createHiResCanvas(568, 148, 2);
   if (ctx) {
     ctx.fillStyle = '#0c1526';
     ctx.fillRect(0, 0, 568, 148);
@@ -182,9 +170,7 @@ function createPortraitLabelTexture(member: ExecutiveMember, accent: string): TH
     ctx.font = '600 22px "JetBrains Mono", monospace';
     ctx.fillText(`${member.role} • ${member.department}`, 284, 108, 530);
   }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.anisotropy = 16;
-  return tex;
+  return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
 }
 
 const ConnectorLine: React.FC<{
@@ -252,10 +238,7 @@ const PortraitCard: React.FC<{
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       if (cancelled) return;
-      const canvas = document.createElement('canvas');
-      canvas.width = PORTRAIT_CANVAS_W;
-      canvas.height = PORTRAIT_CANVAS_H;
-      const ctx = canvas.getContext('2d');
+      const { canvas, ctx } = createHiResCanvas(PORTRAIT_CANVAS_W, PORTRAIT_CANVAS_H, 2);
       if (ctx) {
         ctx.fillStyle = '#0d172a';
         ctx.fillRect(0, 0, PORTRAIT_CANVAS_W, PORTRAIT_CANVAS_H);
@@ -277,10 +260,7 @@ const PortraitCard: React.FC<{
         }
         ctx.drawImage(img, 0, 0, img.width, img.height, dx, dy, dw, dh);
       }
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.anisotropy = 16;
-      setPhotoTex(tex);
+      setPhotoTex(finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true }));
     };
     img.src = member.avatar;
 
@@ -344,12 +324,26 @@ const PortraitCard: React.FC<{
 
       <mesh position={[0, photoY, 0.006]}>
         <planeGeometry args={[innerW, photoH]} />
-        <meshBasicMaterial map={photoTex ?? fallbackTex} />
+        <meshStandardMaterial
+          map={photoTex ?? fallbackTex}
+          emissive="#ffffff"
+          emissiveMap={photoTex ?? fallbackTex}
+          emissiveIntensity={hovered ? 0.48 : 0.3}
+          roughness={0.36}
+          metalness={0.04}
+        />
       </mesh>
 
       <mesh position={[0, labelY, 0.006]}>
         <planeGeometry args={[innerW, labelH]} />
-        <meshBasicMaterial map={labelTex} />
+        <meshStandardMaterial
+          map={labelTex}
+          emissive="#ffffff"
+          emissiveMap={labelTex}
+          emissiveIntensity={hovered ? 0.5 : 0.34}
+          roughness={0.38}
+          metalness={0.05}
+        />
       </mesh>
     </group>
   );
@@ -407,7 +401,14 @@ const DepartmentPortraitTree: React.FC<{
         </RoundedBox>
         <mesh position={[0, 0, 0.006]}>
           <planeGeometry args={[config.bannerWidth - 0.1, 0.34]} />
-          <meshBasicMaterial map={bannerTex} />
+          <meshStandardMaterial
+            map={bannerTex}
+            emissive="#ffffff"
+            emissiveMap={bannerTex}
+            emissiveIntensity={0.38}
+            roughness={0.38}
+            metalness={0.06}
+          />
         </mesh>
       </group>
 

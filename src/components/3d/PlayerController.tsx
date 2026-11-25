@@ -17,7 +17,6 @@ const DRAG_THRESHOLD_PX = 5;
 
 function detectZone(x: number, z: number): string {
   if (z > 8.2) return 'Hành Lang Lối Vào';
-  if (Math.hypot(x - 10.8, z - 2.2) < 7.6) return 'Cây Sơ Đồ Ban Chủ Nhiệm';
   if (z > 0.2 && x < -4.2) return 'Đối Tác & Kết Nối';
   if (z > 0.2 && x > 4.2) return 'Cảm Nhận Thành Viên';
   if (x > 2.8 && z < -11.5) return 'Góc Truyền Thông & Lưu Bút';

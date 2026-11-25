@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createHiResCanvas, finalizeCrispTexture } from './textureUtils';
 
 export interface MaterialMapSet {
   map: THREE.CanvasTexture;
@@ -18,14 +19,10 @@ function configureRepeatedTexture(
   canvas: HTMLCanvasElement,
   repeatX: number,
   repeatY: number,
-  anisotropy = 8
+  anisotropy = 16,
+  srgb = true
 ): THREE.CanvasTexture {
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(repeatX, repeatY);
-  tex.anisotropy = anisotropy;
-  return tex;
+  return finalizeCrispTexture(canvas, { repeatX, repeatY, anisotropy, srgb });
 }
 
 /**
@@ -49,11 +46,11 @@ export function createFloorMaps(): MaterialMapSet {
   const bCtx = bCanvas.getContext('2d');
 
   if (dCtx && rCtx && bCtx) {
-    dCtx.fillStyle = '#141d2e';
+    dCtx.fillStyle = '#0c1320';
     dCtx.fillRect(0, 0, size, size);
 
-    // Honed stone sheen variation (~0.24 - 0.38 roughness)
-    rCtx.fillStyle = '#484848';
+    // Honed obsidian terrazzo sheen (~0.18 - 0.30 roughness) to reflect neon pools cleanly
+    rCtx.fillStyle = '#363636';
     rCtx.fillRect(0, 0, size, size);
 
     bCtx.fillStyle = '#8a8a8a';
@@ -138,9 +135,9 @@ export function createFloorMaps(): MaterialMapSet {
   }
 
   return {
-    map: configureRepeatedTexture(dCanvas, 6, 6, 16),
-    roughnessMap: configureRepeatedTexture(rCanvas, 6, 6, 8),
-    bumpMap: configureRepeatedTexture(bCanvas, 6, 6, 8),
+    map: configureRepeatedTexture(dCanvas, 6, 6, 16, true),
+    roughnessMap: configureRepeatedTexture(rCanvas, 6, 6, 16, false),
+    bumpMap: configureRepeatedTexture(bCanvas, 6, 6, 16, false),
   };
 }
 
@@ -236,9 +233,9 @@ export function createMarbleMaps(): MaterialMapSet {
   }
 
   return {
-    map: configureRepeatedTexture(dCanvas, 1, 1, 8),
-    roughnessMap: configureRepeatedTexture(rCanvas, 1, 1, 4),
-    bumpMap: configureRepeatedTexture(bCanvas, 1, 1, 4),
+    map: configureRepeatedTexture(dCanvas, 1, 1, 16, true),
+    roughnessMap: configureRepeatedTexture(rCanvas, 1, 1, 8, false),
+    bumpMap: configureRepeatedTexture(bCanvas, 1, 1, 8, false),
   };
 }
 
@@ -283,8 +280,8 @@ export function createBrushedMetalMaps(): {
   }
 
   return {
-    roughnessMap: configureRepeatedTexture(rCanvas, 2, 2, 4),
-    bumpMap: configureRepeatedTexture(bCanvas, 2, 2, 4),
+    roughnessMap: configureRepeatedTexture(rCanvas, 2, 2, 8, false),
+    bumpMap: configureRepeatedTexture(bCanvas, 2, 2, 8, false),
   };
 }
 
@@ -309,10 +306,10 @@ export function createArchitecturalWallMaps(): MaterialMapSet {
   const bCtx = bCanvas.getContext('2d');
 
   if (dCtx && rCtx && bCtx) {
-    dCtx.fillStyle = '#151e30';
+    dCtx.fillStyle = '#0d1422';
     dCtx.fillRect(0, 0, size, size);
 
-    rCtx.fillStyle = '#9c9c9c';
+    rCtx.fillStyle = '#b4b4b4';
     rCtx.fillRect(0, 0, size, size);
 
     bCtx.fillStyle = '#828282';
@@ -350,9 +347,9 @@ export function createArchitecturalWallMaps(): MaterialMapSet {
   }
 
   return {
-    map: configureRepeatedTexture(dCanvas, 4, 2, 8),
-    roughnessMap: configureRepeatedTexture(rCanvas, 4, 2, 4),
-    bumpMap: configureRepeatedTexture(bCanvas, 4, 2, 4),
+    map: configureRepeatedTexture(dCanvas, 4, 2, 16, true),
+    roughnessMap: configureRepeatedTexture(rCanvas, 4, 2, 8, false),
+    bumpMap: configureRepeatedTexture(bCanvas, 4, 2, 8, false),
   };
 }
 
@@ -396,8 +393,8 @@ export function createLeatherMaps(): {
   }
 
   return {
-    roughnessMap: configureRepeatedTexture(rCanvas, 2, 2, 4),
-    bumpMap: configureRepeatedTexture(bCanvas, 2, 2, 4),
+    roughnessMap: configureRepeatedTexture(rCanvas, 2, 2, 8, false),
+    bumpMap: configureRepeatedTexture(bCanvas, 2, 2, 8, false),
   };
 }
 
@@ -437,8 +434,8 @@ export function createFabricMaps(): { map: THREE.CanvasTexture; bumpMap: THREE.C
   }
 
   return {
-    map: configureRepeatedTexture(dCanvas, 5, 5, 8),
-    bumpMap: configureRepeatedTexture(bCanvas, 5, 5, 8),
+    map: configureRepeatedTexture(dCanvas, 5, 5, 16, true),
+    bumpMap: configureRepeatedTexture(bCanvas, 5, 5, 16, false),
   };
 }
 
@@ -450,10 +447,7 @@ export function createPedestalPlaqueTexture(
   year: string,
   highlight?: string
 ): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = 768;
-  canvas.height = 224;
-  const ctx = canvas.getContext('2d');
+  const { canvas, ctx } = createHiResCanvas(768, 224, 2);
 
   if (ctx) {
     const grad = ctx.createLinearGradient(0, 0, 768, 224);
@@ -515,19 +509,14 @@ export function createPedestalPlaqueTexture(
     });
   }
 
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.anisotropy = 16;
-  return tex;
+  return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
 }
 
 /**
  * Framed printed honor certificate texture for certificate exhibit inside vitrine.
  */
 export function createCertificateTexture(title: string, year: string): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = 768;
-  canvas.height = 1024;
-  const ctx = canvas.getContext('2d');
+  const { canvas, ctx } = createHiResCanvas(768, 1024, 1.5);
 
   if (ctx) {
     ctx.fillStyle = '#f8fafc';
@@ -597,19 +586,14 @@ export function createCertificateTexture(title: string, year: string): THREE.Can
     ctx.fillText('TT', 384, 799);
   }
 
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.anisotropy = 16;
-  return tex;
+  return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
 }
 
 /**
  * Open guestbook archival paper texture with subtle ruled lines and calligraphy header.
  */
 export function createOpenBookPageTexture(side: 'left' | 'right'): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 640;
-  const ctx = canvas.getContext('2d');
+  const { canvas, ctx } = createHiResCanvas(512, 640, 2);
 
   if (ctx) {
     ctx.fillStyle = '#f1f5f9';
@@ -656,7 +640,5 @@ export function createOpenBookPageTexture(side: 'left' | 'right'): THREE.CanvasT
     }
   }
 
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.anisotropy = 8;
-  return tex;
+  return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
 }

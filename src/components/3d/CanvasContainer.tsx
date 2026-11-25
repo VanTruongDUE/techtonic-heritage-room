@@ -17,7 +17,7 @@ export const CanvasContainer: React.FC = () => {
       : 'cursor-default';
 
   return (
-    <div className={`absolute inset-0 w-full h-full bg-[#080d17] ${cursorClass}`}>
+    <div className={`absolute inset-0 w-full h-full bg-[#050811] ${cursorClass}`}>
       <Canvas
         shadows="soft"
         camera={{
@@ -30,10 +30,11 @@ export const CanvasContainer: React.FC = () => {
           antialias: true,
           powerPreference: 'high-performance',
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.08,
+          toneMappingExposure: 1.15,
         }}
-        dpr={[1, 2]}
+        dpr={[1.5, 2]}
         onCreated={({ gl }) => {
+          gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.domElement.setAttribute('role', 'img');
           gl.domElement.setAttribute(
             'aria-label',
