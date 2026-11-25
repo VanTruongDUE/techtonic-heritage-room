@@ -14,6 +14,7 @@ const PORTRAIT_CANVAS_H = 800; // aspect = 0.71 exactly
 interface DeptWallTreeConfig {
   dept: Department;
   title: string;
+  description: string;
   accent: string;
   position: [number, number, number];
   rotationY: number;
@@ -27,50 +28,55 @@ const DEPT_WALL_TREES: DeptWallTreeConfig[] = [
   {
     dept: 'Ban Sự Kiện',
     title: 'BAN SỰ KIỆN • NHIỆM KỲ 2026–2027',
+    description: 'Tổ chức & điều phối các chương trình kết nối — tạo dấu ấn hình ảnh CLB',
     accent: '#a855f7',
     position: [16.52, 0, -15.1],
     rotationY: -Math.PI / 2,
-    bannerWidth: 4.3,
+    bannerWidth: 4.5,
     rowSteps: [0, 1.08, 1.12],
     cardWidth: [0.68, 0.68],
   },
   {
     dept: 'Ban Chuyên Môn',
     title: 'BAN CHUYÊN MÔN • NHIỆM KỲ 2026–2027',
+    description: 'Tổ chức hoạt động học thuật chuyên sâu, dự án FE/BE/AI & định hướng thi đấu',
     accent: '#38bdf8',
     position: [-16.52, 0, -15.1],
     rotationY: Math.PI / 2,
-    bannerWidth: 4.3,
+    bannerWidth: 4.5,
     rowSteps: [0, 1.18, 1.18],
     cardWidth: [0.68, 0.68],
   },
   {
     dept: 'Ban Truyền Thông',
     title: 'BAN TRUYỀN THÔNG • NHIỆM KỲ 2026–2027',
+    description: 'Sáng tạo nội dung, thiết kế ấn phẩm & lan tỏa hình ảnh CLB đến cộng đồng',
     accent: '#f59e0b',
     position: [-5.8, 0, 8.05],
     rotationY: Math.PI,
-    bannerWidth: 4.6,
+    bannerWidth: 4.8,
     rowSteps: [0, 0, 0.76],
     cardWidth: [0.68, 0.6],
   },
   {
     dept: 'Ban Nhân Sự',
     title: 'BAN NHÂN SỰ (2026–2027)',
+    description: 'Phụ trách gây quỹ, đối ngoại, hồ sơ nhân sự & hậu cần vận hành CLB',
     accent: '#34d399',
     position: [4.4, 0, 8.05],
     rotationY: Math.PI,
-    bannerWidth: 2.4,
+    bannerWidth: 3.0,
     rowSteps: [0, 0, 0],
     cardWidth: [0.68, 0.68],
   },
   {
     dept: 'Ban Chủ Nhiệm',
     title: 'BAN CHỦ NHIỆM (2026–2027)',
+    description: 'Điều hành chiến lược, giám sát vận hành & phối hợp toàn diện các ban',
     accent: '#fbbf24',
     position: [14.8, 0, 8.05],
     rotationY: Math.PI,
-    bannerWidth: 2.5,
+    bannerWidth: 3.0,
     rowSteps: [0, 1.04, 0],
     cardWidth: [0.68, 0.68],
   },
@@ -91,30 +97,30 @@ function getInitials(name: string): string {
     : parts[0].slice(0, 2).toUpperCase();
 }
 
-function createBannerTexture(title: string, accent: string, memberCount: number): THREE.CanvasTexture {
+function createBannerTexture(title: string, description: string, accent: string): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 128;
+  canvas.width = 1152;
+  canvas.height = 136;
   const ctx = canvas.getContext('2d');
   if (ctx) {
     ctx.fillStyle = '#0c1526';
-    ctx.fillRect(0, 0, 1024, 128);
+    ctx.fillRect(0, 0, 1152, 136);
 
     ctx.strokeStyle = accent;
     ctx.lineWidth = 4;
-    ctx.strokeRect(4, 4, 1016, 120);
+    ctx.strokeRect(4, 4, 1144, 128);
 
     ctx.fillStyle = accent;
-    ctx.fillRect(4, 4, 12, 120);
+    ctx.fillRect(4, 4, 12, 128);
 
     ctx.textAlign = 'center';
     ctx.fillStyle = '#f8fafc';
     ctx.font = 'bold 34px Inter, sans-serif';
-    ctx.fillText(title, 512, 58, 960);
+    ctx.fillText(title, 576, 56, 1080);
 
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '600 22px "JetBrains Mono", monospace';
-    ctx.fillText(`SƠ ĐỒ CÂY NHÂN SỰ (${memberCount} THÀNH VIÊN)`, 512, 100, 960);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '500 22px Inter, sans-serif';
+    ctx.fillText(description, 576, 104, 1080);
   }
   const tex = new THREE.CanvasTexture(canvas);
   tex.anisotropy = 16;
@@ -359,8 +365,8 @@ const DepartmentPortraitTree: React.FC<{
   const row3 = members.filter((m) => classifyTier(m.role) === 3);
 
   const bannerTex = useMemo(
-    () => createBannerTexture(config.title, config.accent, members.length),
-    [config.title, config.accent, members.length]
+    () => createBannerTexture(config.title, config.description, config.accent),
+    [config.title, config.description, config.accent]
   );
 
   useEffect(() => {
