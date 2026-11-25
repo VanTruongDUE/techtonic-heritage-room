@@ -193,11 +193,11 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
             className="h-[2px] w-full bg-gradient-to-r from-transparent via-[#00F5FF] to-[#c026d3]"
           />
 
-          {/* Subtle corner architectural brackets */}
-          <span aria-hidden="true" className="pointer-events-none absolute top-3.5 left-3.5 w-4 h-4 border-t-2 border-l-2 border-tech-cyan/60 rounded-tl-sm" />
-          <span aria-hidden="true" className="pointer-events-none absolute top-3.5 right-3.5 w-4 h-4 border-t-2 border-r-2 border-fuchsia-400/60 rounded-tr-sm" />
-          <span aria-hidden="true" className="pointer-events-none absolute bottom-3.5 left-3.5 w-4 h-4 border-b-2 border-l-2 border-tech-cyan/40 rounded-bl-sm" />
-          <span aria-hidden="true" className="pointer-events-none absolute bottom-3.5 right-3.5 w-4 h-4 border-b-2 border-r-2 border-fuchsia-400/40 rounded-br-sm" />
+          {/* Crisp architectural corner reticles */}
+          <span aria-hidden="true" className="pointer-events-none absolute top-3.5 left-3.5 w-3.5 h-3.5 border-t border-l border-tech-cyan/60" />
+          <span aria-hidden="true" className="pointer-events-none absolute top-3.5 right-3.5 w-3.5 h-3.5 border-t border-r border-fuchsia-400/60" />
+          <span aria-hidden="true" className="pointer-events-none absolute bottom-3.5 left-3.5 w-3.5 h-3.5 border-b border-l border-tech-cyan/40" />
+          <span aria-hidden="true" className="pointer-events-none absolute bottom-3.5 right-3.5 w-3.5 h-3.5 border-b border-r border-fuchsia-400/40" />
 
           <div className="grid grid-cols-1 lg:grid-cols-[1.18fr_0.82fr] gap-7 lg:gap-9 p-7 lg:p-10 items-center">
             {/* LEFT COLUMN: Brand Identity, Editorial Title, Live Metrics & Entry Dock */}
@@ -222,7 +222,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
               {/* Hero Display Headline */}
               <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight text-white leading-[1.1] mb-3">
                 Phòng Truyền Thống
-                <span className="block bg-gradient-to-r from-[#00F5FF] via-[#60a5fa] to-[#d946ef] bg-clip-text text-transparent mt-0.5">
+                <span className="block text-tech-cyan mt-0.5">
                   TechTonic Club
                 </span>
               </h1>
