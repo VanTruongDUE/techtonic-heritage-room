@@ -151,10 +151,21 @@ const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
     accent: '#fbbf24',
   },
 
-  // ================= 2. RIGHT WALL STRAIGHT ROW (8 pedestals, x = +15.45, step = 2.00m — mirror of Left Wall) =================
+  // ================= 2. RIGHT WALL STRAIGHT ROW (8 pedestals step 1.80m + 1 BSK feature pedestal) =================
+  {
+    id: 'pedestal-bsk-1',
+    position: [14.72, 0, -15.1],
+    rotationY: -Math.PI / 2,
+    tag: 'BAN SỰ KIỆN • BSK',
+    title: 'Tập Thể Ban Sự Kiện TechTonic',
+    description:
+      'Đội ngũ tổ chức và điều phối các chương trình lớn như TechXplore, TechWare, Mentor - Mentee và các hoạt động gắn kết cộng đồng DUE.',
+    image: '/assets/images/gallery/tw10.webp',
+    accent: '#c084fc',
+  },
   {
     id: 'pedestal-rw-1',
-    position: [15.45, 0, -7.8],
+    position: [15.45, 0, -7.9],
     rotationY: -Math.PI / 2,
     tag: 'CỐ VẤN • HỌC THUẬT',
     title: 'Sinh Hoạt Mentor & Chuyên Đề',
@@ -165,7 +176,7 @@ const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
   },
   {
     id: 'pedestal-rw-2',
-    position: [15.45, 0, -5.8],
+    position: [15.45, 0, -6.1],
     rotationY: -Math.PI / 2,
     tag: 'SỰ KIỆN • TECHWARE MÙA 1',
     title: 'Chuỗi Sự Kiện TechWare Mùa 1',
@@ -176,7 +187,7 @@ const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
   },
   {
     id: 'pedestal-rw-3',
-    position: [15.45, 0, -3.8],
+    position: [15.45, 0, -4.3],
     rotationY: -Math.PI / 2,
     tag: 'THỰC HÀNH • WORKSHOP',
     title: 'Workshop Công Nghệ TechWare',
@@ -187,7 +198,7 @@ const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
   },
   {
     id: 'pedestal-rw-4',
-    position: [15.45, 0, -1.8],
+    position: [15.45, 0, -2.5],
     rotationY: -Math.PI / 2,
     tag: 'SÂN KHẤU • TECHWARE',
     title: 'Sân Khấu Khai Mạc TechWare',
@@ -198,7 +209,7 @@ const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
   },
   {
     id: 'pedestal-rw-5',
-    position: [15.45, 0, 0.2],
+    position: [15.45, 0, -0.7],
     rotationY: -Math.PI / 2,
     tag: 'TRẢI NGHIỆM • TECHWARE',
     title: 'Không Gian Cộng Đồng TechWare',
@@ -209,7 +220,7 @@ const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
   },
   {
     id: 'pedestal-rw-6',
-    position: [15.45, 0, 2.2],
+    position: [15.45, 0, 1.1],
     rotationY: -Math.PI / 2,
     tag: 'SẢN PHẨM • TECHWARE',
     title: 'Triển Lãm Giải Pháp Công Nghệ',
@@ -220,7 +231,7 @@ const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
   },
   {
     id: 'pedestal-rw-7',
-    position: [15.45, 0, 4.2],
+    position: [15.45, 0, 2.9],
     rotationY: -Math.PI / 2,
     tag: 'CÔNG NGHỆ • KẾT NỐI',
     title: 'Hoạt Động Trải Nghiệm TechWare',
@@ -231,7 +242,7 @@ const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
   },
   {
     id: 'pedestal-rw-8',
-    position: [15.45, 0, 6.2],
+    position: [15.45, 0, 4.7],
     rotationY: -Math.PI / 2,
     tag: 'THIỆN NGUYỆN • ĐÊM NHẠC',
     title: 'Đêm Nhạc Gây Quỹ Thiện Nguyện',
@@ -377,6 +388,17 @@ const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
     accent: '#38bdf8',
   },
   {
+    id: 'pedestal-bns-1',
+    position: [4.4, 0, 6.25],
+    rotationY: Math.PI,
+    tag: 'BAN NHÂN SỰ • BNS',
+    title: 'Tập Thể Ban Nhân Sự TechTonic',
+    description:
+      'Phụ trách gắn kết thành viên, đối ngoại, gây quỹ, quản lý hồ sơ nhân sự và hậu cần vận hành các hoạt động của CLB.',
+    image: '/assets/images/gallery/mm8.webp',
+    accent: '#34d399',
+  },
+  {
     id: 'pedestal-fw-4',
     position: [7.2, 0, 7.05],
     rotationY: Math.PI,
@@ -408,6 +430,17 @@ const PHOTO_PEDESTALS: PhotoPedestalConfig[] = [
       'Study Hard - Play Harder — khoảnh khắc âm nhạc, thiện nguyện và du lịch nội bộ lưu giữ thanh xuân cùng TechTonic.',
     image: '/assets/images/gallery/ntnm3.webp',
     accent: '#f472b6',
+  },
+  {
+    id: 'pedestal-bcn-1',
+    position: [14.6, 0, 6.25],
+    rotationY: Math.PI,
+    tag: 'BAN CHỦ NHIỆM • BCN',
+    title: 'Ban Chủ Nhiệm & Điều Hành TechTonic',
+    description:
+      'Đội ngũ lãnh đạo định hướng chiến lược, kết nối 4 Ban chức năng và dẫn dắt hành trình phát triển của TechTonic Club qua các nhiệm kỳ.',
+    image: '/assets/images/tunnel/techware_ss1.webp',
+    accent: '#fbbf24',
   },
 ];
 
@@ -450,6 +483,7 @@ const PhotoPedestalStand: React.FC<{
 
   useEffect(() => {
     let cancelled = false;
+    let triedFallback = false;
     const img = new Image();
     img.onload = () => {
       if (cancelled) return;
@@ -474,6 +508,11 @@ const PhotoPedestalStand: React.FC<{
       }
       setPhotoTex(finalizeCrispTexture(canvas, { anisotropy: 4, srgb: true }));
     };
+    img.onerror = () => {
+      if (cancelled || triedFallback) return;
+      triedFallback = true;
+      img.src = '/assets/images/gallery/tw10.webp';
+    };
     img.src = item.image;
     return () => {
       cancelled = true;
@@ -483,9 +522,14 @@ const PhotoPedestalStand: React.FC<{
   useEffect(() => {
     return () => {
       captionTex.dispose();
+    };
+  }, [captionTex]);
+
+  useEffect(() => {
+    return () => {
       photoTex?.dispose();
     };
-  }, [captionTex, photoTex]);
+  }, [photoTex]);
 
   const exhibitData: ExhibitItem = useMemo(
     () => ({
