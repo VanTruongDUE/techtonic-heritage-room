@@ -96,7 +96,7 @@ export const StudioLights: React.FC = () => {
       <primitive object={timelineTarget.current} position={[-16.2, 3.0, -6]} />
       <primitive object={activitiesTarget.current} position={[-16.2, 3.0, 4]} />
       <primitive object={interactiveTarget.current} position={[9.5, 2.2, -16.5]} />
-      <primitive object={orgTreeTarget.current} position={[-9.6, 2.6, -12.2]} />
+      <primitive object={orgTreeTarget.current} position={[10.8, 2.6, 2.2]} />
 
       {/* 1. Balanced Natural Architectural Fill */}
       <hemisphereLight color="#c7dcff" groundColor="#1b2438" intensity={1.3} />
@@ -229,18 +229,18 @@ export const StudioLights: React.FC = () => {
         color="#e2e8f0"
       />
 
-      {/* 8. Back-Left Sanctuary: Soft Diffused Wash for BCN Org Tree (no glare hotspot) */}
+      {/* 8. Bottom-Right Quadrant: Soft Diffused Wash for BCN Org Tree (no glare hotspot) */}
       <spotLight
-        position={[-6.8, 6.1, -9.2]}
+        position={[7.0, 6.1, -1.6]}
         target={orgTreeTarget.current}
-        intensity={24}
+        intensity={26}
         distance={18}
         decay={1.2}
         angle={0.85}
         penumbra={0.9}
         color="#e8f1ff"
       />
-      <pointLight position={[-6.8, 2.6, -9.4]} intensity={8} distance={10} decay={1.2} color="#dbeafe" />
+      <pointLight position={[7.4, 2.6, -1.4]} intensity={9} distance={10} decay={1.2} color="#dbeafe" />
 
       {/* 9. Interactive Corner: LED Display & Guestbook Kiosk */}
       <spotLight

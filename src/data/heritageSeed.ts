@@ -864,8 +864,8 @@ export const TELEPORT_ZONES: TeleportZone[] = [
     label: 'Cây Sơ Đồ Ban Chủ Nhiệm',
     shortLabel: 'Cây BCN',
     description: 'Cây cấu trúc Ban Chủ Nhiệm theo cấp bậc Chủ nhiệm - Phó Chủ nhiệm - 4 Ban.',
-    position: [-4.4, 1.55, -6.4],
-    lookAt: [-9.6, 2.55, -12.2],
+    position: [5.6, 1.55, -2.5],
+    lookAt: [10.8, 2.75, 2.2],
   },
   {
     id: 'club-shirt',

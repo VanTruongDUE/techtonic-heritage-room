@@ -6,8 +6,9 @@ import { useHeritageStore } from '../../../store/useHeritageStore';
 import { createBrushedMetalMaps, createMarbleMaps } from '../utils/proceduralMaterials';
 import type { Department, ExecutiveMember, HoverPreview } from '../../../types/heritage';
 
-const TREE_POSITION: [number, number, number] = [-9.6, 0, -12.2];
-const TREE_ROTATION: [number, number, number] = [0, Math.PI / 4.2, 0];
+// Positioned in the bottom-right corner (+X, +Z when viewed top-down), angled cleanly toward center hall
+const TREE_POSITION: [number, number, number] = [10.8, 0, 2.2];
+const TREE_ROTATION: [number, number, number] = [0, -Math.PI * 0.74, 0];
 
 type TreeTermFilter =
   | 'Nhiệm kỳ 2026 - 2027'

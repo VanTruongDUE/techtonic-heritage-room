@@ -19,7 +19,7 @@ interface TunnelFrameConfig {
 }
 
 const TUNNEL_ITEMS: TunnelFrameConfig[] = [
-  // Left Tunnel Wall (x = -2.36)
+  // Left Tunnel Wall (x = -2.35)
   {
     id: 'tunnel-l1',
     side: 'left',
@@ -81,7 +81,7 @@ const TUNNEL_ITEMS: TunnelFrameConfig[] = [
     accent: '#fbbf24',
   },
 
-  // Right Tunnel Wall (x = +2.36)
+  // Right Tunnel Wall (x = +2.35)
   {
     id: 'tunnel-r1',
     side: 'right',
@@ -164,7 +164,7 @@ function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxW: number): s
 function buildInfoPlaqueTexture(item: TunnelFrameConfig): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 1024;
-  canvas.height = 640;
+  canvas.height = 640; // exact 1.60 aspect ratio matching 2.24 x 1.40 plane
   const ctx = canvas.getContext('2d');
   if (ctx) {
     const grad = ctx.createLinearGradient(0, 0, 1024, 640);
@@ -221,27 +221,27 @@ function buildInfoPlaqueTexture(item: TunnelFrameConfig): THREE.CanvasTexture {
 function buildCaptionStripTexture(item: TunnelFrameConfig): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 1024;
-  canvas.height = 176;
+  canvas.height = 148;
   const ctx = canvas.getContext('2d');
   if (ctx) {
     ctx.fillStyle = '#0c1424';
-    ctx.fillRect(0, 0, 1024, 176);
+    ctx.fillRect(0, 0, 1024, 148);
 
     ctx.strokeStyle = item.accent;
     ctx.lineWidth = 4;
-    ctx.strokeRect(6, 6, 1012, 164);
+    ctx.strokeRect(4, 4, 1016, 140);
 
     ctx.fillStyle = item.accent;
-    ctx.font = '700 20px "JetBrains Mono", monospace';
-    ctx.fillText(item.tag, 32, 48);
+    ctx.font = '700 19px "JetBrains Mono", monospace';
+    ctx.fillText(item.tag, 28, 42);
 
     ctx.fillStyle = '#f8fafc';
-    ctx.font = 'bold 30px Inter, sans-serif';
-    ctx.fillText(item.title, 32, 96, 960);
+    ctx.font = 'bold 28px Inter, sans-serif';
+    ctx.fillText(item.title, 28, 86, 968);
 
     ctx.fillStyle = '#cbd5e1';
-    ctx.font = '400 22px Inter, sans-serif';
-    ctx.fillText(item.subtitle, 32, 138, 960);
+    ctx.font = '400 21px Inter, sans-serif';
+    ctx.fillText(item.subtitle, 28, 124, 968);
   }
   const tex = new THREE.CanvasTexture(canvas);
   tex.anisotropy = 16;
@@ -253,7 +253,7 @@ const TunnelFrame: React.FC<{
   metalMaps: { roughnessMap: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture };
 }> = ({ item, metalMaps }) => {
   const { openModal, setHoveringInteractive } = useHeritageStore();
-  const [photoTex, setPhotoTex] = useState<THREE.Texture | null>(null);
+  const [photoTex, setPhotoTex] = useState<THREE.CanvasTexture | null>(null);
 
   const infoTex = useMemo(
     () => (item.kind === 'info' ? buildInfoPlaqueTexture(item) : null),
@@ -261,28 +261,44 @@ const TunnelFrame: React.FC<{
   );
   const captionTex = useMemo(() => buildCaptionStripTexture(item), [item]);
 
+  // Draw tunnel photos with aspect-locked object-cover crop onto a 1024x640 (1.60) canvas
+  // matching the 2.24 x 1.40 (1.60) plane -> ZERO stretching or image tearing
   useEffect(() => {
     if (item.kind !== 'photo' || !item.image) return;
-    let disposed = false;
-    const loader = new THREE.TextureLoader();
-    loader.load(
-      item.image,
-      (tex) => {
-        if (disposed) {
-          tex.dispose();
-          return;
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (cancelled) return;
+      const w = 1024;
+      const h = 640;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        const targetRatio = w / h;
+        const imgRatio = img.width / img.height;
+        let sx = 0;
+        let sy = 0;
+        let sw = img.width;
+        let sh = img.height;
+        if (imgRatio > targetRatio) {
+          sw = img.height * targetRatio;
+          sx = (img.width - sw) / 2;
+        } else {
+          sh = img.width / targetRatio;
+          sy = (img.height - sh) / 2;
         }
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.anisotropy = 16;
-        setPhotoTex(tex);
-      },
-      undefined,
-      () => {
-        // Fallback smoothly keeps info card visible
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
       }
-    );
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 16;
+      setPhotoTex(tex);
+    };
+    img.src = item.image;
     return () => {
-      disposed = true;
+      cancelled = true;
     };
   }, [item.kind, item.image]);
 
@@ -323,10 +339,16 @@ const TunnelFrame: React.FC<{
   const rotY = item.side === 'left' ? Math.PI / 2 : -Math.PI / 2;
   const handleOpen = () => openModal('exhibit', exhibitData);
 
+  // Lowered to eye level (y = 2.08) so frames read directly while walking down the tunnel
   return (
-    <group position={[x, 2.75, item.z]} rotation={[0, rotY, 0]}>
-      {/* Brushed Metallic Display Frame */}
-      <RoundedBox position={[0, 0, -0.04]} args={[2.56, 1.66, 0.08]} radius={0.03} smoothness={4} castShadow>
+    <group position={[x, 2.08, item.z]} rotation={[0, rotY, 0]}>
+      <RoundedBox
+        position={[0, 0, -0.04]}
+        args={[2.42, item.kind === 'photo' ? 1.84 : 1.56, 0.08]}
+        radius={0.03}
+        smoothness={4}
+        castShadow
+      >
         <meshStandardMaterial
           color="#26344d"
           roughnessMap={metalMaps.roughnessMap}
@@ -336,8 +358,9 @@ const TunnelFrame: React.FC<{
           roughness={0.24}
         />
       </RoundedBox>
+
       {/* Picture light bar above frame */}
-      <group position={[0, 0.9, 0.16]}>
+      <group position={[0, item.kind === 'photo' ? 0.99 : 0.85, 0.16]}>
         <mesh rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[0.02, 0.02, 1.35, 16]} />
           <meshStandardMaterial color="#64748b" metalness={0.88} roughness={0.2} />
@@ -348,9 +371,9 @@ const TunnelFrame: React.FC<{
         </mesh>
       </group>
 
-      {/* Main artwork / info panel */}
+      {/* Aspect-locked 2.24 x 1.40 (1.60) main graphic / photo plane */}
       <mesh
-        position={[0, 0.12, 0.01]}
+        position={[0, item.kind === 'photo' ? 0.14 : 0, 0.01]}
         onClick={(e) => {
           e.stopPropagation();
           handleOpen();
@@ -361,7 +384,7 @@ const TunnelFrame: React.FC<{
         }}
         onPointerOut={() => setHoveringInteractive(false)}
       >
-        <planeGeometry args={[2.36, 1.24]} />
+        <planeGeometry args={[2.24, 1.4]} />
         {item.kind === 'photo' && photoTex ? (
           <meshBasicMaterial map={photoTex} />
         ) : (
@@ -369,16 +392,16 @@ const TunnelFrame: React.FC<{
         )}
       </mesh>
 
-      {/* Caption strip anchored neatly along bottom of photo frames */}
+      {/* Caption strip cleanly below photo */}
       {item.kind === 'photo' && (
         <mesh
-          position={[0, -0.62, 0.012]}
+          position={[0, -0.71, 0.012]}
           onClick={(e) => {
             e.stopPropagation();
             handleOpen();
           }}
         >
-          <planeGeometry args={[2.36, 0.3]} />
+          <planeGeometry args={[2.24, 0.32]} />
           <meshBasicMaterial map={captionTex} />
         </mesh>
       )}

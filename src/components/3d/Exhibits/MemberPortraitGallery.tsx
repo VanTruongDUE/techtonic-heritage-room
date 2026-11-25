@@ -7,6 +7,10 @@ import type { Department, ExecutiveMember, HoverPreview } from '../../../types/h
 
 const CURRENT_TERM = 'Nhiệm kỳ 2026 - 2027';
 
+// True natural aspect ratio of pre-styled TechTonic portrait cards (~0.70 - 0.72)
+const PORTRAIT_CANVAS_W = 568;
+const PORTRAIT_CANVAS_H = 800; // aspect = 0.71 exactly
+
 interface DeptWallTreeConfig {
   dept: Department;
   title: string;
@@ -15,11 +19,10 @@ interface DeptWallTreeConfig {
   rotationY: number;
   bannerWidth: number;
   rowSteps: [number, number, number];
-  cardWidth: [number, number]; // [normal, compact row3]
+  cardWidth: [number, number]; // [row1&2 card width, row3 card width]
 }
 
-// Each Department gets its own dedicated wall bay arranged strictly as a 3-tier Portrait Tree:
-// Level 1 (Chủ nhiệm / Trưởng ban) -> Level 2 (Phó Chủ nhiệm / Phó ban) -> Level 3 (Thành viên)
+// Each Department has its own dedicated wall tree positioned comfortably at museum eye height
 const DEPT_WALL_TREES: DeptWallTreeConfig[] = [
   {
     dept: 'Ban Sự Kiện',
@@ -27,9 +30,9 @@ const DEPT_WALL_TREES: DeptWallTreeConfig[] = [
     accent: '#a855f7',
     position: [16.52, 0, -15.1],
     rotationY: -Math.PI / 2,
-    bannerWidth: 4.5,
-    rowSteps: [0, 1.18, 1.24],
-    cardWidth: [0.84, 0.84],
+    bannerWidth: 4.3,
+    rowSteps: [0, 1.08, 1.12],
+    cardWidth: [0.68, 0.68],
   },
   {
     dept: 'Ban Chuyên Môn',
@@ -37,9 +40,9 @@ const DEPT_WALL_TREES: DeptWallTreeConfig[] = [
     accent: '#38bdf8',
     position: [-16.52, 0, -15.1],
     rotationY: Math.PI / 2,
-    bannerWidth: 4.5,
-    rowSteps: [0, 1.32, 1.32],
-    cardWidth: [0.84, 0.84],
+    bannerWidth: 4.3,
+    rowSteps: [0, 1.18, 1.18],
+    cardWidth: [0.68, 0.68],
   },
   {
     dept: 'Ban Truyền Thông',
@@ -47,9 +50,9 @@ const DEPT_WALL_TREES: DeptWallTreeConfig[] = [
     accent: '#f59e0b',
     position: [-5.8, 0, 8.05],
     rotationY: Math.PI,
-    bannerWidth: 4.8,
-    rowSteps: [0, 0, 0.84],
-    cardWidth: [0.84, 0.72],
+    bannerWidth: 4.6,
+    rowSteps: [0, 0, 0.76],
+    cardWidth: [0.68, 0.6],
   },
   {
     dept: 'Ban Nhân Sự',
@@ -57,9 +60,9 @@ const DEPT_WALL_TREES: DeptWallTreeConfig[] = [
     accent: '#34d399',
     position: [4.4, 0, 8.05],
     rotationY: Math.PI,
-    bannerWidth: 2.5,
+    bannerWidth: 2.4,
     rowSteps: [0, 0, 0],
-    cardWidth: [0.84, 0.84],
+    cardWidth: [0.68, 0.68],
   },
   {
     dept: 'Ban Chủ Nhiệm',
@@ -67,9 +70,9 @@ const DEPT_WALL_TREES: DeptWallTreeConfig[] = [
     accent: '#fbbf24',
     position: [14.8, 0, 8.05],
     rotationY: Math.PI,
-    bannerWidth: 2.6,
-    rowSteps: [0, 1.15, 0],
-    cardWidth: [0.84, 0.84],
+    bannerWidth: 2.5,
+    rowSteps: [0, 1.04, 0],
+    cardWidth: [0.68, 0.68],
   },
 ];
 
@@ -120,32 +123,32 @@ function createBannerTexture(title: string, accent: string, memberCount: number)
 
 function createPortraitFallbackTexture(member: ExecutiveMember, accent: string): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
-  canvas.width = 480;
-  canvas.height = 540;
+  canvas.width = PORTRAIT_CANVAS_W;
+  canvas.height = PORTRAIT_CANVAS_H;
   const ctx = canvas.getContext('2d');
   if (ctx) {
-    const grad = ctx.createLinearGradient(0, 0, 480, 540);
+    const grad = ctx.createLinearGradient(0, 0, PORTRAIT_CANVAS_W, PORTRAIT_CANVAS_H);
     grad.addColorStop(0, '#0f1b31');
     grad.addColorStop(1, '#162744');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 480, 540);
+    ctx.fillRect(0, 0, PORTRAIT_CANVAS_W, PORTRAIT_CANVAS_H);
 
     ctx.beginPath();
-    ctx.arc(240, 240, 118, 0, Math.PI * 2);
+    ctx.arc(PORTRAIT_CANVAS_W / 2, 340, 132, 0, Math.PI * 2);
     ctx.fillStyle = '#0b1426';
     ctx.fill();
     ctx.strokeStyle = accent;
-    ctx.lineWidth = 6;
+    ctx.lineWidth = 7;
     ctx.stroke();
 
     ctx.fillStyle = accent;
-    ctx.font = 'bold 84px Inter, sans-serif';
+    ctx.font = 'bold 96px Inter, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(getInitials(member.name), 240, 268);
+    ctx.fillText(getInitials(member.name), PORTRAIT_CANVAS_W / 2, 372);
 
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '600 22px "JetBrains Mono", monospace';
-    ctx.fillText('TECHTONIC CLUB', 240, 430);
+    ctx.font = '600 24px "JetBrains Mono", monospace';
+    ctx.fillText('TECHTONIC CLUB', PORTRAIT_CANVAS_W / 2, 570);
   }
   const tex = new THREE.CanvasTexture(canvas);
   tex.anisotropy = 8;
@@ -154,24 +157,24 @@ function createPortraitFallbackTexture(member: ExecutiveMember, accent: string):
 
 function createPortraitLabelTexture(member: ExecutiveMember, accent: string): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
+  canvas.width = 568;
   canvas.height = 148;
   const ctx = canvas.getContext('2d');
   if (ctx) {
     ctx.fillStyle = '#0c1526';
-    ctx.fillRect(0, 0, 512, 148);
+    ctx.fillRect(0, 0, 568, 148);
 
     ctx.fillStyle = accent;
-    ctx.fillRect(0, 0, 512, 6);
+    ctx.fillRect(0, 0, 568, 6);
 
     ctx.textAlign = 'center';
     ctx.fillStyle = '#f8fafc';
-    ctx.font = 'bold 30px Inter, sans-serif';
-    ctx.fillText(member.name, 256, 60, 476);
+    ctx.font = 'bold 31px Inter, sans-serif';
+    ctx.fillText(member.name, 284, 60, 530);
 
     ctx.fillStyle = accent;
     ctx.font = '600 22px "JetBrains Mono", monospace';
-    ctx.fillText(`${member.role} • ${member.department}`, 256, 108, 476);
+    ctx.fillText(`${member.role} • ${member.department}`, 284, 108, 530);
   }
   const tex = new THREE.CanvasTexture(canvas);
   tex.anisotropy = 16;
@@ -188,7 +191,7 @@ const ConnectorLine: React.FC<{
   const dx = Math.abs(x2 - x1);
   const dy = Math.abs(y2 - y1);
   if (dx < 0.001 && dy < 0.001) return null;
-  const thickness = 0.024;
+  const thickness = 0.022;
   return (
     <group>
       <mesh position={[(x1 + x2) / 2, (y1 + y2) / 2, -0.015]}>
@@ -202,12 +205,21 @@ const ConnectorLine: React.FC<{
         />
       </mesh>
       <mesh position={[x1, y1, -0.012]}>
-        <sphereGeometry args={[0.022, 10, 8]} />
+        <sphereGeometry args={[0.02, 10, 8]} />
         <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.75} />
       </mesh>
     </group>
   );
 };
+
+function computeCardMetrics(width: number) {
+  const innerW = width - 0.07;
+  // Exact 0.71 portrait photo aspect ratio (matches 568x800 CanvasTexture 1:1 with zero stretch)
+  const photoH = innerW / (PORTRAIT_CANVAS_W / PORTRAIT_CANVAS_H);
+  const labelH = innerW * 0.255;
+  const height = photoH + labelH + 0.11;
+  return { innerW, photoH, labelH, height };
+}
 
 const PortraitCard: React.FC<{
   member: ExecutiveMember;
@@ -222,10 +234,11 @@ const PortraitCard: React.FC<{
   const [hovered, setHovered] = useState(false);
   const [photoTex, setPhotoTex] = useState<THREE.CanvasTexture | null>(null);
 
-  const height = width * 1.24;
+  const { innerW, photoH, labelH, height } = computeCardMetrics(width);
   const fallbackTex = useMemo(() => createPortraitFallbackTexture(member, accent), [member, accent]);
   const labelTex = useMemo(() => createPortraitLabelTexture(member, accent), [member, accent]);
 
+  // Draw pre-styled member portrait cards with true aspect-preserving fit (no stretching, no clipping!)
   useEffect(() => {
     if (!member.avatar) return;
     let cancelled = false;
@@ -234,27 +247,29 @@ const PortraitCard: React.FC<{
     img.onload = () => {
       if (cancelled) return;
       const canvas = document.createElement('canvas');
-      canvas.width = 480;
-      canvas.height = 540;
+      canvas.width = PORTRAIT_CANVAS_W;
+      canvas.height = PORTRAIT_CANVAS_H;
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.fillStyle = '#0d172a';
-        ctx.fillRect(0, 0, 480, 540);
+        ctx.fillRect(0, 0, PORTRAIT_CANVAS_W, PORTRAIT_CANVAS_H);
 
-        const targetRatio = 480 / 540;
+        const targetRatio = PORTRAIT_CANVAS_W / PORTRAIT_CANVAS_H;
         const imgRatio = img.width / img.height;
-        let sx = 0;
-        let sy = 0;
-        let sw = img.width;
-        let sh = img.height;
+        let dw = PORTRAIT_CANVAS_W;
+        let dh = PORTRAIT_CANVAS_H;
+        let dx = 0;
+        let dy = 0;
+
+        // Object-fit: contain inside exact 0.71 portrait canvas -> preserves entire card graphics without distortion
         if (imgRatio > targetRatio) {
-          sw = img.height * targetRatio;
-          sx = (img.width - sw) / 2;
+          dh = PORTRAIT_CANVAS_W / imgRatio;
+          dy = (PORTRAIT_CANVAS_H - dh) / 2;
         } else {
-          sh = img.width / targetRatio;
-          sy = Math.max(0, (img.height - sh) * 0.16);
+          dw = PORTRAIT_CANVAS_H * imgRatio;
+          dx = (PORTRAIT_CANVAS_W - dw) / 2;
         }
-        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 480, 540);
+        ctx.drawImage(img, 0, 0, img.width, img.height, dx, dy, dw, dh);
       }
       const tex = new THREE.CanvasTexture(canvas);
       tex.colorSpace = THREE.SRGBColorSpace;
@@ -288,9 +303,8 @@ const PortraitCard: React.FC<{
   );
 
   const handleOpen = () => openExecutiveBoard(member.department, CURRENT_TERM);
-  const innerW = width - 0.1;
-  const photoH = height * 0.72;
-  const labelH = height * 0.18;
+  const photoY = height / 2 - 0.045 - photoH / 2;
+  const labelY = -height / 2 + 0.04 + labelH / 2;
 
   return (
     <group
@@ -309,7 +323,7 @@ const PortraitCard: React.FC<{
         setHoveringInteractive(false);
       }}
     >
-      <RoundedBox position={[0, 0, -0.025]} args={[width, height, 0.05]} radius={0.022} smoothness={4} castShadow>
+      <RoundedBox position={[0, 0, -0.025]} args={[width, height, 0.05]} radius={0.02} smoothness={4} castShadow>
         <meshStandardMaterial
           color={isTopTier ? '#2b3954' : '#223048'}
           roughnessMap={metalMaps.roughnessMap}
@@ -322,12 +336,12 @@ const PortraitCard: React.FC<{
         />
       </RoundedBox>
 
-      <mesh position={[0, height * 0.085, 0.006]}>
+      <mesh position={[0, photoY, 0.006]}>
         <planeGeometry args={[innerW, photoH]} />
         <meshBasicMaterial map={photoTex ?? fallbackTex} />
       </mesh>
 
-      <mesh position={[0, -height * 0.375, 0.006]}>
+      <mesh position={[0, labelY, 0.006]}>
         <planeGeometry args={[innerW, labelH]} />
         <meshBasicMaterial map={labelTex} />
       </mesh>
@@ -355,12 +369,13 @@ const DepartmentPortraitTree: React.FC<{
     };
   }, [bannerTex]);
 
-  const row1Y = 4.66;
-  const row2Y = 3.22;
-  const row3Y = 1.78;
+  // Lowered natural eye-height layout (y = 1.02 .. 3.70, banner at y = 4.46 instead of 5.52)
+  const row1Y = 3.7;
+  const row2Y = 2.36;
+  const row3Y = 1.04;
   const [normW, row3W] = config.cardWidth;
-  const cardH = normW * 1.24;
-  const row3H = row3W * 1.24;
+  const cardH = computeCardMetrics(normW).height;
+  const row3H = computeCardMetrics(row3W).height;
 
   const layoutRow = (list: ExecutiveMember[], step: number, y: number, w: number) =>
     list.map((m, idx) => ({
@@ -379,13 +394,13 @@ const DepartmentPortraitTree: React.FC<{
 
   return (
     <group position={config.position} rotation={[0, config.rotationY, 0]}>
-      {/* Wall Section Title Banner */}
-      <group position={[0, 5.52, 0]}>
-        <RoundedBox position={[0, 0, -0.025]} args={[config.bannerWidth, 0.44, 0.045]} radius={0.02} smoothness={4}>
+      {/* Wall Section Title Banner comfortably at eye-visible upper height */}
+      <group position={[0, 4.5, 0]}>
+        <RoundedBox position={[0, 0, -0.025]} args={[config.bannerWidth, 0.42, 0.045]} radius={0.02} smoothness={4}>
           <meshStandardMaterial color="#1e293b" metalness={0.85} roughness={0.24} />
         </RoundedBox>
         <mesh position={[0, 0, 0.006]}>
-          <planeGeometry args={[config.bannerWidth - 0.1, 0.36]} />
+          <planeGeometry args={[config.bannerWidth - 0.1, 0.34]} />
           <meshBasicMaterial map={bannerTex} />
         </mesh>
       </group>
@@ -428,9 +443,9 @@ const DepartmentPortraitTree: React.FC<{
           {r2Nodes.length > 1 && (
             <ConnectorLine
               x1={r2Nodes[0].x}
-              y1={bus2Y + 0.07}
+              y1={bus2Y + 0.06}
               x2={r2Nodes[r2Nodes.length - 1].x}
-              y2={bus2Y + 0.07}
+              y2={bus2Y + 0.06}
               accent={config.accent}
             />
           )}
@@ -440,18 +455,12 @@ const DepartmentPortraitTree: React.FC<{
               x1={n.x}
               y1={row2Y - cardH / 2}
               x2={n.x}
-              y2={r2Nodes.length > 1 ? bus2Y + 0.07 : bus2Y}
+              y2={r2Nodes.length > 1 ? bus2Y + 0.06 : bus2Y}
               accent={config.accent}
             />
           ))}
           {r2Nodes.length > 1 && (
-            <ConnectorLine
-              x1={0}
-              y1={bus2Y + 0.07}
-              x2={0}
-              y2={bus2Y}
-              accent={config.accent}
-            />
+            <ConnectorLine x1={0} y1={bus2Y + 0.06} x2={0} y2={bus2Y} accent={config.accent} />
           )}
           {r3Nodes.length > 1 && (
             <ConnectorLine
@@ -475,7 +484,6 @@ const DepartmentPortraitTree: React.FC<{
         </>
       )}
 
-      {/* Render Tier Cards */}
       {r1Nodes.map((n) => (
         <PortraitCard
           key={n.member.id}

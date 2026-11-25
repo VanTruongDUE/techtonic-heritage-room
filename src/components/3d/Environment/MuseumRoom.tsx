@@ -45,7 +45,7 @@ const ISLAND_CORNER_STANCHIONS: [number, number, number][] = [
 
 const BENCH_POSITIONS: Array<{ pos: [number, number, number]; rotY: number }> = [
   { pos: [-5.8, 0, 2.2], rotY: 0.32 },
-  { pos: [5.8, 0, 2.2], rotY: -0.32 },
+  { pos: [4.2, 0, 2.8], rotY: -0.42 },
 ];
 
 export const MuseumRoom: React.FC = () => {
