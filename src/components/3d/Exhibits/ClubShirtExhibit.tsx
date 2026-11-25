@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
-import { RigidBody } from '@react-three/rapier';
+import { CylinderCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import {
   createBrushedMetalMaps,
@@ -509,14 +509,17 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
   ]);
 
   useFrame((_, delta) => {
+    const dt = Math.min(delta, 0.05);
     if (mannequinTurnRef.current) {
       // Smooth 360° boutique turntable rotation (slows gracefully on hover for close inspection)
-      mannequinTurnRef.current.rotation.y += delta * (hovered ? 0.1 : 0.4);
+      mannequinTurnRef.current.rotation.y += dt * (hovered ? 0.1 : 0.4);
       const targetScale = hovered ? 1.03 : 1;
-      mannequinTurnRef.current.scale.lerp(
-        new THREE.Vector3(targetScale, targetScale, targetScale),
-        0.12
+      const nextScale = THREE.MathUtils.lerp(
+        mannequinTurnRef.current.scale.x,
+        targetScale,
+        1 - Math.exp(-9 * dt)
       );
+      mannequinTurnRef.current.scale.setScalar(nextScale);
     }
     if (ringRef.current) {
       ringRef.current.rotation.z += hovered ? 0.022 : 0.007;
@@ -567,12 +570,9 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
         </mesh>
       </group>
 
-      {/* Soft Front-Left & Front-Right Boutique Studio Fill Lights (reveal real piqué weave & sky-blue flank!) */}
-      <pointLight position={[12.5, 2.55, -2.6]} intensity={11.5} distance={7.5} decay={2} color="#eef7ff" />
-      <pointLight position={[12.5, 2.35, -5.4]} intensity={9.5} distance={7.5} decay={2} color="#dbeafe" />
-
       {/* ================= LUXURY 2-TIER OBSIDIAN & CHAMPAGNE-GOLD MOTORIZED TURNTABLE ================= */}
-      <RigidBody type="fixed" position={[14.5, 0.42, -4]}>
+      <RigidBody type="fixed" colliders={false} position={[14.5, 0.42, -4]}>
+        <CylinderCollider args={[0.45, 1.7]} position={[0, 0, 0]} />
         {/* Tier 1: Wide Grounded Obsidian Marble Base + Warm Gold Under-Glow */}
         <mesh position={[0, -0.34, 0]} receiveShadow castShadow>
           <cylinderGeometry args={[1.66, 1.76, 0.18, 64]} />

@@ -46,12 +46,33 @@ export function countOfficialVisitedZones(visited: string[]): number {
   return OFFICIAL_ZONE_LABELS.filter((label) => visited.includes(label)).length;
 }
 
+function detectDefaultQuality(): GraphicsQuality {
+  try {
+    const canvas = document.createElement('canvas');
+    const gl =
+      (canvas.getContext('webgl2') as WebGL2RenderingContext | null) ||
+      (canvas.getContext('webgl') as WebGLRenderingContext | null);
+    if (gl) {
+      const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+      const renderer = dbg ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '') : '';
+      // Dedicated discrete desktop/gaming GPUs default to 'high'; integrated laptop GPUs default to silky 'balanced'
+      if (/RTX|GTX|Radeon RX|Radeon Pro|Quadro|Arc A\d/i.test(renderer)) {
+        return 'high';
+      }
+    }
+  } catch {
+    // Fallback safely to balanced
+  }
+  return 'balanced';
+}
+
 function readStoredQuality(): GraphicsQuality {
   try {
     const val = window.localStorage.getItem(QUALITY_STORAGE_KEY);
-    return val === 'balanced' ? 'balanced' : 'high';
+    if (val === 'high' || val === 'balanced') return val;
+    return detectDefaultQuality();
   } catch {
-    return 'high';
+    return 'balanced';
   }
 }
 
@@ -106,7 +127,7 @@ interface HeritageState {
 
   // Quality, MiniMap & Guided Tour
   graphicsQuality: GraphicsQuality;
-  setGraphicsQuality: (quality: GraphicsQuality) => void;
+  setGraphicsQuality: (quality: GraphicsQuality, silent?: boolean) => void;
   showMiniMap: boolean;
   toggleMiniMap: () => void;
   isGuidedTourActive: boolean;
@@ -264,20 +285,22 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
     set({ mouseSensitivity: Math.min(1.8, Math.max(0.4, Number(value.toFixed(2)))) }),
 
   graphicsQuality: readStoredQuality(),
-  setGraphicsQuality: (quality) => {
+  setGraphicsQuality: (quality, silent = false) => {
     try {
       window.localStorage.setItem(QUALITY_STORAGE_KEY, quality);
     } catch {
       // Ignore
     }
     set({ graphicsQuality: quality });
-    get().pushToast(
-      quality === 'high' ? 'Đồ họa: Chất lượng cao' : 'Đồ họa: Mượt mà tối ưu',
-      quality === 'high'
-        ? 'Phản chiếu sàn độ phân giải cao và khử răng cưa sắc nét.'
-        : 'Tối ưu khung hình ổn định cho máy cấu hình trung bình.',
-      'info'
-    );
+    if (!silent) {
+      get().pushToast(
+        quality === 'high' ? 'Đồ họa: Chất lượng cao' : 'Đồ họa: Mượt mà tối ưu (60 FPS)',
+        quality === 'high'
+          ? 'Bật phản chiếu gương thời gian thực và bóng đổ sắc nét.'
+          : 'Tối ưu tối đa cho laptop & mọi thiết bị để di chuyển mượt mà.',
+        'info'
+      );
+    }
   },
 
   showMiniMap: true,

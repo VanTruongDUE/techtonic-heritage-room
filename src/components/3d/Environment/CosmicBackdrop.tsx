@@ -245,9 +245,9 @@ export const CosmicBackdrop: React.FC = () => {
   const starTex = useMemo(() => createStarGlowTexture(), []);
   const moonHaloTex = useMemo(() => createMoonHaloTexture(), []);
 
-  // 3,200 Fine Pinpoint Distant Countryside Night-Sky Stars (far celestial sphere, delicate natural scale)
+  // 1,800 Fine Pinpoint Distant Countryside Night-Sky Stars (optimized vertex count, same realistic scale)
   const farStarField = useMemo(() => {
-    const count = 3200;
+    const count = 1800;
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     const palette = [
@@ -282,9 +282,9 @@ export const CosmicBackdrop: React.FC = () => {
     return { positions, colors };
   }, []);
 
-  // 480 Delicate Twinkling First-Magnitude Countryside Stars (small, crisp, distant — never giant blobs)
+  // 280 Delicate Twinkling First-Magnitude Countryside Stars (small, crisp, distant — never giant blobs)
   const brightStarField = useMemo(() => {
-    const count = 480;
+    const count = 280;
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     const palette = [

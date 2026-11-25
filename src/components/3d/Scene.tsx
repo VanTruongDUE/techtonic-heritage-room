@@ -13,8 +13,11 @@ import { PhotoPedestalGallery } from './Exhibits/PhotoPedestalGallery';
 import { PlayerController } from './PlayerController';
 import { HallParticleField, OrgConstellationOrbit } from './Effects/AmbientMotion';
 import { CodeCosmosOrbit } from './Effects/CodeCosmosOrbit';
+import { useHeritageStore } from '../../store/useHeritageStore';
 
 export const Scene: React.FC = () => {
+  const activeModal = useHeritageStore((s) => s.activeModal);
+
   return (
     <Suspense fallback={null}>
       <color attach="background" args={['#010206']} />
@@ -31,8 +34,8 @@ export const Scene: React.FC = () => {
       <OrgConstellationOrbit />
       <CodeCosmosOrbit />
 
-      {/* Physics World for Collisions and Character Movement */}
-      <Physics gravity={[0, -9.81, 0]}>
+      {/* Physics World (paused automatically while viewing 2D modals to save CPU) */}
+      <Physics gravity={[0, -9.81, 0]} paused={Boolean(activeModal)}>
         <MuseumRoom />
         <CenterWall />
         <PerimeterGallery />

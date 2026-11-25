@@ -26,7 +26,7 @@ export function useReducedMotionPreference(): boolean {
 export const HallParticleField: React.FC = () => {
   const reducedMotion = useReducedMotionPreference();
   const pointsRef = useRef<THREE.Points>(null);
-  const count = reducedMotion ? 60 : 220;
+  const count = reducedMotion ? 45 : 130;
 
   const { positions, colors } = useMemo(() => {
     const arr = new Float32Array(count * 3);

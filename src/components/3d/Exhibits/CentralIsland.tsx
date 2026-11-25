@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
-import { RigidBody } from '@react-three/rapier';
+import { CuboidCollider, CylinderCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import {
@@ -607,7 +607,8 @@ export const CentralIsland: React.FC = () => {
       const boost = hoveredIdx === idx ? 2.1 : 1;
       group.rotation.y += delta * slot.speed * boost;
       const targetScale = hoveredIdx === idx ? 1.07 : 1;
-      group.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.12);
+      const nextScale = THREE.MathUtils.lerp(group.scale.x, targetScale, 1 - Math.exp(-9 * Math.min(delta, 0.05)));
+      group.scale.setScalar(nextScale);
     });
 
     // Regal Sovereign Crest Core floating majestically above the surrounding vitrines
@@ -631,7 +632,9 @@ export const CentralIsland: React.FC = () => {
   return (
     <group position={[0, 0, 0]}>
       {/* ================= 3-TIER IMPERIAL OBSIDIAN & CHAMPAGNE-GOLD DAIS ================= */}
-      <RigidBody type="fixed" position={[0, 0.18, -5]}>
+      <RigidBody type="fixed" colliders={false} position={[0, 0.18, -5]}>
+        <CylinderCollider args={[0.18, 5.1]} position={[0, 0, 0]} />
+        <CylinderCollider args={[0.25, 1.8]} position={[0, 0.25, 0]} />
         {/* Tier 1: Wide Grounded Obsidian Plinth + Warm Gold Under-Glow Halo */}
         <mesh position={[0, -0.1, 0]} receiveShadow castShadow>
           <cylinderGeometry args={[5.05, 5.22, 0.16, 64]} />
@@ -734,7 +737,8 @@ export const CentralIsland: React.FC = () => {
       {/* ================= CENTRAL TECHTONIC SOVEREIGN MONUMENT & ROYAL CROWN HALO ================= */}
       <group position={[0, 0, -5]}>
         {/* Sculpted Tall Octagonal Fluted Obsidian & Gold Sovereign Column */}
-        <RigidBody type="fixed">
+        <RigidBody type="fixed" colliders={false}>
+          <CylinderCollider args={[0.95, 0.56]} position={[0, 1.45, 0]} />
           <mesh position={[0, 1.4, 0]} castShadow receiveShadow>
             <cylinderGeometry args={[0.34, 0.54, 1.76, 8]} />
             <meshPhysicalMaterial
@@ -907,7 +911,8 @@ export const CentralIsland: React.FC = () => {
         return (
           <group key={ex.item.id}>
             {/* Sculpted Obsidian & Champagne-Gold Museum Plinth */}
-            <RigidBody type="fixed" position={[ex.position[0], 0.78, ex.position[2]]}>
+            <RigidBody type="fixed" colliders={false} position={[ex.position[0], 0.78, ex.position[2]]}>
+              <CuboidCollider args={[0.66, 0.48, 0.66]} position={[0, 0.05, 0]} />
               {/* Grounded Stepped Base Foot + Recessed Gold Toe-Kick Light */}
               <RoundedBox position={[0, -0.36, 0]} args={[1.34, 0.12, 1.34]} radius={0.02} smoothness={4} castShadow receiveShadow>
                 <meshPhysicalMaterial color="#090f1c" roughness={0.26} metalness={0.42} clearcoat={0.5} />
@@ -1106,19 +1111,6 @@ export const CentralIsland: React.FC = () => {
               {idx === 2 && <HackathonGlobeModel hovered={isHovered} />}
               {idx >= 3 && <CrystalObeliskModel hovered={isHovered} />}
             </group>
-
-            {/* Crisp Neutral-Warm Museum Jewel Pin-Spot Illumination inside each Vitrine + Front Key for Hero Chalice */}
-            <pointLight
-              position={[
-                ex.position[0] + Math.sin(ex.plaqueRotationY) * 0.28,
-                2.08,
-                ex.position[2] + Math.cos(ex.plaqueRotationY) * 0.28,
-              ]}
-              intensity={isHovered ? 15.0 : 11.5}
-              distance={4.0}
-              decay={2}
-              color="#fff1cf"
-            />
           </group>
         );
       })}

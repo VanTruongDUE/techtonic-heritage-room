@@ -116,16 +116,15 @@
   .glass-panel {
     background: linear-gradient(
       180deg,
-      rgba(7, 12, 24, 0.9) 0%,
-      rgba(4, 8, 16, 0.93) 100%
+      rgba(7, 12, 24, 0.92) 0%,
+      rgba(4, 8, 16, 0.95) 100%
     );
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(0, 245, 255, 0.2);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      0 10px 28px rgba(1, 4, 12, 0.56),
-      0 0 18px rgba(0, 245, 255, 0.06);
+      0 8px 22px rgba(1, 4, 12, 0.52);
   }
 
   .glass-panel-glow {
@@ -136,14 +135,13 @@
       rgba(7, 13, 26, 0.96) 0%,
       rgba(4, 7, 15, 0.98) 100%
     );
-    backdrop-filter: blur(22px);
-    -webkit-backdrop-filter: blur(22px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(0, 245, 255, 0.38);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.12),
-      0 22px 54px rgba(0, 0, 0, 0.7),
-      0 0 28px rgba(0, 245, 255, 0.12),
-      0 0 42px rgba(184, 77, 255, 0.08);
+      0 18px 44px rgba(0, 0, 0, 0.68),
+      0 0 24px rgba(0, 245, 255, 0.11);
   }
 
   .glass-panel-glow::before {

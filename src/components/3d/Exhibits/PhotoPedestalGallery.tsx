@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { RoundedBox } from '@react-three/drei';
-import { RigidBody } from '@react-three/rapier';
+import { CuboidCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { createBrushedMetalMaps, createMarbleMaps } from '../utils/proceduralMaterials';
@@ -345,8 +345,9 @@ const PhotoPedestalStand: React.FC<{
 
   return (
     <group position={item.position} rotation={[0, item.rotationY, 0]}>
-      {/* Compact Low-Profile Gallery Plinth (dark-tech obsidian marble + crisp neon collar) */}
-      <RigidBody type="fixed" position={[0, 0.24, 0]}>
+      {/* Compact Low-Profile Gallery Plinth (dark-tech obsidian marble + explicit fast box collider) */}
+      <RigidBody type="fixed" colliders={false} position={[0, 0.24, 0]}>
+        <CuboidCollider args={[0.45, 0.36, 0.28]} position={[0, 0.12, 0]} />
         <RoundedBox position={[0, -0.21, 0]} args={[0.88, 0.06, 0.54]} radius={0.018} smoothness={4} receiveShadow>
           <meshStandardMaterial
             color="#121b2e"

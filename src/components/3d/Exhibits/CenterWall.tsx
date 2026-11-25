@@ -543,13 +543,16 @@ export const CenterWall: React.FC = () => {
   }, [playConsoleTex]);
 
   useFrame((state, delta) => {
-    // Silky smooth spring scale on the slim 3D Play Pill Button
+    const dt = Math.min(delta, 0.05);
+    // Silky smooth spring scale on the slim 3D Play Pill Button (zero per-frame allocations)
     if (playBtnGroupRef.current) {
       const targetS = isPlayBtnHovered ? 1.045 : 1.0;
-      playBtnGroupRef.current.scale.lerp(
-        new THREE.Vector3(targetS, targetS, targetS),
-        1 - Math.exp(-12 * Math.min(delta, 0.05))
+      const nextS = THREE.MathUtils.lerp(
+        playBtnGroupRef.current.scale.x,
+        targetS,
+        1 - Math.exp(-12 * dt)
       );
+      playBtnGroupRef.current.scale.setScalar(nextS);
     }
 
     if (!isCenterWallCinemaActive) {
@@ -557,10 +560,12 @@ export const CenterWall: React.FC = () => {
         emblemRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.08;
         emblemRef.current.position.y = 5.05 + Math.sin(state.clock.elapsedTime * 1.1) * 0.03;
         const targetScale = isEmblemHovered ? 1.08 : 1;
-        emblemRef.current.scale.lerp(
-          new THREE.Vector3(targetScale, targetScale, targetScale),
-          0.12
+        const nextScale = THREE.MathUtils.lerp(
+          emblemRef.current.scale.x,
+          targetScale,
+          1 - Math.exp(-9 * dt)
         );
+        emblemRef.current.scale.setScalar(nextScale);
       }
       if (!reducedMotion && haloRef.current) {
         haloRef.current.rotation.x += delta * 0.18;

@@ -237,45 +237,52 @@ export const MuseumRoom: React.FC = () => {
         </mesh>
       </RigidBody>
 
-      {/* Main Hall Planar Real-Time Space-Mirror Reflector Floor (dark-tech obsidian with vivid neon reflections) */}
+      {/* Main Hall Floor: Adaptive Single-Pass Obsidian Glass on Laptops / Fast 256px Planar Mirror on High-End GPUs */}
       <mesh position={[0, 0.002, -5]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[31.8, 25.8]} />
-        <MeshReflectorMaterial
-          key={`floor-reflector-${graphicsQuality}`}
-          blur={graphicsQuality === 'high' ? [260, 88] : [170, 65]}
-          resolution={graphicsQuality === 'high' ? 512 : 256}
-          mixBlur={0.86}
-          mixStrength={graphicsQuality === 'high' ? 0.92 : 0.72}
-          roughness={0.3}
-          depthScale={0.85}
-          minDepthThreshold={0.38}
-          maxDepthThreshold={1.4}
-          color="#070d1c"
-          metalness={0.46}
-          mirror={0.72}
-          map={floorMaps.map}
-          roughnessMap={floorMaps.roughnessMap}
-          bumpMap={floorMaps.bumpMap}
-          bumpScale={0.003}
-        />
+        {graphicsQuality === 'high' ? (
+          <MeshReflectorMaterial
+            key="floor-reflector-high"
+            blur={[160, 52]}
+            resolution={256}
+            mixBlur={0.84}
+            mixStrength={0.86}
+            roughness={0.28}
+            depthScale={0.8}
+            minDepthThreshold={0.38}
+            maxDepthThreshold={1.4}
+            color="#070d1c"
+            metalness={0.48}
+            mirror={0.68}
+            map={floorMaps.map}
+            roughnessMap={floorMaps.roughnessMap}
+            bumpMap={floorMaps.bumpMap}
+            bumpScale={0.003}
+          />
+        ) : (
+          <meshStandardMaterial
+            key="floor-glossy-balanced"
+            color="#091122"
+            map={floorMaps.map}
+            roughnessMap={floorMaps.roughnessMap}
+            bumpMap={floorMaps.bumpMap}
+            bumpScale={0.003}
+            roughness={0.2}
+            metalness={0.58}
+            envMapIntensity={1.65}
+          />
+        )}
       </mesh>
 
-      {/* Entrance Tunnel Mirror Runway Reflection Strip (reflects stadium walkout beams right underfoot!) */}
+      {/* Entrance Tunnel Glossy Obsidian Runway Strip (IBL reflection — zero extra scene render pass!) */}
       <mesh position={[0, 0.003, 18.5]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[4.75, 20.1]} />
-        <MeshReflectorMaterial
-          key={`tunnel-reflector-${graphicsQuality}`}
-          blur={[150, 48]}
-          resolution={graphicsQuality === 'high' ? 384 : 256}
-          mixBlur={0.78}
-          mixStrength={1.08}
-          roughness={0.22}
-          depthScale={0.6}
-          minDepthThreshold={0.35}
-          maxDepthThreshold={1.35}
-          color="#060b18"
-          metalness={0.54}
-          mirror={0.82}
+        <meshStandardMaterial
+          color="#070d1b"
+          roughnessMap={floorMaps.roughnessMap}
+          roughness={0.18}
+          metalness={0.62}
+          envMapIntensity={1.6}
         />
       </mesh>
 
@@ -905,9 +912,11 @@ export const MuseumRoom: React.FC = () => {
         <RigidBody
           key={`museum-bench-${idx}`}
           type="fixed"
+          colliders={false}
           position={bench.pos}
           rotation={[0, bench.rotY, 0]}
         >
+          <CuboidCollider args={[1.15, 0.28, 0.36]} position={[0, 0.28, 0]} />
           {/* Left & Right Brushed Steel Frame Legs */}
           {[-0.95, 0.95].map((lx) => (
             <group key={`bench-leg-${lx}`} position={[lx, 0.21, 0]}>

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
-import { RigidBody } from '@react-three/rapier';
+import { CuboidCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import {
@@ -67,20 +67,21 @@ export const InteractiveCorner: React.FC = () => {
 
   const videoTexture = useMemo(() => {
     const canvas = document.createElement('canvas');
-    canvas.width = 1536;
-    canvas.height = 864;
+    canvas.width = 768;
+    canvas.height = 432;
     const initCtx = canvas.getContext('2d');
     if (initCtx) {
-      initCtx.scale(1.5, 1.5);
+      initCtx.scale(0.75, 0.75);
       initCtx.imageSmoothingEnabled = true;
-      initCtx.imageSmoothingQuality = 'high';
+      initCtx.imageSmoothingQuality = 'medium';
     }
     canvasRef.current = canvas;
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.minFilter = THREE.LinearFilter;
     tex.magFilter = THREE.LinearFilter;
-    tex.anisotropy = 16;
+    tex.anisotropy = 2;
+    tex.generateMipmaps = false;
     textureRef.current = tex;
     return tex;
   }, []);
@@ -123,11 +124,14 @@ export const InteractiveCorner: React.FC = () => {
     }
 
     const elapsed = state.clock.elapsedTime;
+    const playerZ = state.camera.position.z;
+    const isCinemaActive = useHeritageStore.getState().isCenterWallCinemaActive;
+    // Skip dynamic LED texture upload while player is in Entrance Tunnel or watching Cinema TV (~8fps otherwise)
     if (
       canvasRef.current &&
       textureRef.current &&
-      (!isScreenPaused || lastDrawTimeRef.current === 0) &&
-      elapsed - lastDrawTimeRef.current >= 0.045
+      !isCinemaActive &&
+      (lastDrawTimeRef.current === 0 || (playerZ < 10 && !isScreenPaused && elapsed - lastDrawTimeRef.current >= 0.125))
     ) {
       lastDrawTimeRef.current = elapsed;
       const ctx = canvasRef.current.getContext('2d');
@@ -138,27 +142,30 @@ export const InteractiveCorner: React.FC = () => {
         ctx.fillStyle = '#040812';
         ctx.fillRect(0, 0, w, h);
 
-        ctx.fillStyle = 'rgba(0, 245, 255, 0.045)';
-        for (let y = 0; y < h; y += 8) {
+        ctx.fillStyle = 'rgba(0, 245, 255, 0.04)';
+        for (let y = 0; y < h; y += 12) {
           ctx.fillRect(0, y, w, 1);
         }
 
-        ctx.lineWidth = 3.2;
+        // Fast GPU-friendly dual-pass neon glow (avoids expensive CPU ctx.shadowBlur per frame)
         for (let wave = 0; wave < 3; wave++) {
-          ctx.save();
           const strokeCol = wave === 0 ? '#00F5FF' : wave === 1 ? '#b84dff' : '#38bdf8';
-          ctx.strokeStyle = strokeCol;
-          ctx.shadowColor = strokeCol;
-          ctx.shadowBlur = 12;
           ctx.beginPath();
-          for (let x = 0; x < w; x += 10) {
+          for (let x = 0; x < w; x += 16) {
             const freq = 0.014 + wave * 0.005;
-            const y = h / 2 + Math.sin(x * freq + elapsed * 2.6 + wave) * (36 + wave * 20);
+            const y = h / 2 + Math.sin(x * freq + elapsed * 2.4 + wave) * (36 + wave * 20);
             if (x === 0) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
           }
+          ctx.globalAlpha = 0.25;
+          ctx.lineWidth = 9;
+          ctx.strokeStyle = strokeCol;
           ctx.stroke();
-          ctx.restore();
+
+          ctx.globalAlpha = 1;
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = strokeCol;
+          ctx.stroke();
         }
 
         const slideIndex = Math.floor(elapsed / 5.5) % 3;
@@ -274,7 +281,8 @@ export const InteractiveCorner: React.FC = () => {
       ))}
 
       {/* ================= 2. MUSEUM GUESTBOOK LECTERN & OPEN HARDCOVER BOOK ================= */}
-      <RigidBody type="fixed" position={[1.75, 0.46, 1.4]}>
+      <RigidBody type="fixed" colliders={false} position={[1.75, 0.46, 1.4]}>
+        <CuboidCollider args={[0.7, 0.5, 0.56]} position={[0, 0.05, 0]} />
         <RoundedBox position={[0, -0.4, 0]} args={[1.38, 0.1, 1.08]} radius={0.03} smoothness={4} receiveShadow>
           <meshStandardMaterial
             color="#475569"
@@ -410,11 +418,11 @@ export const InteractiveCorner: React.FC = () => {
 
         <mesh position={[-0.175, 0.036, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[0.31, 0.42]} />
-          <meshStandardMaterial map={leftPageTex} roughness={0.85} />
+          <meshStandardMaterial map={leftPageTex} emissive="#ffffff" emissiveMap={leftPageTex} emissiveIntensity={isBookHovered ? 0.42 : 0.25} roughness={0.85} />
         </mesh>
         <mesh position={[0.175, 0.036, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[0.31, 0.42]} />
-          <meshStandardMaterial map={rightPageTex} roughness={0.85} />
+          <meshStandardMaterial map={rightPageTex} emissive="#ffffff" emissiveMap={rightPageTex} emissiveIntensity={isBookHovered ? 0.42 : 0.25} roughness={0.85} />
         </mesh>
 
         <mesh position={[0.02, 0.004, 0.27]} rotation={[0.25, 0, 0]}>
@@ -443,17 +451,9 @@ export const InteractiveCorner: React.FC = () => {
           </mesh>
           <mesh position={[0, 0.25, 0]}>
             <cylinderGeometry args={[0.013, 0.013, 0.025, 16]} />
-            <meshBasicMaterial color="#38bdf8" />
+            <meshBasicMaterial color="#00F5FF" toneMapped={false} />
           </mesh>
         </group>
-
-        <pointLight
-          position={[0, 0.55, 0.2]}
-          intensity={isBookHovered ? 7.5 : 4.8}
-          distance={4.2}
-          decay={2}
-          color="#38bdf8"
-        />
       </group>
     </group>
   );

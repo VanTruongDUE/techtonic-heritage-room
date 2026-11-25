@@ -354,7 +354,7 @@ export const HUD: React.FC = () => {
         !showJourneyPrompt &&
         !isCenterWallCinemaActive &&
         (controlMode === 'cursor' || !isLocked) && (
-        <div className="mt-auto mb-2.5 self-center glass-panel px-4 py-2.5 rounded-2xl border border-tech-cyan/28 pointer-events-auto max-w-[820px] w-full animate-panel-in">
+        <div className="mt-auto mb-2.5 self-center glass-panel px-3.5 py-2 rounded-2xl border border-tech-cyan/28 pointer-events-auto max-w-[840px] w-full animate-panel-in">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <MousePointerClick className="w-4 h-4 text-tech-cyan shrink-0" aria-hidden="true" />
@@ -399,7 +399,7 @@ export const HUD: React.FC = () => {
           </div>
 
           {showTeleportBar && (
-            <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-white/10">
+            <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-white/10">
               {TELEPORT_ZONES.map((zone, idx) => {
                 const isActive = currentZone === zone.label;
                 const isVisited = visitedZones.includes(zone.label);
@@ -408,7 +408,7 @@ export const HUD: React.FC = () => {
                     key={zone.id}
                     type="button"
                     onClick={() => requestTeleport(zone.id)}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+                    className={`px-2 py-1 rounded-lg text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer ${
                       isActive
                         ? 'bg-tech-cyan/20 text-tech-cyan border border-tech-cyan/60'
                         : 'bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 hover:border-tech-cyan/40'

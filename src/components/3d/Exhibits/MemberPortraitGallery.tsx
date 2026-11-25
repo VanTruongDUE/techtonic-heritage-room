@@ -375,11 +375,11 @@ const PortraitCard: React.FC<{
         <planeGeometry args={[innerW, photoH]} />
         <meshStandardMaterial
           map={photoTex ?? fallbackTex}
-          color="#d8e4f5"
+          color="#e2ecf8"
           emissive="#ffffff"
           emissiveMap={photoTex ?? fallbackTex}
-          emissiveIntensity={hovered ? 0.66 : 0.54}
-          roughness={0.94}
+          emissiveIntensity={hovered ? 0.78 : 0.66}
+          roughness={0.92}
           metalness={0}
         />
       </mesh>
@@ -388,11 +388,11 @@ const PortraitCard: React.FC<{
         <planeGeometry args={[innerW, labelH]} />
         <meshStandardMaterial
           map={labelTex}
-          color="#dce8f8"
+          color="#e4eef9"
           emissive="#ffffff"
           emissiveMap={labelTex}
-          emissiveIntensity={hovered ? 0.66 : 0.54}
-          roughness={0.92}
+          emissiveIntensity={hovered ? 0.78 : 0.66}
+          roughness={0.9}
           metalness={0}
         />
       </mesh>
@@ -410,8 +410,6 @@ const DepartmentPortraitTree: React.FC<{
   const row2 = members.filter((m) => classifyTier(m.role) === 2);
   const row3 = members.filter((m) => classifyTier(m.role) === 3);
 
-  const stageTargetRef = useRef<THREE.Object3D>(new THREE.Object3D());
-  const colorSpotRef = useRef<THREE.SpotLight>(null);
   const outerBeamMatRef = useRef<THREE.MeshBasicMaterial>(null);
   const wallAuraMatRef = useRef<THREE.MeshBasicMaterial>(null);
 
@@ -435,14 +433,11 @@ const DepartmentPortraitTree: React.FC<{
 
   useFrame((state) => {
     const pulse = Math.sin(state.clock.elapsedTime * 1.45 + phaseOffset) * 0.5 + 0.5;
-    if (colorSpotRef.current) {
-      colorSpotRef.current.intensity = 22 + pulse * 5;
-    }
     if (outerBeamMatRef.current) {
-      outerBeamMatRef.current.opacity = 0.075 + pulse * 0.02;
+      outerBeamMatRef.current.opacity = 0.08 + pulse * 0.025;
     }
     if (wallAuraMatRef.current) {
-      wallAuraMatRef.current.opacity = 0.42 + pulse * 0.1;
+      wallAuraMatRef.current.opacity = 0.45 + pulse * 0.12;
     }
   });
 
@@ -473,10 +468,7 @@ const DepartmentPortraitTree: React.FC<{
 
   return (
     <group position={config.position} rotation={[0, config.rotationY, 0]}>
-      {/* Aimed target right at center of this department portrait tree */}
-      <primitive object={stageTargetRef.current} position={[0, 2.48, 0.04]} />
-
-      {/* Theatrical Stage Spotlight Fixture + Dual Light Cones aimed squarely at tree */}
+      {/* Theatrical Stage Spotlight Fixture + Soft Volumetric Beams (zero heavy real-time WebGL lights!) */}
       <group position={[0, 5.95, 2.9]} rotation={[0.68, 0, 0]}>
         {/* Ceiling stem & mounting yoke */}
         <mesh position={[0, 0.24, 0]}>
@@ -546,38 +538,7 @@ const DepartmentPortraitTree: React.FC<{
         </mesh>
       ))}
 
-      {/* Balanced Glare-Free Stage SpotLights */}
-      <spotLight
-        ref={colorSpotRef}
-        position={[0, 5.72, 2.72]}
-        target={stageTargetRef.current}
-        intensity={24}
-        distance={15}
-        decay={1.75}
-        angle={isWideTree ? 0.66 : 0.54}
-        penumbra={0.92}
-        color={config.stageGlow}
-      />
-      <spotLight
-        position={[0, 5.72, 2.72]}
-        target={stageTargetRef.current}
-        intensity={12}
-        distance={13}
-        decay={1.85}
-        angle={isWideTree ? 0.54 : 0.42}
-        penumbra={0.9}
-        color="#f8fafc"
-      />
-      {/* Gentle Floor Stage Uplight Glow */}
-      <pointLight
-        position={[0, 0.85, 1.45]}
-        intensity={3.0}
-        distance={6.0}
-        decay={2}
-        color={config.stageGlow}
-      />
-
-      {/* Wall Radial Colored Stage Halo behind Tree */}
+      {/* Wall Radial Colored Stage Halo behind Tree (baked additive stage glow — 0 shader light cost) */}
       <mesh position={[0, 2.65, -0.018]}>
         <planeGeometry args={[config.bannerWidth + 2.4, 5.3]} />
         <meshBasicMaterial
