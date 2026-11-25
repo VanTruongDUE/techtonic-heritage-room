@@ -232,12 +232,24 @@ const CelestialEmbers: React.FC<{
 };
 
 /* ================= SHARED FLUID SKELETAL ANIMATION & SMOOTH-NORMAL ENGINE ================= */
+interface BeastBehaviorStep {
+  clip: string;
+  speed: number;
+  hold: number;
+  fade: number;
+  oneShot?: boolean;
+}
+
 interface RiggedBeastProps {
   url: string;
   scale: number;
   baseRotationY: number;
-  idleClips: string[];
+  phaseOffset: number;
+  headScale?: number;
+  earScale?: number;
+  behaviors: BeastBehaviorStep[];
   hoverClip: string;
+  hoverSpeed?: number;
   hovered: boolean;
   furBump: THREE.CanvasTexture;
   resolveMaterial: (meshName: string, materialName: string) => THREE.Material;
@@ -248,8 +260,12 @@ const MythicalRiggedBeast: React.FC<RiggedBeastProps> = ({
   url,
   scale,
   baseRotationY,
-  idleClips,
+  phaseOffset,
+  headScale = 1.12,
+  earScale = 1.15,
+  behaviors,
   hoverClip,
+  hoverSpeed = 0.62,
   hovered,
   resolveMaterial,
   renderAttachments,
@@ -259,8 +275,9 @@ const MythicalRiggedBeast: React.FC<RiggedBeastProps> = ({
   const mixerRef = useRef<THREE.AnimationMixer | null>(null);
   const actionsRef = useRef<Map<string, THREE.AnimationAction>>(new Map());
   const currentClipRef = useRef<string>('');
-  const switchTimerRef = useRef<number>(4.5);
-  const idleIdxRef = useRef<number>(0);
+  const targetClipSpeedRef = useRef<number>(behaviors[0]?.speed ?? 0.46);
+  const stepIdxRef = useRef<number>(Math.floor(phaseOffset) % Math.max(1, behaviors.length));
+  const switchTimerRef = useRef<number>(3.2 + (phaseOffset % 2.4));
   const prevHoveredRef = useRef<boolean>(false);
 
   // Clone the rigged skeleton safely, weld coincident normals for silky organic muscle smoothness,
@@ -316,7 +333,7 @@ const MythicalRiggedBeast: React.FC<RiggedBeastProps> = ({
     };
   }, [gltf.scene, resolveMaterial]);
 
-  // Build AnimationMixer and start with smooth organic idle blending
+  // Build AnimationMixer and start at each creature's asynchronous starting step
   useEffect(() => {
     const mixer = new THREE.AnimationMixer(sceneClone);
     mixerRef.current = mixer;
@@ -329,12 +346,18 @@ const MythicalRiggedBeast: React.FC<RiggedBeastProps> = ({
     }
     actionsRef.current = map;
 
+    const startStep = behaviors[stepIdxRef.current] ?? behaviors[0];
     const initialName =
-      idleClips.find((name) => map.has(name)) ?? gltf.animations[0]?.name ?? '';
+      (startStep && map.has(startStep.clip) ? startStep.clip : undefined) ??
+      gltf.animations[0]?.name ??
+      '';
     if (initialName) {
       const firstAction = map.get(initialName)!;
-      firstAction.reset().fadeIn(0.4).play();
+      firstAction.reset().fadeIn(0.6).play();
+      firstAction.time = (phaseOffset * 0.73) % Math.max(0.5, firstAction.getClip().duration);
       currentClipRef.current = initialName;
+      targetClipSpeedRef.current = startStep?.speed ?? 0.46;
+      mixer.timeScale = targetClipSpeedRef.current;
     }
 
     return () => {
@@ -343,7 +366,7 @@ const MythicalRiggedBeast: React.FC<RiggedBeastProps> = ({
       mixerRef.current = null;
       actionsRef.current.clear();
     };
-  }, [gltf.animations, idleClips, sceneClone]);
+  }, [behaviors, gltf.animations, phaseOffset, sceneClone]);
 
   // Cleanly dispose cloned smoothed geometries and custom shader materials on unmount
   useEffect(() => {
@@ -353,17 +376,28 @@ const MythicalRiggedBeast: React.FC<RiggedBeastProps> = ({
     };
   }, [disposedGeoms, disposedMats]);
 
-  const crossFadeTo = (targetName: string, duration = 0.72) => {
+  const crossFadeTo = (targetName: string, fadeDuration = 1.15, oneShot = false) => {
     const map = actionsRef.current;
     const next = map.get(targetName);
-    if (!next || currentClipRef.current === targetName) return;
+    if (!next) return;
+
+    if (currentClipRef.current === targetName && !oneShot) return;
 
     const prev = map.get(currentClipRef.current);
-    next.reset().setEffectiveTimeScale(1).setEffectiveWeight(1).play();
-    if (prev) {
-      prev.crossFadeTo(next, duration, true);
+    next.reset();
+    if (oneShot) {
+      next.setLoop(THREE.LoopOnce, 1);
+      next.clampWhenFinished = true;
     } else {
-      next.fadeIn(duration);
+      next.setLoop(THREE.LoopRepeat, Infinity);
+      next.clampWhenFinished = false;
+    }
+    next.setEffectiveTimeScale(1).setEffectiveWeight(1).play();
+
+    if (prev && prev !== next) {
+      prev.crossFadeTo(next, fadeDuration, true);
+    } else {
+      next.fadeIn(fadeDuration);
     }
     currentClipRef.current = targetName;
   };
@@ -372,49 +406,82 @@ const MythicalRiggedBeast: React.FC<RiggedBeastProps> = ({
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
 
-    // React to hover state transitions with commanding heroic flourish
+    // React gracefully to hover with a playful, friendly hop/salute (never jarring!)
     if (hovered !== prevHoveredRef.current) {
       prevHoveredRef.current = hovered;
       if (hovered && actionsRef.current.has(hoverClip)) {
-        crossFadeTo(hoverClip, 0.36);
-        switchTimerRef.current = 2.4;
+        targetClipSpeedRef.current = hoverSpeed;
+        crossFadeTo(hoverClip, 0.55, true);
+        const clipDur = actionsRef.current.get(hoverClip)?.getClip().duration ?? 1.4;
+        switchTimerRef.current = Math.max(1.4, (clipDur / hoverSpeed) * 0.82);
       } else {
-        const calmClip = idleClips[0];
-        if (calmClip && actionsRef.current.has(calmClip)) {
-          crossFadeTo(calmClip, 0.65);
-          switchTimerRef.current = 4.6;
+        const calmStep = behaviors[0];
+        if (calmStep && actionsRef.current.has(calmStep.clip)) {
+          targetClipSpeedRef.current = calmStep.speed;
+          crossFadeTo(calmStep.clip, 1.15, false);
+          switchTimerRef.current = calmStep.hold;
         }
       }
     }
 
-    // Autonomous organic clip cycling so the beast never repeats a stiff single loop
+    // Autonomous interleaved choreography across 7-8 varied gentle actions
     switchTimerRef.current -= dt;
     if (switchTimerRef.current <= 0) {
       if (hovered) {
-        // After signature flourish, settle into alert survey pose while hovered
-        const alertClip = idleClips[1] ?? idleClips[0];
-        if (alertClip) crossFadeTo(alertClip, 0.6);
-        switchTimerRef.current = 3.8;
+        // Gently alternate between curious look-around and relaxed breathing while hovered
+        const attentive = behaviors[1] ?? behaviors[0];
+        if (attentive) {
+          targetClipSpeedRef.current = Math.min(0.62, attentive.speed * 1.18);
+          crossFadeTo(attentive.clip, 1.0, false);
+          switchTimerRef.current = 4.2;
+        }
       } else {
-        idleIdxRef.current = (idleIdxRef.current + 1) % idleClips.length;
-        const nextIdle = idleClips[idleIdxRef.current];
-        if (nextIdle) crossFadeTo(nextIdle, 0.85);
-        switchTimerRef.current = 4.8 + (idleIdxRef.current % 2) * 1.6;
+        stepIdxRef.current = (stepIdxRef.current + 1) % behaviors.length;
+        const step = behaviors[stepIdxRef.current];
+        if (step && actionsRef.current.has(step.clip)) {
+          targetClipSpeedRef.current = step.speed;
+          crossFadeTo(step.clip, step.fade, Boolean(step.oneShot));
+          if (step.oneShot) {
+            const clipDur = actionsRef.current.get(step.clip)?.getClip().duration ?? 1.4;
+            // Lead out smoothly before the one-shot clip ends so there's zero frame-0 snap
+            switchTimerRef.current = Math.max(1.1, (clipDur / step.speed) * 0.8);
+          } else {
+            switchTimerRef.current = step.hold;
+          }
+        } else {
+          switchTimerRef.current = 4.0;
+        }
       }
     }
 
     if (mixerRef.current) {
-      const targetSpeed = hovered ? 1.06 : 0.78;
-      mixerRef.current.timeScale = THREE.MathUtils.lerp(mixerRef.current.timeScale, targetSpeed, dt * 4);
+      const targetSpeed = hovered ? Math.max(targetClipSpeedRef.current, 0.56) : targetClipSpeedRef.current;
+      mixerRef.current.timeScale = THREE.MathUtils.lerp(mixerRef.current.timeScale, targetSpeed, dt * 2.2);
       mixerRef.current.update(dt);
     }
 
-    // Gentle living presence turn & heroic hover scale emphasis
+    // Subtle Pixar-style cute companion proportions on Head & expressive Ears (post-mixer so clips don't overwrite)
+    const headBone = bonesMap['Head'];
+    if (headBone && headScale !== 1) {
+      headBone.scale.setScalar(headScale);
+    }
+    const earL = bonesMap['Ear1.L'];
+    const earR = bonesMap['Ear1.R'];
+    if (earL && earR && earScale !== 1) {
+      const earPulse = earScale + Math.sin(t * 1.8 + phaseOffset) * 0.02;
+      earL.scale.setScalar(earPulse);
+      earR.scale.setScalar(earPulse);
+    }
+
+    // Dreamy, multi-harmonic organic look-around sway & soft hover breathing lift
     if (rootRef.current) {
-      const subtleTurn = baseRotationY + Math.sin(t * 0.42) * 0.09;
-      rootRef.current.rotation.y = THREE.MathUtils.lerp(rootRef.current.rotation.y, subtleTurn, dt * 3);
-      const targetScale = scale * (hovered ? 1.06 : 1.0);
-      rootRef.current.scale.setScalar(THREE.MathUtils.lerp(rootRef.current.scale.x, targetScale, dt * 5));
+      const organicTurn =
+        baseRotationY +
+        Math.sin(t * 0.22 + phaseOffset) * 0.14 +
+        Math.sin(t * 0.095 + phaseOffset * 1.6) * 0.08;
+      rootRef.current.rotation.y = THREE.MathUtils.lerp(rootRef.current.rotation.y, organicTurn, dt * 1.8);
+      const targetScale = scale * (hovered ? 1.055 : 1.0);
+      rootRef.current.scale.setScalar(THREE.MathUtils.lerp(rootRef.current.scale.x, targetScale, dt * 3.8));
     }
   });
 
@@ -442,8 +509,8 @@ const CelestialWolfMascot: React.FC<{ hovered: boolean; furBump: THREE.CanvasTex
         return new THREE.MeshStandardMaterial({
           color: '#fff7ed',
           emissive: '#fb923c',
-          emissiveIntensity: 3.2,
-          roughness: 0.1,
+          emissiveIntensity: 2.35,
+          roughness: 0.08,
           toneMapped: false,
         });
       }
@@ -493,8 +560,17 @@ const CelestialWolfMascot: React.FC<{ hovered: boolean; furBump: THREE.CanvasTex
     [furBump]
   );
 
-  const idleClips = useMemo(
-    () => ['AnimalArmature|Idle', 'AnimalArmature|Idle_2', 'AnimalArmature|Idle_2_HeadLow'],
+  const behaviors = useMemo<BeastBehaviorStep[]>(
+    () => [
+      { clip: 'AnimalArmature|Idle', speed: 0.44, hold: 5.4, fade: 1.3 },
+      { clip: 'AnimalArmature|Idle_2', speed: 0.48, hold: 5.0, fade: 1.25 },
+      { clip: 'AnimalArmature|Eating', speed: 0.44, hold: 4.4, fade: 1.2 },
+      { clip: 'AnimalArmature|Idle_2_HeadLow', speed: 0.46, hold: 4.8, fade: 1.25 },
+      { clip: 'AnimalArmature|Walk', speed: 0.45, hold: 2.7, fade: 1.0 },
+      { clip: 'AnimalArmature|Idle', speed: 0.43, hold: 4.6, fade: 1.3 },
+      { clip: 'AnimalArmature|Jump_ToIdle', speed: 0.54, hold: 2.2, fade: 0.85, oneShot: true },
+      { clip: 'AnimalArmature|Idle_2', speed: 0.46, hold: 4.8, fade: 1.2 },
+    ],
     []
   );
 
@@ -502,12 +578,12 @@ const CelestialWolfMascot: React.FC<{ hovered: boolean; furBump: THREE.CanvasTex
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
     if (haloOuterRef.current) {
-      haloOuterRef.current.rotation.z += dt * (hovered ? 0.9 : 0.35);
-      haloOuterRef.current.position.y = 1.66 + Math.sin(t * 1.4) * 0.025;
+      haloOuterRef.current.rotation.z += dt * (hovered ? 0.65 : 0.24);
+      haloOuterRef.current.position.y = 1.52 + Math.sin(t * 1.1) * 0.022;
     }
     if (haloInnerRef.current) {
-      haloInnerRef.current.rotation.z -= dt * (hovered ? 1.2 : 0.5);
-      haloInnerRef.current.position.y = 1.66 + Math.sin(t * 1.4) * 0.025;
+      haloInnerRef.current.rotation.z -= dt * (hovered ? 0.85 : 0.34);
+      haloInnerRef.current.position.y = 1.52 + Math.sin(t * 1.1) * 0.022;
     }
   });
 
@@ -515,32 +591,36 @@ const CelestialWolfMascot: React.FC<{ hovered: boolean; furBump: THREE.CanvasTex
     <group>
       <MythicalRiggedBeast
         url="/models/mascots/wolf.glb"
-        scale={0.38}
+        scale={0.305}
         baseRotationY={0.28}
-        idleClips={idleClips}
-        hoverClip="AnimalArmature|Attack"
+        phaseOffset={0.4}
+        headScale={1.14}
+        earScale={1.16}
+        behaviors={behaviors}
+        hoverClip="AnimalArmature|Jump_ToIdle"
+        hoverSpeed={0.6}
         hovered={hovered}
         furBump={furBump}
         resolveMaterial={resolveMaterial}
       />
 
       {/* Sovereign Arcane Runic Halo behind Alpha Wolf's shoulders */}
-      <mesh ref={haloOuterRef} position={[0, 1.66, -0.34]} rotation={[0.14, 0.22, 0]}>
-        <torusGeometry args={[0.52, 0.011, 10, 56]} />
-        <meshBasicMaterial color="#fb923c" transparent opacity={hovered ? 0.92 : 0.56} toneMapped={false} />
+      <mesh ref={haloOuterRef} position={[0, 1.52, -0.28]} rotation={[0.14, 0.22, 0]}>
+        <torusGeometry args={[0.42, 0.009, 10, 56]} />
+        <meshBasicMaterial color="#fb923c" transparent opacity={hovered ? 0.9 : 0.52} toneMapped={false} />
       </mesh>
-      <mesh ref={haloInnerRef} position={[0, 1.66, -0.34]} rotation={[0.14, 0.22, Math.PI / 6]}>
-        <ringGeometry args={[0.37, 0.395, 6]} />
+      <mesh ref={haloInnerRef} position={[0, 1.52, -0.28]} rotation={[0.14, 0.22, Math.PI / 6]}>
+        <ringGeometry args={[0.3, 0.322, 6]} />
         <meshBasicMaterial
           color="#00F5FF"
           transparent
-          opacity={hovered ? 0.82 : 0.42}
+          opacity={hovered ? 0.8 : 0.38}
           side={THREE.DoubleSide}
           toneMapped={false}
         />
       </mesh>
 
-      <CelestialEmbers color="#fb923c" count={32} radius={0.62} height={1.25} hovered={hovered} />
+      <CelestialEmbers color="#fb923c" count={28} radius={0.52} height={1.05} hovered={hovered} />
     </group>
   );
 };
@@ -566,9 +646,9 @@ const PegasusWingsAndHorn: React.FC<{
 
   const { primaryFeather, secondaryFeather, hornGeom } = useMemo(() => {
     return {
-      primaryFeather: createSculptedFeatherGeometry(0.46, 0.095, 0.045),
-      secondaryFeather: createSculptedFeatherGeometry(0.32, 0.082, 0.032),
-      hornGeom: createSpiraledHornGeometry(0.24, 0.022),
+      primaryFeather: createSculptedFeatherGeometry(0.37, 0.08, 0.038),
+      secondaryFeather: createSculptedFeatherGeometry(0.26, 0.068, 0.028),
+      hornGeom: createSpiraledHornGeometry(0.195, 0.019),
     };
   }, []);
 
@@ -601,8 +681,9 @@ const PegasusWingsAndHorn: React.FC<{
     if (torsoBone && wingsHostRef.current && parent) {
       torsoBone.getWorldPosition(tmpPos);
       parent.worldToLocal(tmpPos);
-      wingsHostRef.current.position.set(tmpPos.x, tmpPos.y + 0.13, tmpPos.z - 0.02);
-      wingsHostRef.current.rotation.y = -0.24 + Math.sin(t * 0.42) * 0.09;
+      wingsHostRef.current.position.set(tmpPos.x, tmpPos.y + 0.1, tmpPos.z - 0.015);
+      wingsHostRef.current.rotation.y =
+        -0.24 + Math.sin(t * 0.22 + 2.1) * 0.14 + Math.sin(t * 0.095 + 2.1 * 1.6) * 0.08;
     }
 
     // Anchor spiraled Kirin horn seamlessly to the animated Head bone
@@ -633,28 +714,28 @@ const PegasusWingsAndHorn: React.FC<{
         if (tmpOrthoUp.y < 0) tmpOrthoUp.negate();
 
         hornHostRef.current.position.set(
-          tmpHeadPos.x + tmpForward.x * 0.042,
-          tmpHeadPos.y + 0.032,
-          tmpHeadPos.z + tmpForward.z * 0.042
+          tmpHeadPos.x + tmpForward.x * 0.035,
+          tmpHeadPos.y + 0.026,
+          tmpHeadPos.z + tmpForward.z * 0.035
         );
         // Map local +Y (exact horn axis) cleanly upward & heroically forward
         tmpAim.copy(tmpOrthoUp).multiplyScalar(0.74).addScaledVector(tmpForward, 0.67).normalize();
         hornHostRef.current.quaternion.setFromUnitVectors(yUp, tmpAim);
       } else {
-        hornHostRef.current.position.set(tmpHeadPos.x, tmpHeadPos.y + 0.11, tmpHeadPos.z + 0.08);
+        hornHostRef.current.position.set(tmpHeadPos.x, tmpHeadPos.y + 0.09, tmpHeadPos.z + 0.065);
       }
     }
 
-    // Graceful celestial Phoenix wing breathing & hover flare
-    const speed = hovered ? 3.8 : 1.75;
-    const flap = Math.sin(t * speed) * (hovered ? 0.32 : 0.16) + (hovered ? 0.22 : 0.08);
+    // Dreamy, slow celestial Phoenix wing breathing & soft hover flare
+    const speed = hovered ? 1.9 : 0.95;
+    const flap = Math.sin(t * speed) * (hovered ? 0.24 : 0.14) + (hovered ? 0.16 : 0.06);
     if (leftWingRef.current) {
       leftWingRef.current.rotation.z = flap;
-      leftWingRef.current.rotation.y = 0.28 + Math.cos(t * speed) * 0.08;
+      leftWingRef.current.rotation.y = 0.28 + Math.cos(t * speed) * 0.06;
     }
     if (rightWingRef.current) {
       rightWingRef.current.rotation.z = -flap;
-      rightWingRef.current.rotation.y = -0.28 - Math.cos(t * speed) * 0.08;
+      rightWingRef.current.rotation.y = -0.28 - Math.cos(t * speed) * 0.06;
     }
   });
 
@@ -701,11 +782,11 @@ const PegasusWingsAndHorn: React.FC<{
   return (
     <>
       {/* Sculpted Feathered Phoenix-Flame Wings tracking Torso bone */}
-      <group ref={wingsHostRef} position={[0, 0.72, 0.04]} rotation={[0, -0.24, 0]}>
-        <group ref={rightWingRef} position={[0.09, 0, 0]}>
+      <group ref={wingsHostRef} position={[0, 0.58, 0.03]} rotation={[0, -0.24, 0]} scale={0.82}>
+        <group ref={rightWingRef} position={[0.08, 0, 0]}>
           {renderWingSide(1)}
         </group>
-        <group ref={leftWingRef} position={[-0.09, 0, 0]}>
+        <group ref={leftWingRef} position={[-0.08, 0, 0]}>
           {renderWingSide(-1)}
         </group>
       </group>
@@ -738,8 +819,8 @@ const CelestialPegasusMascot: React.FC<{ hovered: boolean; furBump: THREE.Canvas
         return new THREE.MeshStandardMaterial({
           color: '#fef9c3',
           emissive: '#facc15',
-          emissiveIntensity: 3.1,
-          roughness: 0.1,
+          emissiveIntensity: 2.3,
+          roughness: 0.08,
           toneMapped: false,
         });
       }
@@ -820,8 +901,17 @@ const CelestialPegasusMascot: React.FC<{ hovered: boolean; furBump: THREE.Canvas
     [furBump]
   );
 
-  const idleClips = useMemo(
-    () => ['AnimalArmature|Idle', 'AnimalArmature|Idle_2', 'AnimalArmature|Idle_Headlow'],
+  const behaviors = useMemo<BeastBehaviorStep[]>(
+    () => [
+      { clip: 'AnimalArmature|Idle', speed: 0.44, hold: 5.2, fade: 1.3 },
+      { clip: 'AnimalArmature|Idle_2', speed: 0.48, hold: 5.0, fade: 1.25 },
+      { clip: 'AnimalArmature|Idle_Headlow', speed: 0.45, hold: 4.8, fade: 1.25 },
+      { clip: 'AnimalArmature|Walk', speed: 0.45, hold: 2.8, fade: 1.05 },
+      { clip: 'AnimalArmature|Idle', speed: 0.43, hold: 4.6, fade: 1.3 },
+      { clip: 'AnimalArmature|Eating', speed: 0.48, hold: 5.2, fade: 1.3 },
+      { clip: 'AnimalArmature|Jump_toIdle', speed: 0.55, hold: 2.6, fade: 0.9, oneShot: true },
+      { clip: 'AnimalArmature|Idle_2', speed: 0.46, hold: 4.8, fade: 1.25 },
+    ],
     []
   );
 
@@ -829,17 +919,21 @@ const CelestialPegasusMascot: React.FC<{ hovered: boolean; furBump: THREE.Canvas
     <group>
       <MythicalRiggedBeast
         url="/models/mascots/horse.glb"
-        scale={0.25}
+        scale={0.2}
         baseRotationY={-0.24}
-        idleClips={idleClips}
+        phaseOffset={2.1}
+        headScale={1.11}
+        earScale={1.15}
+        behaviors={behaviors}
         hoverClip="AnimalArmature|Jump_toIdle"
+        hoverSpeed={0.62}
         hovered={hovered}
         furBump={furBump}
         resolveMaterial={resolveMaterial}
         renderAttachments={(bones) => <PegasusWingsAndHorn bones={bones} hovered={hovered} />}
       />
 
-      <CelestialEmbers color="#f472b6" count={38} radius={0.68} height={1.45} hovered={hovered} />
+      <CelestialEmbers color="#f472b6" count={32} radius={0.56} height={1.2} hovered={hovered} />
     </group>
   );
 };
@@ -857,8 +951,8 @@ const CelestialFoxMascot: React.FC<{ hovered: boolean; furBump: THREE.CanvasText
         return new THREE.MeshStandardMaterial({
           color: '#ecfdf5',
           emissive: '#34d399',
-          emissiveIntensity: 3.3,
-          roughness: 0.1,
+          emissiveIntensity: 2.4,
+          roughness: 0.08,
           toneMapped: false,
         });
       }
@@ -922,21 +1016,30 @@ const CelestialFoxMascot: React.FC<{ hovered: boolean; furBump: THREE.CanvasText
     [furBump]
   );
 
-  const idleClips = useMemo(
-    () => ['AnimalArmature|Idle', 'AnimalArmature|Idle_2', 'AnimalArmature|Idle_2_HeadLow'],
+  const behaviors = useMemo<BeastBehaviorStep[]>(
+    () => [
+      { clip: 'AnimalArmature|Idle_2', speed: 0.46, hold: 4.8, fade: 1.25 },
+      { clip: 'AnimalArmature|Eating', speed: 0.45, hold: 4.2, fade: 1.2 },
+      { clip: 'AnimalArmature|Idle', speed: 0.44, hold: 5.0, fade: 1.3 },
+      { clip: 'AnimalArmature|Jump_ToIdle', speed: 0.56, hold: 2.1, fade: 0.85, oneShot: true },
+      { clip: 'AnimalArmature|Idle_2_HeadLow', speed: 0.46, hold: 4.8, fade: 1.25 },
+      { clip: 'AnimalArmature|Walk', speed: 0.46, hold: 2.6, fade: 1.0 },
+      { clip: 'AnimalArmature|Idle', speed: 0.43, hold: 4.8, fade: 1.3 },
+      { clip: 'AnimalArmature|Idle_HitReact_Left', speed: 0.44, hold: 1.4, fade: 0.7, oneShot: true },
+    ],
     []
   );
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     if (pearlRef.current) {
-      const orbitSpeed = hovered ? 1.9 : 1.05;
+      const orbitSpeed = hovered ? 1.25 : 0.68;
       pearlRef.current.position.set(
-        Math.cos(t * orbitSpeed) * 0.46,
-        1.64 + Math.sin(t * 2.1) * 0.06,
-        Math.sin(t * orbitSpeed) * 0.46
+        Math.cos(t * orbitSpeed) * 0.38,
+        1.5 + Math.sin(t * 1.45) * 0.05,
+        Math.sin(t * orbitSpeed) * 0.38
       );
-      pearlRef.current.rotation.y = t * 1.4;
+      pearlRef.current.rotation.y = t * 0.9;
     }
   });
 
@@ -944,35 +1047,39 @@ const CelestialFoxMascot: React.FC<{ hovered: boolean; furBump: THREE.CanvasText
     <group>
       <MythicalRiggedBeast
         url="/models/mascots/fox.glb"
-        scale={0.36}
+        scale={0.29}
         baseRotationY={-0.25}
-        idleClips={idleClips}
+        phaseOffset={3.8}
+        headScale={1.15}
+        earScale={1.18}
+        behaviors={behaviors}
         hoverClip="AnimalArmature|Jump_ToIdle"
+        hoverSpeed={0.62}
         hovered={hovered}
         furBump={furBump}
         resolveMaterial={resolveMaterial}
       />
 
       {/* Orbiting Sacred Jade Spirit Pearl */}
-      <group ref={pearlRef} position={[0.42, 1.64, 0.15]}>
+      <group ref={pearlRef} position={[0.36, 1.5, 0.12]}>
         <mesh>
-          <sphereGeometry args={[0.052, 20, 16]} />
+          <sphereGeometry args={[0.044, 20, 16]} />
           <meshPhysicalMaterial
             color="#a7f3d0"
             emissive="#34d399"
-            emissiveIntensity={hovered ? 2.2 : 1.45}
+            emissiveIntensity={hovered ? 2.0 : 1.35}
             roughness={0.08}
             clearcoat={1}
             iridescence={0.9}
           />
         </mesh>
         <mesh rotation={[Math.PI / 2.6, 0.4, 0]}>
-          <torusGeometry args={[0.095, 0.007, 10, 32]} />
+          <torusGeometry args={[0.08, 0.006, 10, 32]} />
           <meshBasicMaterial color="#6ee7b7" toneMapped={false} />
         </mesh>
       </group>
 
-      <CelestialEmbers color="#34d399" count={34} radius={0.62} height={1.2} hovered={hovered} />
+      <CelestialEmbers color="#34d399" count={28} radius={0.5} height={1.0} hovered={hovered} />
     </group>
   );
 };
@@ -994,20 +1101,20 @@ const StagCrownPrism: React.FC<{ bones: Record<string, THREE.Object3D>; hovered:
     if (hornNode && prismRef.current && parent) {
       hornNode.getWorldPosition(tmpPos);
       parent.worldToLocal(tmpPos);
-      prismRef.current.position.set(tmpPos.x, tmpPos.y + 0.25 + Math.sin(t * 2.1) * 0.028, tmpPos.z + 0.02);
-      prismRef.current.rotation.y += dt * (hovered ? 2.4 : 1.1);
+      prismRef.current.position.set(tmpPos.x, tmpPos.y + 0.21 + Math.sin(t * 1.5) * 0.022, tmpPos.z + 0.015);
+      prismRef.current.rotation.y += dt * (hovered ? 1.6 : 0.75);
     }
   });
 
   return (
-    <group ref={prismRef} position={[0, 1.15, 0.25]}>
+    <group ref={prismRef} position={[0, 0.96, 0.2]}>
       <mesh>
-        <octahedronGeometry args={[0.062, 0]} />
+        <octahedronGeometry args={[0.048, 0]} />
         <meshBasicMaterial color="#00F5FF" toneMapped={false} />
       </mesh>
       <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.125, 0.008, 10, 36]} />
-        <meshBasicMaterial color="#38bdf8" transparent opacity={0.85} toneMapped={false} />
+        <torusGeometry args={[0.098, 0.007, 10, 36]} />
+        <meshBasicMaterial color="#38bdf8" transparent opacity={0.82} toneMapped={false} />
       </mesh>
     </group>
   );
@@ -1039,11 +1146,11 @@ const CelestialStagMascot: React.FC<{ hovered: boolean; furBump: THREE.CanvasTex
         });
       }
       if (materialName === 'Material.011') {
-        // Blazing electric-cyan eyes
+        // Luminous electric-cyan friendly eyes
         return new THREE.MeshStandardMaterial({
           color: '#e0f2fe',
           emissive: '#00f5ff',
-          emissiveIntensity: 3.4,
+          emissiveIntensity: 2.5,
           roughness: 0.08,
           toneMapped: false,
         });
@@ -1114,8 +1221,17 @@ const CelestialStagMascot: React.FC<{ hovered: boolean; furBump: THREE.CanvasTex
     [furBump]
   );
 
-  const idleClips = useMemo(
-    () => ['AnimalArmature|Idle', 'AnimalArmature|Idle_2', 'AnimalArmature|Idle_Headlow'],
+  const behaviors = useMemo<BeastBehaviorStep[]>(
+    () => [
+      { clip: 'AnimalArmature|Idle', speed: 0.43, hold: 5.4, fade: 1.3 },
+      { clip: 'AnimalArmature|Idle_2', speed: 0.47, hold: 5.0, fade: 1.25 },
+      { clip: 'AnimalArmature|Eating', speed: 0.52, hold: 6.0, fade: 1.35 },
+      { clip: 'AnimalArmature|Idle_Headlow', speed: 0.45, hold: 4.8, fade: 1.25 },
+      { clip: 'AnimalArmature|Walk', speed: 0.44, hold: 2.8, fade: 1.05 },
+      { clip: 'AnimalArmature|Idle', speed: 0.42, hold: 4.8, fade: 1.3 },
+      { clip: 'AnimalArmature|Jump_toIdle', speed: 0.54, hold: 2.4, fade: 0.9, oneShot: true },
+      { clip: 'AnimalArmature|Idle_2', speed: 0.46, hold: 5.0, fade: 1.25 },
+    ],
     []
   );
 
@@ -1123,17 +1239,21 @@ const CelestialStagMascot: React.FC<{ hovered: boolean; furBump: THREE.CanvasTex
     <group>
       <MythicalRiggedBeast
         url="/models/mascots/stag.glb"
-        scale={0.265}
+        scale={0.21}
         baseRotationY={0.26}
-        idleClips={idleClips}
-        hoverClip="AnimalArmature|Attack_Headbutt"
+        phaseOffset={5.3}
+        headScale={1.11}
+        earScale={1.14}
+        behaviors={behaviors}
+        hoverClip="AnimalArmature|Jump_toIdle"
+        hoverSpeed={0.6}
         hovered={hovered}
         furBump={furBump}
         resolveMaterial={resolveMaterial}
         renderAttachments={(bones) => <StagCrownPrism bones={bones} hovered={hovered} />}
       />
 
-      <CelestialEmbers color="#38bdf8" count={36} radius={0.66} height={1.48} hovered={hovered} />
+      <CelestialEmbers color="#38bdf8" count={30} radius={0.54} height={1.2} hovered={hovered} />
     </group>
   );
 };
@@ -1262,14 +1382,14 @@ const DeptEmblemPedestal: React.FC<{
 
   const handleOpen = () => openExecutiveBoard(cfg.dept, CURRENT_TERM);
 
-  // Wider heroic royal dais for the 4 quadruped mythical beasts so all four paws/hooves stand solidly
-  const topRadius = cfg.isMascot ? 0.56 : 0.32;
-  const colTopRadius = cfg.isMascot ? 0.45 : 0.27;
-  const colBotRadius = cfg.isMascot ? 0.5 : 0.3;
-  const baseRadius = cfg.isMascot ? 0.58 : 0.36;
-  const ringInner = cfg.isMascot ? 0.6 : 0.36;
-  const ringOuter = cfg.isMascot ? 0.67 : 0.42;
-  const plaqueZ = cfg.isMascot ? 0.52 : 0.32;
+  // Refined proportional royal dais for our compact cute mythical companions
+  const topRadius = cfg.isMascot ? 0.47 : 0.32;
+  const colTopRadius = cfg.isMascot ? 0.38 : 0.27;
+  const colBotRadius = cfg.isMascot ? 0.42 : 0.3;
+  const baseRadius = cfg.isMascot ? 0.49 : 0.36;
+  const ringInner = cfg.isMascot ? 0.51 : 0.36;
+  const ringOuter = cfg.isMascot ? 0.58 : 0.42;
+  const plaqueZ = cfg.isMascot ? 0.45 : 0.32;
 
   return (
     <group
