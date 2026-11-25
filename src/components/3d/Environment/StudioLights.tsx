@@ -143,96 +143,96 @@ export const StudioLights: React.FC = () => {
 
   return (
     <group>
-      {/* Crisp 256px Multi-Spectral Neon IBL Environment Cubemap (rendered ONCE at startup = 0ms/frame!) */}
-      <Environment resolution={256} frames={1} environmentIntensity={0.95}>
-        {/* Overhead Cosmic Skylight Cool Cyan Wash */}
+      {/* Crisp 256px Multi-Spectral Neon IBL Environment Cubemap (tuned for deep dark-tech contrast so neon & departments pop) */}
+      <Environment resolution={256} frames={1} environmentIntensity={0.72}>
+        {/* Overhead Cosmic Skylight Subtle Cool Wash */}
         <Lightformer
           form="circle"
-          intensity={1.35}
-          color="#a5f3fc"
+          intensity={0.95}
+          color="#7dd3fc"
           position={[0, 11, -5]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[16, 16, 1]}
+          scale={[15, 15, 1]}
         />
         {/* Sovereign Champagne-Gold Halo above Central Honor Island */}
         <Lightformer
           form="ring"
-          intensity={2.8}
+          intensity={2.4}
           color="#ffe082"
           position={[0, 8.6, -5]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[6.2, 6.2, 1]}
+          scale={[6.0, 6.0, 1]}
         />
         {/* 4 Vivid Alternating Electric-Cyan & Cyber-Violet Ceiling Neon Beams */}
         <Lightformer
           form="rect"
-          intensity={2.6}
+          intensity={2.5}
           color="#00F5FF"
           position={[0, 9.2, -12]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[24, 0.75, 1]}
+          scale={[24, 0.72, 1]}
         />
         <Lightformer
           form="rect"
-          intensity={2.4}
+          intensity={2.3}
           color="#c026d3"
           position={[0, 9.2, -7]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[24, 0.75, 1]}
+          scale={[24, 0.72, 1]}
         />
         <Lightformer
           form="rect"
-          intensity={2.4}
+          intensity={2.3}
           color="#00F5FF"
           position={[0, 9.2, -2]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[24, 0.75, 1]}
+          scale={[24, 0.72, 1]}
         />
         <Lightformer
           form="rect"
-          intensity={2.2}
+          intensity={2.1}
           color="#a855f7"
           position={[0, 9.2, 3]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[24, 0.75, 1]}
+          scale={[24, 0.72, 1]}
         />
-        {/* Panoramic Wall Horizon Reflections (rich dark-tech color sheen without white grazing blow-out) */}
+        {/* Subtle Horizon Accent Reflections */}
         <Lightformer
           form="rect"
-          intensity={1.35}
+          intensity={0.95}
           color="#00F5FF"
           position={[0, 3.2, -19]}
           rotation={[0, 0, 0]}
-          scale={[26, 2.8, 1]}
+          scale={[24, 2.4, 1]}
         />
         <Lightformer
           form="rect"
-          intensity={1.25}
+          intensity={0.9}
           color="#a855f7"
           position={[-17, 3.2, -5]}
           rotation={[0, Math.PI / 2, 0]}
-          scale={[22, 2.6, 1]}
+          scale={[20, 2.2, 1]}
         />
         <Lightformer
           form="rect"
-          intensity={1.25}
+          intensity={0.9}
           color="#06b6d4"
           position={[17, 3.2, -5]}
           rotation={[0, -Math.PI / 2, 0]}
-          scale={[22, 2.6, 1]}
+          scale={[20, 2.2, 1]}
         />
         <Lightformer
           form="rect"
-          intensity={1.0}
-          color="#2563eb"
+          intensity={0.75}
+          color="#1d4ed8"
           position={[0, 3.2, 11]}
           rotation={[0, Math.PI, 0]}
-          scale={[20, 2.5, 1]}
+          scale={[18, 2.2, 1]}
         />
         <Lightformer
           form="rect"
-          intensity={0.22}
-          color="#040b1c"
+          intensity={0.12}
+          color="#02050d"
           position={[0, -5, -4]}
           rotation={[-Math.PI / 2, 0, 0]}
           scale={[34, 34, 1]}
@@ -244,9 +244,9 @@ export const StudioLights: React.FC = () => {
       <primitive object={centralIslandTarget.current} position={[0, 1.5, -5]} />
       <primitive object={shirtTarget.current} position={[13.8, 2.0, -10.4]} />
 
-      {/* 1–3. Vivid Dark-Tech Interior Fill + Single Optional Hero Shadow Caster */}
-      <hemisphereLight color="#7be8ff" groundColor="#091228" intensity={0.68} />
-      <ambientLight color="#112244" intensity={0.28} />
+      {/* 1–3. Deep Dark-Tech Interior Fill (dark backdrop makes neon trims & department stages pop dramatically!) */}
+      <hemisphereLight color="#56d8ff" groundColor="#030712" intensity={0.42} />
+      <ambientLight color="#081226" intensity={0.14} />
       <directionalLight
         position={[4, 14, 8]}
         intensity={0.42}

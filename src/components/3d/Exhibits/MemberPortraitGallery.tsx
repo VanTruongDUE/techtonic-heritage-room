@@ -108,24 +108,37 @@ function getInitials(name: string): string {
 function createBannerTexture(title: string, description: string, accent: string): THREE.CanvasTexture {
   const { canvas, ctx } = createHiResCanvas(1152, 136, 2);
   if (ctx) {
-    ctx.fillStyle = '#0c1526';
+    const bgGrad = ctx.createLinearGradient(0, 0, 1152, 136);
+    bgGrad.addColorStop(0, '#040812');
+    bgGrad.addColorStop(0.5, '#081022');
+    bgGrad.addColorStop(1, '#040812');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, 1152, 136);
+
+    // Subtle colored top/bottom neon wash inside the department header
+    const tint = ctx.createLinearGradient(0, 0, 1152, 0);
+    tint.addColorStop(0, `${accent}36`);
+    tint.addColorStop(0.5, `${accent}14`);
+    tint.addColorStop(1, `${accent}36`);
+    ctx.fillStyle = tint;
     ctx.fillRect(0, 0, 1152, 136);
 
     ctx.strokeStyle = accent;
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 6;
     ctx.strokeRect(4, 4, 1144, 128);
 
     ctx.fillStyle = accent;
-    ctx.fillRect(4, 4, 12, 128);
+    ctx.fillRect(4, 4, 16, 128);
+    ctx.fillRect(1132, 4, 16, 128);
 
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#f8fafc';
-    ctx.font = 'bold 34px Inter, sans-serif';
-    ctx.fillText(title, 576, 56, 1080);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 36px Inter, sans-serif';
+    ctx.fillText(title, 576, 56, 1060);
 
-    ctx.fillStyle = '#cbd5e1';
-    ctx.font = '500 22px Inter, sans-serif';
-    ctx.fillText(description, 576, 104, 1080);
+    ctx.fillStyle = accent;
+    ctx.font = '600 22px Inter, sans-serif';
+    ctx.fillText(description, 576, 104, 1060);
   }
   return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
 }
@@ -234,18 +247,12 @@ const ConnectorLine: React.FC<{
   return (
     <group>
       <mesh position={[(x1 + x2) / 2, (y1 + y2) / 2, -0.015]}>
-        <boxGeometry args={[Math.max(dx, thickness), Math.max(dy, thickness), 0.016]} />
-        <meshStandardMaterial
-          color={accent}
-          emissive={accent}
-          emissiveIntensity={0.55}
-          metalness={0.75}
-          roughness={0.25}
-        />
+        <boxGeometry args={[Math.max(dx, thickness), Math.max(dy, thickness), 0.018]} />
+        <meshBasicMaterial color={accent} toneMapped={false} />
       </mesh>
       <mesh position={[x1, y1, -0.012]}>
-        <sphereGeometry args={[0.02, 10, 8]} />
-        <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.75} />
+        <sphereGeometry args={[0.026, 10, 8]} />
+        <meshBasicMaterial color={accent} toneMapped={false} />
       </mesh>
     </group>
   );
@@ -434,10 +441,10 @@ const DepartmentPortraitTree: React.FC<{
   useFrame((state) => {
     const pulse = Math.sin(state.clock.elapsedTime * 1.45 + phaseOffset) * 0.5 + 0.5;
     if (outerBeamMatRef.current) {
-      outerBeamMatRef.current.opacity = 0.08 + pulse * 0.025;
+      outerBeamMatRef.current.opacity = 0.11 + pulse * 0.035;
     }
     if (wallAuraMatRef.current) {
-      wallAuraMatRef.current.opacity = 0.45 + pulse * 0.12;
+      wallAuraMatRef.current.opacity = 0.58 + pulse * 0.14;
     }
   });
 
@@ -526,59 +533,65 @@ const DepartmentPortraitTree: React.FC<{
         </mesh>
       </group>
 
-      {/* Architectural Stage Backdrop Bay + Neon Vertical Side Blades so each Dept Pops */}
+      {/* Pitch-Dark Architectural Stage Backdrop Bay + 4-Sided Luminous Neon Portal Frame so each Dept Stands Out Unmistakably */}
       <mesh position={[0, 2.66, -0.045]}>
-        <boxGeometry args={[config.bannerWidth + 0.36, 4.58, 0.04]} />
-        <meshStandardMaterial color="#060b16" roughness={0.56} metalness={0.42} />
+        <boxGeometry args={[config.bannerWidth + 0.42, 4.66, 0.045]} />
+        <meshStandardMaterial color="#02050c" roughness={0.62} metalness={0.38} />
       </mesh>
-      {[-(config.bannerWidth + 0.36) / 2, (config.bannerWidth + 0.36) / 2].map((bx) => (
-        <mesh key={`stage-blade-${bx}`} position={[bx, 2.66, -0.015]}>
-          <boxGeometry args={[0.026, 4.46, 0.025]} />
+      {/* Left & Right Glowing Vertical Neon Stage Blades */}
+      {[-(config.bannerWidth + 0.42) / 2, (config.bannerWidth + 0.42) / 2].map((bx) => (
+        <mesh key={`stage-blade-${bx}`} position={[bx, 2.66, -0.012]}>
+          <boxGeometry args={[0.044, 4.62, 0.032]} />
           <meshBasicMaterial color={config.stageGlow} toneMapped={false} />
         </mesh>
       ))}
+      {/* Top Neon Crown Bar framing each Department Zone */}
+      <mesh position={[0, 4.98, -0.012]}>
+        <boxGeometry args={[config.bannerWidth + 0.46, 0.044, 0.032]} />
+        <meshBasicMaterial color={config.stageGlow} toneMapped={false} />
+      </mesh>
 
       {/* Wall Radial Colored Stage Halo behind Tree (baked additive stage glow — 0 shader light cost) */}
-      <mesh position={[0, 2.65, -0.018]}>
-        <planeGeometry args={[config.bannerWidth + 2.4, 5.3]} />
+      <mesh position={[0, 2.68, -0.018]}>
+        <planeGeometry args={[config.bannerWidth + 2.6, 5.5]} />
         <meshBasicMaterial
           ref={wallAuraMatRef}
           map={stageGlowTex}
           transparent
-          opacity={0.44}
+          opacity={0.62}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
       </mesh>
 
-      {/* Floor Stage Light Puddle & Glowing Edge Bar */}
-      <mesh position={[0, 0.015, 1.15]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[config.bannerWidth + 1.2, 3.4]} />
+      {/* Vivid Floor Stage Light Puddle & Thick Glowing Threshold Bar marking each Department Position */}
+      <mesh position={[0, 0.016, 1.25]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[config.bannerWidth + 1.5, 3.8]} />
         <meshBasicMaterial
           map={stageGlowTex}
           transparent
-          opacity={0.46}
+          opacity={0.64}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
       </mesh>
-      <mesh position={[0, 0.02, 0.05]}>
-        <boxGeometry args={[config.bannerWidth + 0.16, 0.022, 0.04]} />
+      <mesh position={[0, 0.022, 0.06]}>
+        <boxGeometry args={[config.bannerWidth + 0.42, 0.036, 0.055]} />
         <meshBasicMaterial color={config.stageGlow} toneMapped={false} />
       </mesh>
       {/* Wall Section Title Banner comfortably at eye-visible upper height */}
       <group position={[0, 4.5, 0]}>
-        <RoundedBox position={[0, 0, -0.025]} args={[config.bannerWidth, 0.42, 0.045]} radius={0.02} smoothness={4}>
-          <meshStandardMaterial color="#1e293b" metalness={0.85} roughness={0.24} />
+        <RoundedBox position={[0, 0, -0.025]} args={[config.bannerWidth, 0.44, 0.05]} radius={0.02} smoothness={4}>
+          <meshStandardMaterial color="#070d1c" metalness={0.86} roughness={0.22} />
         </RoundedBox>
-        <mesh position={[0, 0, 0.006]}>
-          <planeGeometry args={[config.bannerWidth - 0.1, 0.34]} />
+        <mesh position={[0, 0, 0.008]}>
+          <planeGeometry args={[config.bannerWidth - 0.08, 0.36]} />
           <meshStandardMaterial
             map={bannerTex}
             emissive="#ffffff"
             emissiveMap={bannerTex}
-            emissiveIntensity={0.4}
-            roughness={0.86}
+            emissiveIntensity={0.72}
+            roughness={0.72}
             metalness={0}
           />
         </mesh>

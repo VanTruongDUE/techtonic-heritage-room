@@ -135,77 +135,75 @@ function createMoonMaps(): { map: THREE.CanvasTexture; bumpMap: THREE.CanvasText
   };
 }
 
-/** Deep-space panoramic sky dome texture: rich dark-tech obsidian cosmos with luminous aurora nebulae */
+/** Deep-space panoramic sky dome texture: pitch-dark obsidian cosmos with subtle deep nebula so tech neon pops */
 function createCosmicDomeTexture(): THREE.CanvasTexture {
   const { canvas, ctx } = createHiResCanvas(2048, 1024, 1);
   if (ctx) {
     const bg = ctx.createLinearGradient(0, 0, 0, 1024);
-    bg.addColorStop(0, '#01030b');
-    bg.addColorStop(0.32, '#03081a');
-    bg.addColorStop(0.62, '#050c24');
-    bg.addColorStop(1, '#01030a');
+    bg.addColorStop(0, '#000003');
+    bg.addColorStop(0.35, '#010207');
+    bg.addColorStop(0.68, '#02040c');
+    bg.addColorStop(1, '#000003');
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, 2048, 1024);
 
-    // Rich deep-space Milky Way & cyber-aurora nebula bands (luminous color depth against dark void)
+    // Restrained deep-space nebula wisps (keeps cosmic ceiling ultra-dark so room neon pops sharply)
     const clouds: Array<[number, number, number, string]> = [
-      [310, 300, 440, 'rgba(37, 99, 235, 0.19)'],
-      [660, 250, 480, 'rgba(6, 182, 212, 0.17)'],
-      [1040, 320, 560, 'rgba(99, 102, 241, 0.18)'],
-      [1390, 380, 480, 'rgba(168, 85, 247, 0.21)'],
-      [1740, 320, 460, 'rgba(14, 165, 233, 0.16)'],
-      [520, 540, 420, 'rgba(139, 92, 246, 0.14)'],
-      [960, 620, 520, 'rgba(29, 78, 216, 0.16)'],
-      [1520, 650, 420, 'rgba(192, 38, 211, 0.15)'],
-      [140, 440, 360, 'rgba(0, 245, 255, 0.13)'],
+      [310, 300, 420, 'rgba(20, 56, 150, 0.085)'],
+      [660, 250, 450, 'rgba(6, 130, 165, 0.075)'],
+      [1040, 320, 520, 'rgba(58, 56, 168, 0.08)'],
+      [1390, 380, 440, 'rgba(118, 42, 185, 0.085)'],
+      [1740, 320, 420, 'rgba(10, 110, 165, 0.07)'],
+      [960, 620, 480, 'rgba(18, 44, 120, 0.068)'],
+      [1520, 650, 380, 'rgba(110, 22, 145, 0.062)'],
     ];
 
     clouds.forEach(([cx, cy, r, color]) => {
       const g = ctx.createRadialGradient(cx, cy, r * 0.05, cx, cy, r);
       g.addColorStop(0, color);
-      g.addColorStop(0.48, color.replace(/0\.\d+\)$/, '0.065)'));
-      g.addColorStop(1, 'rgba(1, 3, 12, 0)');
+      g.addColorStop(0.48, color.replace(/0\.\d+\)$/, '0.025)'));
+      g.addColorStop(1, 'rgba(0, 1, 5, 0)');
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fill();
     });
 
-    // Sweeping translucent diagonal cosmic aurora ribbon across upper dome
+    // Subtle dark-void aurora veil across upper dome (never brightens the ceiling)
     ctx.save();
     ctx.translate(1024, 300);
     ctx.rotate(-0.14);
     const auroraGrad = ctx.createLinearGradient(-950, 0, 950, 0);
     auroraGrad.addColorStop(0, 'rgba(0, 245, 255, 0)');
-    auroraGrad.addColorStop(0.25, 'rgba(0, 245, 255, 0.11)');
-    auroraGrad.addColorStop(0.52, 'rgba(129, 140, 248, 0.13)');
-    auroraGrad.addColorStop(0.76, 'rgba(192, 38, 211, 0.12)');
-    auroraGrad.addColorStop(1, 'rgba(192, 38, 211, 0)');
+    auroraGrad.addColorStop(0.28, 'rgba(0, 245, 255, 0.042)');
+    auroraGrad.addColorStop(0.54, 'rgba(99, 102, 241, 0.05)');
+    auroraGrad.addColorStop(0.78, 'rgba(168, 85, 247, 0.045)');
+    auroraGrad.addColorStop(1, 'rgba(168, 85, 247, 0)');
     ctx.fillStyle = auroraGrad;
     ctx.beginPath();
-    ctx.ellipse(0, 0, 960, 125, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, 940, 110, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
 
-    // Ultra-fine distant background star dust baked into the rich cosmic dome
+    // Crisp pinpoint distant star dust against the pitch-dark obsidian cosmos
     let seed = 88231;
     const rand = () => {
       seed = (seed * 16807) % 2147483647;
       return (seed - 1) / 2147483646;
     };
-    for (let i = 0; i < 2800; i++) {
+    for (let i = 0; i < 2600; i++) {
       const x = rand() * 2048;
       const y = rand() * 1024;
-      const alpha = 0.18 + rand() * 0.65;
-      const size = rand() > 0.92 ? 1.8 : 1.05;
+      const alpha = 0.16 + rand() * 0.62;
+      const size = rand() > 0.92 ? 1.7 : 1.0;
       ctx.fillStyle =
         rand() > 0.7
           ? `rgba(165, 243, 252, ${alpha})`
           : rand() > 0.45
           ? `rgba(255, 255, 255, ${alpha})`
           : rand() > 0.22
-          ? `rgba(233, 213, 255, ${alpha * 0.9})`
-          : `rgba(254, 240, 138, ${alpha * 0.88})`;
+          ? `rgba(233, 213, 255, ${alpha * 0.85})`
+          : `rgba(254, 240, 138, ${alpha * 0.85})`;
       ctx.fillRect(x, y, size, size);
     }
   }

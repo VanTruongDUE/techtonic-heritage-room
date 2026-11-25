@@ -269,7 +269,7 @@ export const MuseumRoom: React.FC = () => {
         </mesh>
       </RigidBody>
 
-      {/* Main Hall Floor: Deep Dark-Tech Obsidian Clearcoat + Glowing Neon Circuit Veins (zero grazing blow-out!) */}
+      {/* Main Hall Floor: Deep Pitch-Obsidian Clearcoat + Glowing Neon Circuit Veins */}
       <mesh position={[0, 0.002, -5]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[31.8, 25.8]} />
         {graphicsQuality === 'high' ? (
@@ -277,58 +277,58 @@ export const MuseumRoom: React.FC = () => {
             key="floor-reflector-high"
             blur={[180, 56]}
             resolution={256}
-            mixBlur={0.85}
-            mixStrength={0.78}
-            roughness={0.3}
+            mixBlur={0.86}
+            mixStrength={0.72}
+            roughness={0.32}
             depthScale={0.85}
             minDepthThreshold={0.35}
             maxDepthThreshold={1.4}
-            color="#060c1a"
-            metalness={0.45}
-            mirror={0.62}
+            color="#040812"
+            metalness={0.44}
+            mirror={0.58}
             map={floorMaps.map}
             roughnessMap={floorMaps.roughnessMap}
             bumpMap={floorMaps.bumpMap}
             bumpScale={0.004}
             emissive="#ffffff"
             emissiveMap={floorMaps.emissiveMap}
-            emissiveIntensity={0.52}
+            emissiveIntensity={0.56}
           />
         ) : (
           <meshPhysicalMaterial
             key="floor-glossy-balanced"
-            color="#060c1a"
+            color="#040812"
             map={floorMaps.map}
             roughnessMap={floorMaps.roughnessMap}
             bumpMap={floorMaps.bumpMap}
             bumpScale={0.004}
             emissive="#ffffff"
             emissiveMap={floorMaps.emissiveMap}
-            emissiveIntensity={0.58}
-            roughness={0.28}
-            metalness={0.46}
-            clearcoat={0.32}
-            clearcoatRoughness={0.34}
-            envMapIntensity={0.82}
+            emissiveIntensity={0.62}
+            roughness={0.3}
+            metalness={0.44}
+            clearcoat={0.28}
+            clearcoatRoughness={0.36}
+            envMapIntensity={0.68}
           />
         )}
       </mesh>
 
-      {/* Entrance Tunnel Deep Obsidian Runway Strip (balanced clearcoat IBL + glowing micro-circuits) */}
+      {/* Entrance Tunnel Deep Obsidian Runway Strip */}
       <mesh position={[0, 0.003, 18.5]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[4.75, 20.1]} />
         <meshPhysicalMaterial
-          color="#060c1a"
+          color="#040812"
           map={floorMaps.map}
           roughnessMap={floorMaps.roughnessMap}
           emissive="#ffffff"
           emissiveMap={floorMaps.emissiveMap}
-          emissiveIntensity={0.48}
-          roughness={0.26}
-          metalness={0.48}
-          clearcoat={0.3}
-          clearcoatRoughness={0.32}
-          envMapIntensity={0.8}
+          emissiveIntensity={0.52}
+          roughness={0.28}
+          metalness={0.46}
+          clearcoat={0.26}
+          clearcoatRoughness={0.34}
+          envMapIntensity={0.66}
         />
       </mesh>
 
@@ -383,17 +383,17 @@ export const MuseumRoom: React.FC = () => {
         </mesh>
       ))}
 
-      {/* ================= PANORAMIC GLASS SKYLIGHT (MAIN HALL ONLY) & SOLID TUNNEL CEILING ================= */}
-      {/* Ultra-clear tinted cosmic skylight glass panes overhead in MAIN HALL ONLY */}
+      {/* ================= PANORAMIC DARK-TINTED COSMIC SKYLIGHT (MAIN HALL ONLY) & SOLID TUNNEL CEILING ================= */}
+      {/* Smoked dark-tech cosmic skylight glass pane overhead (deepens ceiling contrast so neon beams glow sharply) */}
       <mesh position={[0, 6.52, -5]} rotation={[Math.PI / 2, 0, 0]}>
         <planeGeometry args={[33.2, 27.2]} />
         <meshPhysicalMaterial
-          color="#040917"
+          color="#010308"
           transparent
-          opacity={0.08}
-          roughness={0.05}
-          metalness={0.2}
-          clearcoat={0.9}
+          opacity={0.24}
+          roughness={0.08}
+          metalness={0.18}
+          clearcoat={0.6}
           depthWrite={false}
           side={THREE.DoubleSide}
         />
@@ -670,9 +670,9 @@ export const MuseumRoom: React.FC = () => {
             roughnessMap={wallMaps.roughnessMap}
             bumpMap={wallMaps.bumpMap}
             bumpScale={0.008}
-            color="#15233b"
-            roughness={0.46}
-            metalness={0.54}
+            color="#080e1c"
+            roughness={0.5}
+            metalness={0.5}
           />
         </mesh>
       ))}
@@ -715,7 +715,7 @@ export const MuseumRoom: React.FC = () => {
         />
       </mesh>
 
-      {/* Panoramic Smoked Space-Observatory Curtain-Wall Glass (MAIN HALL ONLY, y=0.92..6.02) */}
+      {/* Panoramic Deep-Smoked Space-Observatory Curtain-Wall Glass (MAIN HALL ONLY, y=0.92..6.02) */}
       {[
         { pos: [0, 3.47, -18.72] as [number, number, number], rot: [0, 0, 0] as [number, number, number], args: [33.4, 5.1] as [number, number] },
         { pos: [-16.72, 3.47, -5] as [number, number, number], rot: [0, Math.PI / 2, 0] as [number, number, number], args: [27.4, 5.1] as [number, number] },
@@ -726,13 +726,13 @@ export const MuseumRoom: React.FC = () => {
         <mesh key={`obs-glass-${idx}`} position={pane.pos} rotation={pane.rot}>
           <planeGeometry args={pane.args} />
           <meshPhysicalMaterial
-            color="#030815"
+            color="#01040b"
             transparent
-            opacity={0.18}
-            roughness={0.06}
-            metalness={0.26}
-            clearcoat={0.95}
-            clearcoatRoughness={0.05}
+            opacity={0.34}
+            roughness={0.08}
+            metalness={0.22}
+            clearcoat={0.7}
+            clearcoatRoughness={0.08}
             depthWrite={false}
             side={THREE.DoubleSide}
           />
