@@ -35,9 +35,9 @@ const AdaptivePerformanceGuard: React.FC<{
       sampleCountRef.current = 0;
       sampleDeltaSumRef.current = 0;
 
-      if (avgFps < 36) {
+      if (avgFps < 28) {
         lowFpsStrikesRef.current += 1;
-        if (lowFpsStrikesRef.current >= 2) {
+        if (lowFpsStrikesRef.current >= 3) {
           if (graphicsQuality === 'high') {
             setGraphicsQuality('balanced', true);
             lowFpsStrikesRef.current = 0;
@@ -81,19 +81,19 @@ export const CanvasContainer: React.FC = () => {
       : 'cursor-default';
 
   const dpr: [number, number] = lowPowerDpr
-    ? [0.75, 0.9]
+    ? [0.95, 1.15]
     : graphicsQuality === 'high'
-    ? [1, 1.45]
-    : [0.85, 1.15];
+    ? [1.2, 1.7]
+    : [1, 1.4];
 
   return (
-    <div className={`absolute inset-0 w-full h-full bg-[#010207] ${cursorClass}`}>
+    <div className={`absolute inset-0 w-full h-full bg-[#02040d] ${cursorClass}`}>
       <Canvas
         shadows={graphicsQuality === 'high'}
         camera={{
           fov: 65,
           near: 0.15,
-          far: 420,
+          far: 450,
           position: [0, 2, 25.8],
         }}
         gl={{
@@ -101,7 +101,7 @@ export const CanvasContainer: React.FC = () => {
           powerPreference: 'high-performance',
           stencil: false,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.18,
+          toneMappingExposure: 1.24,
         }}
         dpr={dpr}
         onCreated={({ gl }) => {

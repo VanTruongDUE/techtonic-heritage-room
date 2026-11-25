@@ -26,7 +26,9 @@ export function useReducedMotionPreference(): boolean {
 export const HallParticleField: React.FC = () => {
   const reducedMotion = useReducedMotionPreference();
   const pointsRef = useRef<THREE.Points>(null);
-  const count = reducedMotion ? 45 : 130;
+  const sparksRef = useRef<THREE.Points>(null);
+  const count = reducedMotion ? 50 : 165;
+  const sparkCount = reducedMotion ? 16 : 55;
 
   const { positions, colors } = useMemo(() => {
     const arr = new Float32Array(count * 3);
@@ -34,7 +36,8 @@ export const HallParticleField: React.FC = () => {
     const palette = [
       new THREE.Color('#00F5FF'),
       new THREE.Color('#38e8ff'),
-      new THREE.Color('#c864ff'),
+      new THREE.Color('#d946ef'),
+      new THREE.Color('#818cf8'),
     ];
     let seed = 20250409;
     const rand = () => {
@@ -42,9 +45,9 @@ export const HallParticleField: React.FC = () => {
       return (seed - 1) / 2147483646;
     };
     for (let i = 0; i < count; i++) {
-      arr[i * 3] = (rand() - 0.5) * 30;
-      arr[i * 3 + 1] = 0.8 + rand() * 5.0;
-      arr[i * 3 + 2] = -17 + rand() * 44;
+      arr[i * 3] = (rand() - 0.5) * 31;
+      arr[i * 3 + 1] = 0.65 + rand() * 5.2;
+      arr[i * 3 + 2] = -17.5 + rand() * 44;
 
       const c = palette[i % palette.length];
       colArr[i * 3] = c.r;
@@ -53,6 +56,32 @@ export const HallParticleField: React.FC = () => {
     }
     return { positions: arr, colors: colArr };
   }, [count]);
+
+  const sparkData = useMemo(() => {
+    const arr = new Float32Array(sparkCount * 3);
+    const colArr = new Float32Array(sparkCount * 3);
+    const palette = [
+      new THREE.Color('#ffe082'),
+      new THREE.Color('#00F5FF'),
+      new THREE.Color('#f472b6'),
+    ];
+    let seed = 9042025;
+    const rand = () => {
+      seed = (seed * 16807) % 2147483647;
+      return (seed - 1) / 2147483646;
+    };
+    for (let i = 0; i < sparkCount; i++) {
+      arr[i * 3] = (rand() - 0.5) * 24;
+      arr[i * 3 + 1] = 0.8 + rand() * 4.5;
+      arr[i * 3 + 2] = -16 + rand() * 24;
+
+      const c = palette[i % palette.length];
+      colArr[i * 3] = c.r;
+      colArr[i * 3 + 1] = c.g;
+      colArr[i * 3 + 2] = c.b;
+    }
+    return { positions: arr, colors: colArr };
+  }, [sparkCount]);
 
   // Smooth circular radial glow sprite so particles never render as hard squares
   const spriteTexture = useMemo(() => {
@@ -63,8 +92,8 @@ export const HallParticleField: React.FC = () => {
     if (ctx) {
       const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
       g.addColorStop(0, 'rgba(255, 255, 255, 1)');
-      g.addColorStop(0.35, 'rgba(186, 230, 253, 0.75)');
-      g.addColorStop(0.7, 'rgba(56, 189, 248, 0.2)');
+      g.addColorStop(0.35, 'rgba(186, 230, 253, 0.82)');
+      g.addColorStop(0.7, 'rgba(56, 189, 248, 0.24)');
       g.addColorStop(1, 'rgba(56, 189, 248, 0)');
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, 64, 64);
@@ -78,29 +107,58 @@ export const HallParticleField: React.FC = () => {
     };
   }, [spriteTexture]);
 
-  useFrame((_, delta) => {
-    if (reducedMotion || !pointsRef.current) return;
-    pointsRef.current.rotation.y += delta * 0.02;
+  useFrame((state, delta) => {
+    if (reducedMotion) return;
+    const t = state.clock.elapsedTime;
+    if (pointsRef.current) {
+      pointsRef.current.rotation.y += delta * 0.018;
+      pointsRef.current.position.y = Math.sin(t * 0.45) * 0.14;
+    }
+    if (sparksRef.current) {
+      sparksRef.current.rotation.y -= delta * 0.024;
+      sparksRef.current.position.y = Math.cos(t * 0.65) * 0.22;
+    }
   });
 
   return (
-    <points ref={pointsRef}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-        <bufferAttribute attach="attributes-color" args={[colors, 3]} />
-      </bufferGeometry>
-      <pointsMaterial
-        map={spriteTexture}
-        vertexColors
-        alphaTest={0.01}
-        blending={THREE.AdditiveBlending}
-        depthWrite={false}
-        opacity={0.56}
-        size={0.08}
-        sizeAttenuation
-        transparent
-      />
-    </points>
+    <group>
+      <points ref={pointsRef}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+          <bufferAttribute attach="attributes-color" args={[colors, 3]} />
+        </bufferGeometry>
+        <pointsMaterial
+          map={spriteTexture}
+          vertexColors
+          alphaTest={0.01}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          opacity={0.68}
+          size={0.095}
+          sizeAttenuation
+          transparent
+          toneMapped={false}
+        />
+      </points>
+      <points ref={sparksRef}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[sparkData.positions, 3]} />
+          <bufferAttribute attach="attributes-color" args={[sparkData.colors, 3]} />
+        </bufferGeometry>
+        <pointsMaterial
+          map={spriteTexture}
+          vertexColors
+          alphaTest={0.01}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          opacity={0.82}
+          size={0.135}
+          sizeAttenuation
+          transparent
+          toneMapped={false}
+        />
+      </points>
+    </group>
   );
 };
 
@@ -220,12 +278,12 @@ export const OrgConstellationOrbit: React.FC = () => {
           {/* Orbit rings */}
           <group ref={ringRef} rotation={[0.38, 0, 0]}>
             <mesh>
-              <torusGeometry args={[1.95, 0.009, 12, 96]} />
-              <meshBasicMaterial color="#38bdf8" transparent opacity={hovered ? 0.38 : 0.16} />
+              <torusGeometry args={[1.95, 0.011, 12, 96]} />
+              <meshBasicMaterial color="#00F5FF" transparent opacity={hovered ? 0.52 : 0.28} toneMapped={false} />
             </mesh>
             <mesh rotation={[Math.PI / 2, 0, 0]}>
-              <torusGeometry args={[2.12, 0.008, 12, 96]} />
-              <meshBasicMaterial color="#a855f7" transparent opacity={hovered ? 0.34 : 0.14} />
+              <torusGeometry args={[2.12, 0.01, 12, 96]} />
+              <meshBasicMaterial color="#d946ef" transparent opacity={hovered ? 0.48 : 0.24} toneMapped={false} />
             </mesh>
           </group>
 
@@ -241,16 +299,16 @@ export const OrgConstellationOrbit: React.FC = () => {
               <meshStandardMaterial
                 color={CENTER_NODE.color}
                 emissive={CENTER_NODE.color}
-                emissiveIntensity={hovered ? 0.65 : 0.3}
+                emissiveIntensity={hovered ? 0.95 : 0.55}
                 transparent
-                opacity={0.75}
-                roughness={0.25}
-                metalness={0.5}
+                opacity={0.85}
+                roughness={0.18}
+                metalness={0.62}
               />
             </mesh>
             <mesh>
-              <octahedronGeometry args={[CENTER_NODE.size * 1.06, 0]} />
-              <meshBasicMaterial color={CENTER_NODE.color} wireframe transparent opacity={0.55} />
+              <octahedronGeometry args={[CENTER_NODE.size * 1.07, 0]} />
+              <meshBasicMaterial color="#e879f9" wireframe transparent opacity={0.72} toneMapped={false} />
             </mesh>
           </group>
 

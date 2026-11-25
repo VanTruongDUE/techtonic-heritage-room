@@ -10,17 +10,19 @@ import { soundFx } from '../../hooks/useAudio';
 import { useHeritageStore } from '../../store/useHeritageStore';
 import type { ModalType } from '../../types/heritage';
 
-const SPEED_WALK = 4.6;
-const SPEED_RUN = 7.4;
+const SPEED_WALK = 4.9;
+const SPEED_RUN = 7.8;
 const JUMP_FORCE = 4.5;
 const BASE_FOV = 65;
-const SPRINT_FOV = 67.5;
-const DRAG_THRESHOLD_PX = 5;
-const GLIDE_DURATION_SEC = 0.85;
+const SPRINT_FOV = 68.2;
+const MIN_ZOOM_FOV = 50;
+const MAX_ZOOM_FOV = 70;
+const DRAG_THRESHOLD_PX = 4;
+const GLIDE_DURATION_SEC = 0.88;
 const GUIDED_TOUR_INTERVAL_MS = 7200;
 
-function easeInOutCubic(t: number): number {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+function easeInOutQuint(t: number): number {
+  return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
 }
 
 function detectZone(x: number, z: number): string {
@@ -79,6 +81,12 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
   const direction = useRef(new THREE.Vector3());
   const cameraEuler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'));
   const smoothVel = useRef({ x: 0, z: 0 });
+  const camSmoothPos = useRef(
+    new THREE.Vector3(initialPosition[0], initialPosition[1], initialPosition[2])
+  );
+  const camRollRef = useRef(0);
+  const zoomFovOffsetRef = useRef(0);
+  const lastZoneRef = useRef<string>('');
   const bobPhase = useRef(0);
   const bobAmount = useRef(0);
   const prevModalRef = useRef<ModalType>(null);
@@ -211,12 +219,22 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
       }
     };
 
+    const onWheel = (e: WheelEvent) => {
+      if (!hasEntered || activeModal) return;
+      zoomFovOffsetRef.current = THREE.MathUtils.clamp(
+        zoomFovOffsetRef.current + Math.sign(e.deltaY) * 2.2,
+        MIN_ZOOM_FOV - BASE_FOV,
+        MAX_ZOOM_FOV - BASE_FOV
+      );
+    };
+
     dom.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', resetDrag);
     window.addEventListener('blur', resetDrag);
     dom.addEventListener('click', onClickCapture, true);
     dom.addEventListener('contextmenu', onContextMenu);
+    dom.addEventListener('wheel', onWheel, { passive: true });
 
     return () => {
       dom.removeEventListener('pointerdown', onPointerDown);
@@ -225,6 +243,7 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
       window.removeEventListener('blur', resetDrag);
       dom.removeEventListener('click', onClickCapture, true);
       dom.removeEventListener('contextmenu', onContextMenu);
+      dom.removeEventListener('wheel', onWheel);
     };
   }, [gl, camera, hasEntered, activeModal, controlMode, mouseSensitivity, setDraggingCamera, stopGuidedTour]);
 
@@ -307,17 +326,18 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
       const g = glideRef.current;
       g.elapsed += dt;
       const rawT = Math.min(1, g.elapsed / g.duration);
-      const eased = easeInOutCubic(rawT);
+      const eased = easeInOutQuint(rawT);
 
       tempPos.current.lerpVectors(g.startPos, g.endPos, eased);
       // Subtle graceful arc in eye height during longer glides
-      const arcLift = Math.sin(rawT * Math.PI) * 0.08;
+      const arcLift = Math.sin(rawT * Math.PI) * 0.09;
 
       rigidBodyRef.current.setTranslation(
         { x: tempPos.current.x, y: tempPos.current.y, z: tempPos.current.z },
         true
       );
       rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      camSmoothPos.current.copy(tempPos.current);
 
       state.camera.position.set(
         tempPos.current.x,
@@ -330,8 +350,12 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
         glideRef.current = null;
       }
 
-      // Still emit MiniMap pose & zone while gliding
-      setCurrentZone(detectZone(tempPos.current.x, tempPos.current.z));
+      // Only dispatch Zustand zone update when actually crossing into a new zone
+      const nextZone = detectZone(tempPos.current.x, tempPos.current.z);
+      if (nextZone !== lastZoneRef.current) {
+        lastZoneRef.current = nextZone;
+        setCurrentZone(nextZone);
+      }
       const nowMs = state.clock.elapsedTime * 1000;
       if (nowMs - lastPoseEmitRef.current > 85) {
         cameraEuler.current.setFromQuaternion(state.camera.quaternion, 'YXZ');
@@ -344,8 +368,8 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
     // Apply smooth damped drag-to-look inertia in cursor mode
     if (controlMode === 'cursor' && hasEntered && !activeModal) {
       const { yaw, pitch } = dragVelocityRef.current;
-      if (Math.abs(yaw) > 0.00008 || Math.abs(pitch) > 0.00008) {
-        const angularStep = 1 - Math.exp(-22 * dt);
+      if (Math.abs(yaw) > 0.00005 || Math.abs(pitch) > 0.00005) {
+        const angularStep = 1 - Math.exp(-19 * dt);
         const applyYaw = yaw * angularStep;
         const applyPitch = pitch * angularStep;
 
@@ -353,10 +377,10 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
         cameraEuler.current.y += applyYaw;
         cameraEuler.current.x = THREE.MathUtils.clamp(
           cameraEuler.current.x + applyPitch,
-          -1.32,
-          1.32
+          -1.35,
+          1.35
         );
-        cameraEuler.current.z = 0;
+        cameraEuler.current.z = camRollRef.current;
         state.camera.quaternion.setFromEuler(cameraEuler.current);
 
         dragVelocityRef.current.yaw -= applyYaw;
@@ -372,8 +396,12 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
 
     const currentVelocity = rigidBodyRef.current.linvel();
 
-    // Update active museum zone indicator
-    setCurrentZone(detectZone(pos.x, pos.z));
+    // Update active museum zone indicator only when crossing zone boundaries (0 wasted store calls/frame)
+    const detectedZone = detectZone(pos.x, pos.z);
+    if (detectedZone !== lastZoneRef.current) {
+      lastZoneRef.current = detectedZone;
+      setCurrentZone(detectedZone);
+    }
 
     // Emit throttled MiniMap pose (~11fps)
     const nowMs = state.clock.elapsedTime * 1000;
@@ -383,19 +411,26 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
       lastPoseEmitRef.current = nowMs;
     }
 
-    const damping = 1 - Math.exp(-13 * dt);
+    const camFollow = 1 - Math.exp(-26 * dt);
     const canExplore = hasEntered && !activeModal && (controlMode === 'cursor' || isLocked);
 
     if (!canExplore) {
-      smoothVel.current.x = THREE.MathUtils.lerp(smoothVel.current.x, 0, damping);
-      smoothVel.current.z = THREE.MathUtils.lerp(smoothVel.current.z, 0, damping);
-      bobAmount.current = THREE.MathUtils.lerp(bobAmount.current, 0, damping);
+      const decel = 1 - Math.exp(-10 * dt);
+      smoothVel.current.x = THREE.MathUtils.lerp(smoothVel.current.x, 0, decel);
+      smoothVel.current.z = THREE.MathUtils.lerp(smoothVel.current.z, 0, decel);
+      bobAmount.current = THREE.MathUtils.lerp(bobAmount.current, 0, decel);
+      camRollRef.current = THREE.MathUtils.lerp(camRollRef.current, 0, decel);
 
       rigidBodyRef.current.setLinvel(
         { x: smoothVel.current.x, y: currentVelocity.y, z: smoothVel.current.z },
         true
       );
-      state.camera.position.set(pos.x, pos.y + 0.6, pos.z);
+      camSmoothPos.current.set(
+        THREE.MathUtils.lerp(camSmoothPos.current.x, pos.x, camFollow),
+        THREE.MathUtils.lerp(camSmoothPos.current.y, pos.y, camFollow),
+        THREE.MathUtils.lerp(camSmoothPos.current.z, pos.z, camFollow)
+      );
+      state.camera.position.set(camSmoothPos.current.x, camSmoothPos.current.y + 0.6, camSmoothPos.current.z);
       return;
     }
 
@@ -416,8 +451,20 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
     cameraEuler.current.z = 0;
     direction.current.applyEuler(cameraEuler.current);
 
-    smoothVel.current.x = THREE.MathUtils.lerp(smoothVel.current.x, direction.current.x, damping);
-    smoothVel.current.z = THREE.MathUtils.lerp(smoothVel.current.z, direction.current.z, damping);
+    // Asymmetric silky acceleration vs buttery museum-glider coast-to-stop
+    const velLambda = hasInput ? 12.5 : 8.4;
+    const velDamping = 1 - Math.exp(-velLambda * dt);
+    smoothVel.current.x = THREE.MathUtils.lerp(smoothVel.current.x, direction.current.x, velDamping);
+    smoothVel.current.z = THREE.MathUtils.lerp(smoothVel.current.z, direction.current.z, velDamping);
+
+    // Subtle kinematic strafe banking (barely perceptible cinema steadicam feel)
+    const targetRoll = controlMode === 'cursor' ? -sideVector.current.x * 0.0075 : 0;
+    camRollRef.current = THREE.MathUtils.lerp(camRollRef.current, targetRoll, 1 - Math.exp(-9 * dt));
+    if (controlMode === 'cursor' && Math.abs(camRollRef.current) > 0.0001) {
+      cameraEuler.current.setFromQuaternion(state.camera.quaternion, 'YXZ');
+      cameraEuler.current.z = camRollRef.current;
+      state.camera.quaternion.setFromEuler(cameraEuler.current);
+    }
 
     let vy = currentVelocity.y;
     const isGrounded = Math.abs(currentVelocity.y) < 0.12;
@@ -431,19 +478,36 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
     );
 
     const horizSpeed = Math.hypot(smoothVel.current.x, smoothVel.current.z);
-    if (isGrounded && horizSpeed > 0.4) {
-      bobPhase.current += dt * (shift ? 11.2 : 8.0);
-      bobAmount.current = THREE.MathUtils.lerp(bobAmount.current, 0.016, damping);
+    if (isGrounded && horizSpeed > 0.35) {
+      bobPhase.current += dt * (shift ? 10.6 : 7.6);
+      bobAmount.current = THREE.MathUtils.lerp(bobAmount.current, 0.015, velDamping);
     } else {
-      bobAmount.current = THREE.MathUtils.lerp(bobAmount.current, 0, damping);
+      bobAmount.current = THREE.MathUtils.lerp(bobAmount.current, 0, velDamping);
     }
     const headBobY = Math.sin(bobPhase.current) * bobAmount.current;
-    state.camera.position.set(pos.x, pos.y + 0.6 + headBobY, pos.z);
+
+    // Frame-rate-independent sub-frame camera eye interpolation (zero physics substep judder!)
+    if (Math.hypot(pos.x - camSmoothPos.current.x, pos.z - camSmoothPos.current.z) > 3.5) {
+      camSmoothPos.current.set(pos.x, pos.y, pos.z);
+    } else {
+      camSmoothPos.current.x = THREE.MathUtils.lerp(camSmoothPos.current.x, pos.x, camFollow);
+      camSmoothPos.current.y = THREE.MathUtils.lerp(camSmoothPos.current.y, pos.y, camFollow);
+      camSmoothPos.current.z = THREE.MathUtils.lerp(camSmoothPos.current.z, pos.z, camFollow);
+    }
+    state.camera.position.set(
+      camSmoothPos.current.x,
+      camSmoothPos.current.y + 0.6 + headBobY,
+      camSmoothPos.current.z
+    );
 
     if (state.camera instanceof THREE.PerspectiveCamera) {
-      const targetFov = hasInput && shift ? SPRINT_FOV : BASE_FOV;
+      const targetFov = THREE.MathUtils.clamp(
+        (hasInput && shift ? SPRINT_FOV : BASE_FOV) + zoomFovOffsetRef.current,
+        MIN_ZOOM_FOV,
+        MAX_ZOOM_FOV + 3
+      );
       if (Math.abs(state.camera.fov - targetFov) > 0.02) {
-        state.camera.fov = THREE.MathUtils.lerp(state.camera.fov, targetFov, 1 - Math.exp(-8 * dt));
+        state.camera.fov = THREE.MathUtils.lerp(state.camera.fov, targetFov, 1 - Math.exp(-9 * dt));
         state.camera.updateProjectionMatrix();
       }
     }
@@ -454,6 +518,7 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
         true
       );
       rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      camSmoothPos.current.set(initialPosition[0], initialPosition[1], initialPosition[2]);
       smoothVel.current = { x: 0, z: 0 };
     }
   });

@@ -5,6 +5,7 @@ export interface MaterialMapSet {
   map: THREE.CanvasTexture;
   roughnessMap: THREE.CanvasTexture;
   bumpMap: THREE.CanvasTexture;
+  emissiveMap?: THREE.CanvasTexture;
 }
 
 function makeSeededRand(initialSeed: number) {
@@ -26,9 +27,10 @@ function configureRepeatedTexture(
 }
 
 /**
- * Architectural terrazzo / honed stone slab floor diffuse, roughness, and bump maps.
+ * Architectural honed dark-tech obsidian terrazzo slab floor with diffuse,
+ * high-contrast specular roughness, bump, and subtle glowing neon circuit inlay emissive maps.
  */
-export function createFloorMaps(): MaterialMapSet {
+export function createFloorMaps(): MaterialMapSet & { emissiveMap: THREE.CanvasTexture } {
   const size = 1024;
   const dCanvas = document.createElement('canvas');
   dCanvas.width = size;
@@ -45,57 +47,82 @@ export function createFloorMaps(): MaterialMapSet {
   bCanvas.height = size;
   const bCtx = bCanvas.getContext('2d');
 
-  if (dCtx && rCtx && bCtx) {
-    dCtx.fillStyle = '#070c17';
+  const eCanvas = document.createElement('canvas');
+  eCanvas.width = size;
+  eCanvas.height = size;
+  const eCtx = eCanvas.getContext('2d');
+
+  if (dCtx && rCtx && bCtx && eCtx) {
+    // Rich sapphire-obsidian polished stone base
+    dCtx.fillStyle = '#081122';
     dCtx.fillRect(0, 0, size, size);
 
-    // Sleek honed dark-tech obsidian terrazzo (~0.15 - 0.25 roughness) to mirror neon strips vividly
-    rCtx.fillStyle = '#2c2c2c';
+    // Mirror-slick dark-tech obsidian terrazzo (~0.11 - 0.19 roughness) to reflect neon IBL vividly
+    rCtx.fillStyle = '#202020';
     rCtx.fillRect(0, 0, size, size);
 
     bCtx.fillStyle = '#8a8a8a';
     bCtx.fillRect(0, 0, size, size);
 
+    // Pure black base for emissive map (only neon hairline seams & nodes glow)
+    eCtx.fillStyle = '#000000';
+    eCtx.fillRect(0, 0, size, size);
+
     const rand = makeSeededRand(1337);
 
-    // Subtle stone tonal patches across slabs
+    // Subtle tonal depth & diagonal satin polish variation across slabs
     for (let sx = 0; sx < 4; sx++) {
       for (let sy = 0; sy < 4; sy++) {
         const tone = (rand() - 0.5) * 10;
-        dCtx.fillStyle = tone > 0 ? 'rgba(38, 54, 82, 0.16)' : 'rgba(9, 14, 24, 0.16)';
+        const slabGrad = dCtx.createLinearGradient(
+          sx * 256,
+          sy * 256,
+          (sx + 1) * 256,
+          (sy + 1) * 256
+        );
+        if (tone > 0) {
+          slabGrad.addColorStop(0, 'rgba(32, 62, 108, 0.24)');
+          slabGrad.addColorStop(1, 'rgba(12, 24, 48, 0.16)');
+        } else {
+          slabGrad.addColorStop(0, 'rgba(14, 26, 52, 0.18)');
+          slabGrad.addColorStop(1, 'rgba(26, 46, 86, 0.22)');
+        }
+        dCtx.fillStyle = slabGrad;
         dCtx.fillRect(sx * 256, sy * 256, 256, 256);
 
-        rCtx.fillStyle = rand() > 0.5 ? 'rgba(62, 62, 62, 0.25)' : 'rgba(84, 84, 84, 0.25)';
+        rCtx.fillStyle = rand() > 0.5 ? 'rgba(38, 38, 38, 0.26)' : 'rgba(58, 58, 58, 0.22)';
         rCtx.fillRect(sx * 256, sy * 256, 256, 256);
       }
     }
 
-    // Fine terrazzo aggregate flecks
-    for (let i = 0; i < 5200; i++) {
+    // Fine crystalline terrazzo mineral aggregate & micro-mica specular flecks
+    for (let i = 0; i < 5600; i++) {
       const x = rand() * size;
       const y = rand() * size;
       const r = 0.6 + rand() * 1.9;
       const shade = rand();
       dCtx.fillStyle =
-        shade > 0.9
-          ? 'rgba(148, 184, 226, 0.18)'
-          : shade > 0.52
-          ? 'rgba(38, 52, 78, 0.34)'
-          : 'rgba(10, 14, 22, 0.3)';
+        shade > 0.92
+          ? 'rgba(155, 224, 255, 0.28)'
+          : shade > 0.84
+          ? 'rgba(192, 132, 252, 0.16)'
+          : shade > 0.48
+          ? 'rgba(38, 62, 98, 0.36)'
+          : 'rgba(8, 14, 26, 0.32)';
       dCtx.beginPath();
       dCtx.arc(x, y, r, 0, Math.PI * 2);
       dCtx.fill();
 
-      rCtx.fillStyle = shade > 0.72 ? 'rgba(52,52,52,0.28)' : 'rgba(130,130,130,0.2)';
+      rCtx.fillStyle = shade > 0.78 ? 'rgba(22,22,22,0.34)' : 'rgba(98,98,98,0.18)';
       rCtx.fillRect(x, y, r * 1.4, r * 1.4);
 
-      bCtx.fillStyle = shade > 0.65 ? '#9c9c9c' : '#767676';
+      bCtx.fillStyle = shade > 0.65 ? '#9e9e9e' : '#747474';
       bCtx.fillRect(x, y, r, r);
     }
 
     // Recessed architectural slab grout lines (256px)
     const slab = 256;
-    dCtx.strokeStyle = '#090e18';
+    dCtx.strokeStyle = '#060b16';
     dCtx.lineWidth = 4;
     rCtx.strokeStyle = '#dcdcdc';
     rCtx.lineWidth = 5;
@@ -115,10 +142,10 @@ export function createFloorMaps(): MaterialMapSet {
       });
     }
 
-    // Subtle specular chamfer beside grout lines
-    dCtx.strokeStyle = 'rgba(125, 211, 252, 0.08)';
-    dCtx.lineWidth = 1.5;
-    bCtx.strokeStyle = '#b6b6b6';
+    // Specular chamfer beside grout lines + delicate glowing neon micro-circuit inlays
+    dCtx.strokeStyle = 'rgba(0, 245, 255, 0.16)';
+    dCtx.lineWidth = 1.6;
+    bCtx.strokeStyle = '#bcbcbc';
     bCtx.lineWidth = 1.5;
     for (let i = 3; i < size; i += slab) {
       [dCtx, bCtx].forEach((ctx) => {
@@ -132,12 +159,45 @@ export function createFloorMaps(): MaterialMapSet {
         ctx.stroke();
       });
     }
+
+    // Subtle futuristic glowing architectural floor seam accents (electric cyan & cyber-violet)
+    for (let i = 0; i <= size; i += slab) {
+      const isCyan = (i / slab) % 2 === 0;
+      eCtx.strokeStyle = isCyan ? 'rgba(0, 245, 255, 0.34)' : 'rgba(184, 77, 255, 0.28)';
+      eCtx.lineWidth = 1.8;
+
+      eCtx.beginPath();
+      eCtx.moveTo(i, 0);
+      eCtx.lineTo(i, size);
+      eCtx.stroke();
+
+      eCtx.beginPath();
+      eCtx.moveTo(0, i);
+      eCtx.lineTo(size, i);
+      eCtx.stroke();
+    }
+
+    // Crisp luminous diamond micro-nodes at slab corners (adds luxury sci-fi floor depth)
+    for (let gx = 0; gx <= size; gx += slab) {
+      for (let gy = 0; gy <= size; gy += slab) {
+        const isCyan = ((gx + gy) / slab) % 2 === 0;
+        const glowGrad = eCtx.createRadialGradient(gx, gy, 0.5, gx, gy, 14);
+        glowGrad.addColorStop(0, isCyan ? 'rgba(140, 252, 255, 0.92)' : 'rgba(216, 150, 255, 0.85)');
+        glowGrad.addColorStop(0.35, isCyan ? 'rgba(0, 245, 255, 0.35)' : 'rgba(184, 77, 255, 0.3)');
+        glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        eCtx.fillStyle = glowGrad;
+        eCtx.beginPath();
+        eCtx.arc(gx, gy, 14, 0, Math.PI * 2);
+        eCtx.fill();
+      }
+    }
   }
 
   return {
     map: configureRepeatedTexture(dCanvas, 6, 6, 16, true),
     roughnessMap: configureRepeatedTexture(rCanvas, 6, 6, 16, false),
     bumpMap: configureRepeatedTexture(bCanvas, 6, 6, 16, false),
+    emissiveMap: configureRepeatedTexture(eCanvas, 6, 6, 16, true),
   };
 }
 
@@ -217,7 +277,7 @@ export function createMarbleMaps(): MaterialMapSet {
       });
 
       dCtx.strokeStyle =
-        v % 3 === 0 ? 'rgba(148, 197, 255, 0.16)' : 'rgba(226, 232, 240, 0.09)';
+        v % 3 === 0 ? 'rgba(0, 245, 255, 0.24)' : 'rgba(226, 232, 240, 0.14)';
       dCtx.lineWidth = lw;
       dCtx.stroke();
 
@@ -306,10 +366,10 @@ export function createArchitecturalWallMaps(): MaterialMapSet {
   const bCtx = bCanvas.getContext('2d');
 
   if (dCtx && rCtx && bCtx) {
-    dCtx.fillStyle = '#0d1422';
+    dCtx.fillStyle = '#0c162c';
     dCtx.fillRect(0, 0, size, size);
 
-    rCtx.fillStyle = '#b4b4b4';
+    rCtx.fillStyle = '#9c9c9c';
     rCtx.fillRect(0, 0, size, size);
 
     bCtx.fillStyle = '#828282';
@@ -321,17 +381,17 @@ export function createArchitecturalWallMaps(): MaterialMapSet {
       const y = rand() * size;
       const w = 2 + rand() * 5;
       const bright = rand() > 0.5;
-      dCtx.fillStyle = bright ? 'rgba(34, 48, 72, 0.2)' : 'rgba(11, 16, 28, 0.2)';
+      dCtx.fillStyle = bright ? 'rgba(42, 68, 110, 0.24)' : 'rgba(9, 16, 32, 0.24)';
       dCtx.fillRect(x, y, w, w);
 
-      bCtx.fillStyle = bright ? '#8d8d8d' : '#767676';
+      bCtx.fillStyle = bright ? '#8e8e8e' : '#747474';
       bCtx.fillRect(x, y, w, w);
     }
 
-    // Subtle vertical architectural panel seams every 256px
-    dCtx.strokeStyle = 'rgba(8, 12, 22, 0.65)';
+    // Subtle vertical architectural panel seams with hairline cyan-titanium chamfer
+    dCtx.strokeStyle = 'rgba(6, 11, 24, 0.72)';
     dCtx.lineWidth = 2;
-    bCtx.strokeStyle = '#383838';
+    bCtx.strokeStyle = '#343434';
     bCtx.lineWidth = 3;
     for (let x = 0; x <= size; x += 256) {
       dCtx.beginPath();
@@ -343,6 +403,17 @@ export function createArchitecturalWallMaps(): MaterialMapSet {
       bCtx.moveTo(x, 0);
       bCtx.lineTo(x, size);
       bCtx.stroke();
+
+      if (x + 2 < size) {
+        dCtx.strokeStyle = 'rgba(56, 189, 248, 0.14)';
+        dCtx.lineWidth = 1;
+        dCtx.beginPath();
+        dCtx.moveTo(x + 2, 0);
+        dCtx.lineTo(x + 2, size);
+        dCtx.stroke();
+        dCtx.strokeStyle = 'rgba(6, 11, 24, 0.72)';
+        dCtx.lineWidth = 2;
+      }
     }
   }
 

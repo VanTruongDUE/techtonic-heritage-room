@@ -1,4 +1,5 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect, useRef } from 'react';
+import { useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import { StudioLights } from './Environment/StudioLights';
 import { CosmicBackdrop } from './Environment/CosmicBackdrop';
@@ -15,13 +16,38 @@ import { HallParticleField, OrgConstellationOrbit } from './Effects/AmbientMotio
 import { CodeCosmosOrbit } from './Effects/CodeCosmosOrbit';
 import { useHeritageStore } from '../../store/useHeritageStore';
 
+/**
+ * Pre-compiles WebGL shaders in the background while the Welcome overlay is active
+ * so panning the camera around the gallery has ZERO first-look shader compilation hitch.
+ */
+const ShaderPrewarmer: React.FC = () => {
+  const { gl, scene, camera } = useThree();
+  const compiledRef = useRef(false);
+
+  useEffect(() => {
+    if (compiledRef.current) return;
+    const rafId = window.requestAnimationFrame(() => {
+      try {
+        gl.compile(scene, camera);
+        compiledRef.current = true;
+      } catch {
+        // Ignore if context is disposed during hot reload
+      }
+    });
+    return () => window.cancelAnimationFrame(rafId);
+  }, [gl, scene, camera]);
+
+  return null;
+};
+
 export const Scene: React.FC = () => {
   const activeModal = useHeritageStore((s) => s.activeModal);
 
   return (
     <Suspense fallback={null}>
-      <color attach="background" args={['#010206']} />
-      <fog attach="fog" args={['#010206', 190, 445]} />
+      <color attach="background" args={['#02040d']} />
+      <fog attach="fog" args={['#020512', 205, 470]} />
+      <ShaderPrewarmer />
 
       {/* 360° Deep-Space Starfield, Nebula & Glowing 3D Moon outside the Observatory */}
       <CosmicBackdrop />
@@ -34,8 +60,8 @@ export const Scene: React.FC = () => {
       <OrgConstellationOrbit />
       <CodeCosmosOrbit />
 
-      {/* Physics World (paused automatically while viewing 2D modals to save CPU) */}
-      <Physics gravity={[0, -9.81, 0]} paused={Boolean(activeModal)}>
+      {/* Physics World: variable frame-synced step eliminates 60Hz-vs-120/144Hz movement judder */}
+      <Physics gravity={[0, -9.81, 0]} timeStep="vary" paused={Boolean(activeModal)}>
         <MuseumRoom />
         <CenterWall />
         <PerimeterGallery />

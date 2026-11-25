@@ -119,84 +119,120 @@ export const StudioLights: React.FC = () => {
     const hr = hallRevealRef.current;
 
     if (centerWallSpotRef.current) {
-      centerWallSpotRef.current.intensity = isCinemaActive ? 6 : 68 * hr;
+      centerWallSpotRef.current.intensity = isCinemaActive ? 6 : 78 * hr;
     }
     if (islandGoldSpotRef.current) {
-      islandGoldSpotRef.current.intensity = (92 + Math.sin(t * 0.9) * 5) * hr;
+      islandGoldSpotRef.current.intensity = (104 + Math.sin(t * 0.9) * 6) * hr;
     }
     if (islandCrownGlowRef.current) {
-      islandCrownGlowRef.current.intensity = (24 + Math.sin(t * 1.35) * 3.5) * hr;
+      islandCrownGlowRef.current.intensity = (30 + Math.sin(t * 1.35) * 4.5) * hr;
     }
     if (hallCyanFillRef.current) {
-      hallCyanFillRef.current.intensity = (28 + Math.sin(t * 1.1) * 4.0) * hr;
+      hallCyanFillRef.current.intensity = (36 + Math.sin(t * 1.1) * 5.0) * hr;
     }
     if (hallVioletFillRef.current) {
-      hallVioletFillRef.current.intensity = (27 + Math.cos(t * 1.0 + 0.6) * 4.0) * hr;
+      hallVioletFillRef.current.intensity = (35 + Math.cos(t * 1.0 + 0.6) * 5.0) * hr;
     }
     if (shirtKeySpotRef.current) {
-      shirtKeySpotRef.current.intensity = 62 * hr;
+      shirtKeySpotRef.current.intensity = 70 * hr;
     }
     if (frontHallFillRef.current) {
-      frontHallFillRef.current.intensity = (22 + Math.sin(t * 1.25 + 1.0) * 3.0) * hr;
+      frontHallFillRef.current.intensity = (28 + Math.sin(t * 1.25 + 1.0) * 4.0) * hr;
     }
   });
 
   return (
     <group>
-      {/* Lightweight 128px IBL Environment Cubemap (rendered once, zero per-frame cost!) */}
-      <Environment resolution={128} frames={1} environmentIntensity={1.1}>
+      {/* Crisp 256px Multi-Spectral Neon IBL Environment Cubemap (rendered ONCE at startup = 0ms/frame!) */}
+      <Environment resolution={256} frames={1} environmentIntensity={0.95}>
+        {/* Overhead Cosmic Skylight Cool Cyan Wash */}
         <Lightformer
           form="circle"
-          intensity={2.0}
-          color="#ccf9ff"
+          intensity={1.35}
+          color="#a5f3fc"
           position={[0, 11, -5]}
           rotation={[Math.PI / 2, 0, 0]}
           scale={[16, 16, 1]}
         />
+        {/* Sovereign Champagne-Gold Halo above Central Honor Island */}
         <Lightformer
           form="ring"
-          intensity={3.4}
-          color="#ffe6a0"
-          position={[0, 8.8, -5]}
+          intensity={2.8}
+          color="#ffe082"
+          position={[0, 8.6, -5]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[6.0, 6.0, 1]}
+          scale={[6.2, 6.2, 1]}
         />
+        {/* 4 Vivid Alternating Electric-Cyan & Cyber-Violet Ceiling Neon Beams */}
         <Lightformer
           form="rect"
-          intensity={3.2}
+          intensity={2.6}
           color="#00F5FF"
           position={[0, 9.2, -12]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[24, 0.85, 1]}
+          scale={[24, 0.75, 1]}
         />
         <Lightformer
           form="rect"
-          intensity={3.0}
-          color="#b84dff"
+          intensity={2.4}
+          color="#c026d3"
           position={[0, 9.2, -7]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[24, 0.85, 1]}
+          scale={[24, 0.75, 1]}
         />
         <Lightformer
           form="rect"
-          intensity={3.0}
+          intensity={2.4}
           color="#00F5FF"
           position={[0, 9.2, -2]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[24, 0.85, 1]}
+          scale={[24, 0.75, 1]}
         />
         <Lightformer
           form="rect"
-          intensity={2.8}
-          color="#b84dff"
+          intensity={2.2}
+          color="#a855f7"
           position={[0, 9.2, 3]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[24, 0.85, 1]}
+          scale={[24, 0.75, 1]}
+        />
+        {/* Panoramic Wall Horizon Reflections (rich dark-tech color sheen without white grazing blow-out) */}
+        <Lightformer
+          form="rect"
+          intensity={1.35}
+          color="#00F5FF"
+          position={[0, 3.2, -19]}
+          rotation={[0, 0, 0]}
+          scale={[26, 2.8, 1]}
         />
         <Lightformer
           form="rect"
-          intensity={0.14}
-          color="#030712"
+          intensity={1.25}
+          color="#a855f7"
+          position={[-17, 3.2, -5]}
+          rotation={[0, Math.PI / 2, 0]}
+          scale={[22, 2.6, 1]}
+        />
+        <Lightformer
+          form="rect"
+          intensity={1.25}
+          color="#06b6d4"
+          position={[17, 3.2, -5]}
+          rotation={[0, -Math.PI / 2, 0]}
+          scale={[22, 2.6, 1]}
+        />
+        <Lightformer
+          form="rect"
+          intensity={1.0}
+          color="#2563eb"
+          position={[0, 3.2, 11]}
+          rotation={[0, Math.PI, 0]}
+          scale={[20, 2.5, 1]}
+        />
+        <Lightformer
+          form="rect"
+          intensity={0.22}
+          color="#040b1c"
           position={[0, -5, -4]}
           rotation={[-Math.PI / 2, 0, 0]}
           scale={[34, 34, 1]}
@@ -208,9 +244,9 @@ export const StudioLights: React.FC = () => {
       <primitive object={centralIslandTarget.current} position={[0, 1.5, -5]} />
       <primitive object={shirtTarget.current} position={[13.8, 2.0, -10.4]} />
 
-      {/* 1–3. Crisp Dark-Tech Interior Fill + Single Optional Hero Shadow Caster */}
-      <hemisphereLight color="#84e8ff" groundColor="#060c1a" intensity={0.58} />
-      <ambientLight color="#0e1c36" intensity={0.24} />
+      {/* 1–3. Vivid Dark-Tech Interior Fill + Single Optional Hero Shadow Caster */}
+      <hemisphereLight color="#7be8ff" groundColor="#091228" intensity={0.68} />
+      <ambientLight color="#112244" intensity={0.28} />
       <directionalLight
         position={[4, 14, 8]}
         intensity={0.42}

@@ -86,6 +86,27 @@ function createGaussianGlowTexture(): THREE.CanvasTexture {
   return tex;
 }
 
+/** Soft circular Gaussian radial pool texture for zero-cost floor neon light-bounce reflections */
+function createRadialPoolTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grad.addColorStop(0.0, 'rgba(255,255,255,0.92)');
+    grad.addColorStop(0.32, 'rgba(255,255,255,0.44)');
+    grad.addColorStop(0.68, 'rgba(255,255,255,0.11)');
+    grad.addColorStop(1.0, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 128, 128);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  return tex;
+}
+
 export const MuseumRoom: React.FC = () => {
   const graphicsQuality = useHeritageStore((s) => s.graphicsQuality);
   const floorMaps = useMemo(() => createFloorMaps(), []);
@@ -93,8 +114,10 @@ export const MuseumRoom: React.FC = () => {
   const metalMaps = useMemo(() => createBrushedMetalMaps(), []);
   const leatherMaps = useMemo(() => createLeatherMaps(), []);
   const softGlowTex = useMemo(() => createGaussianGlowTexture(), []);
+  const radialPoolTex = useMemo(() => createRadialPoolTexture(), []);
   const guideMatRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const hallBeamHaloRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
+  const floorBouncePoolRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const tunnelRibTopRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const tunnelRibHaloRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const tunnelRibLeftRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
@@ -113,8 +136,15 @@ export const MuseumRoom: React.FC = () => {
     // 0. Organic breathing neon halo waves across the 4 Main Hall overhead ceiling beams
     hallBeamHaloRefs.current.forEach((mat, idx) => {
       if (!mat) return;
-      const pulse = 0.3 + (Math.sin(t * 1.45 - idx * 0.9) * 0.5 + 0.5) * 0.16;
+      const pulse = 0.34 + (Math.sin(t * 1.45 - idx * 0.9) * 0.5 + 0.5) * 0.18;
       mat.opacity = pulse;
+    });
+
+    // 0b. Subtle living shimmer across baked zero-cost neon floor light-bounce reflection pools
+    floorBouncePoolRefs.current.forEach((mat, idx) => {
+      if (!mat) return;
+      const baseOp = idx === 0 ? 0.095 : idx === 1 ? 0.085 : 0.065;
+      mat.opacity = baseOp + Math.sin(t * 1.15 + idx * 1.3) * 0.018;
     });
 
     // 1. Sequential Superstar Runway Floor Guide Bars (light up brightly ahead of player footsteps)
@@ -200,6 +230,7 @@ export const MuseumRoom: React.FC = () => {
       floorMaps.map.dispose();
       floorMaps.roughnessMap.dispose();
       floorMaps.bumpMap.dispose();
+      floorMaps.emissiveMap.dispose();
       wallMaps.map.dispose();
       wallMaps.roughnessMap.dispose();
       wallMaps.bumpMap.dispose();
@@ -208,8 +239,9 @@ export const MuseumRoom: React.FC = () => {
       leatherMaps.roughnessMap.dispose();
       leatherMaps.bumpMap.dispose();
       softGlowTex.dispose();
+      radialPoolTex.dispose();
     };
-  }, [floorMaps, wallMaps, metalMaps, leatherMaps, softGlowTex]);
+  }, [floorMaps, wallMaps, metalMaps, leatherMaps, softGlowTex, radialPoolTex]);
 
   return (
     <group>
@@ -237,54 +269,93 @@ export const MuseumRoom: React.FC = () => {
         </mesh>
       </RigidBody>
 
-      {/* Main Hall Floor: Adaptive Single-Pass Obsidian Glass on Laptops / Fast 256px Planar Mirror on High-End GPUs */}
+      {/* Main Hall Floor: Deep Dark-Tech Obsidian Clearcoat + Glowing Neon Circuit Veins (zero grazing blow-out!) */}
       <mesh position={[0, 0.002, -5]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[31.8, 25.8]} />
         {graphicsQuality === 'high' ? (
           <MeshReflectorMaterial
             key="floor-reflector-high"
-            blur={[160, 52]}
+            blur={[180, 56]}
             resolution={256}
-            mixBlur={0.84}
-            mixStrength={0.86}
-            roughness={0.28}
-            depthScale={0.8}
-            minDepthThreshold={0.38}
+            mixBlur={0.85}
+            mixStrength={0.78}
+            roughness={0.3}
+            depthScale={0.85}
+            minDepthThreshold={0.35}
             maxDepthThreshold={1.4}
-            color="#070d1c"
-            metalness={0.48}
-            mirror={0.68}
+            color="#060c1a"
+            metalness={0.45}
+            mirror={0.62}
             map={floorMaps.map}
             roughnessMap={floorMaps.roughnessMap}
             bumpMap={floorMaps.bumpMap}
-            bumpScale={0.003}
+            bumpScale={0.004}
+            emissive="#ffffff"
+            emissiveMap={floorMaps.emissiveMap}
+            emissiveIntensity={0.52}
           />
         ) : (
-          <meshStandardMaterial
+          <meshPhysicalMaterial
             key="floor-glossy-balanced"
-            color="#091122"
+            color="#060c1a"
             map={floorMaps.map}
             roughnessMap={floorMaps.roughnessMap}
             bumpMap={floorMaps.bumpMap}
-            bumpScale={0.003}
-            roughness={0.2}
-            metalness={0.58}
-            envMapIntensity={1.65}
+            bumpScale={0.004}
+            emissive="#ffffff"
+            emissiveMap={floorMaps.emissiveMap}
+            emissiveIntensity={0.58}
+            roughness={0.28}
+            metalness={0.46}
+            clearcoat={0.32}
+            clearcoatRoughness={0.34}
+            envMapIntensity={0.82}
           />
         )}
       </mesh>
 
-      {/* Entrance Tunnel Glossy Obsidian Runway Strip (IBL reflection — zero extra scene render pass!) */}
+      {/* Entrance Tunnel Deep Obsidian Runway Strip (balanced clearcoat IBL + glowing micro-circuits) */}
       <mesh position={[0, 0.003, 18.5]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[4.75, 20.1]} />
-        <meshStandardMaterial
-          color="#070d1b"
+        <meshPhysicalMaterial
+          color="#060c1a"
+          map={floorMaps.map}
           roughnessMap={floorMaps.roughnessMap}
-          roughness={0.18}
-          metalness={0.62}
-          envMapIntensity={1.6}
+          emissive="#ffffff"
+          emissiveMap={floorMaps.emissiveMap}
+          emissiveIntensity={0.48}
+          roughness={0.26}
+          metalness={0.48}
+          clearcoat={0.3}
+          clearcoatRoughness={0.32}
+          envMapIntensity={0.8}
         />
       </mesh>
+
+      {/* Zero-Cost Additive Neon Floor Reflection Bounce Pools (subtle colored glow tint on dark obsidian floor) */}
+      {[
+        { pos: [0, 0.006, -5] as [number, number, number], args: [9.6, 9.6] as [number, number], color: '#ffd466', opacity: 0.095 },
+        { pos: [0, 0.006, -15.4] as [number, number, number], args: [16.5, 5.8] as [number, number], color: '#00F5FF', opacity: 0.085 },
+        { pos: [-13.6, 0.006, -5] as [number, number, number], args: [6.4, 21.5] as [number, number], color: '#b84dff', opacity: 0.065 },
+        { pos: [13.6, 0.006, -5] as [number, number, number], args: [6.4, 21.5] as [number, number], color: '#00e5ff', opacity: 0.065 },
+        { pos: [9.6, 0.006, 5.8] as [number, number, number], args: [9.0, 4.8] as [number, number], color: '#38bdf8', opacity: 0.065 },
+        { pos: [-10.4, 0.006, 5.8] as [number, number, number], args: [9.0, 4.8] as [number, number], color: '#a855f7', opacity: 0.065 },
+      ].map((pool, pIdx) => (
+        <mesh key={`floor-bounce-pool-${pIdx}`} position={pool.pos} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={pool.args} />
+          <meshBasicMaterial
+            ref={(el) => {
+              floorBouncePoolRefs.current[pIdx] = el;
+            }}
+            map={radialPoolTex}
+            color={pool.color}
+            transparent
+            opacity={pool.opacity}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
 
       {/* Perimeter Translucent Cosmic-Glass Floor Viewing Borders (peek into starry void beneath the station!) */}
       {[

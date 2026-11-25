@@ -135,57 +135,77 @@ function createMoonMaps(): { map: THREE.CanvasTexture; bumpMap: THREE.CanvasText
   };
 }
 
-/** Deep-space panoramic sky dome texture: ultra-dark obsidian cosmos with whispered deep nebula */
+/** Deep-space panoramic sky dome texture: rich dark-tech obsidian cosmos with luminous aurora nebulae */
 function createCosmicDomeTexture(): THREE.CanvasTexture {
   const { canvas, ctx } = createHiResCanvas(2048, 1024, 1);
   if (ctx) {
     const bg = ctx.createLinearGradient(0, 0, 0, 1024);
-    bg.addColorStop(0, '#000104');
-    bg.addColorStop(0.35, '#010309');
-    bg.addColorStop(0.65, '#020510');
-    bg.addColorStop(1, '#000104');
+    bg.addColorStop(0, '#01030b');
+    bg.addColorStop(0.32, '#03081a');
+    bg.addColorStop(0.62, '#050c24');
+    bg.addColorStop(1, '#01030a');
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, 2048, 1024);
 
-    // Whisper-subtle deep-space cosmic dust bands (keeps sky dark and high-contrast)
+    // Rich deep-space Milky Way & cyber-aurora nebula bands (luminous color depth against dark void)
     const clouds: Array<[number, number, number, string]> = [
-      [340, 320, 420, 'rgba(20, 48, 130, 0.055)'],
-      [680, 280, 460, 'rgba(14, 116, 164, 0.045)'],
-      [1040, 360, 520, 'rgba(67, 56, 202, 0.052)'],
-      [1380, 440, 440, 'rgba(109, 40, 217, 0.05)'],
-      [1720, 350, 420, 'rgba(8, 105, 165, 0.042)'],
-      [960, 660, 480, 'rgba(18, 36, 92, 0.048)'],
-      [1520, 690, 380, 'rgba(76, 20, 118, 0.04)'],
+      [310, 300, 440, 'rgba(37, 99, 235, 0.19)'],
+      [660, 250, 480, 'rgba(6, 182, 212, 0.17)'],
+      [1040, 320, 560, 'rgba(99, 102, 241, 0.18)'],
+      [1390, 380, 480, 'rgba(168, 85, 247, 0.21)'],
+      [1740, 320, 460, 'rgba(14, 165, 233, 0.16)'],
+      [520, 540, 420, 'rgba(139, 92, 246, 0.14)'],
+      [960, 620, 520, 'rgba(29, 78, 216, 0.16)'],
+      [1520, 650, 420, 'rgba(192, 38, 211, 0.15)'],
+      [140, 440, 360, 'rgba(0, 245, 255, 0.13)'],
     ];
 
     clouds.forEach(([cx, cy, r, color]) => {
-      const g = ctx.createRadialGradient(cx, cy, r * 0.06, cx, cy, r);
+      const g = ctx.createRadialGradient(cx, cy, r * 0.05, cx, cy, r);
       g.addColorStop(0, color);
-      g.addColorStop(0.55, color.replace(/0\.\d+\)$/, '0.015)'));
-      g.addColorStop(1, 'rgba(1, 2, 8, 0)');
+      g.addColorStop(0.48, color.replace(/0\.\d+\)$/, '0.065)'));
+      g.addColorStop(1, 'rgba(1, 3, 12, 0)');
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fill();
     });
 
-    // Ultra-fine distant background star dust baked into the dark dome
+    // Sweeping translucent diagonal cosmic aurora ribbon across upper dome
+    ctx.save();
+    ctx.translate(1024, 300);
+    ctx.rotate(-0.14);
+    const auroraGrad = ctx.createLinearGradient(-950, 0, 950, 0);
+    auroraGrad.addColorStop(0, 'rgba(0, 245, 255, 0)');
+    auroraGrad.addColorStop(0.25, 'rgba(0, 245, 255, 0.11)');
+    auroraGrad.addColorStop(0.52, 'rgba(129, 140, 248, 0.13)');
+    auroraGrad.addColorStop(0.76, 'rgba(192, 38, 211, 0.12)');
+    auroraGrad.addColorStop(1, 'rgba(192, 38, 211, 0)');
+    ctx.fillStyle = auroraGrad;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 960, 125, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Ultra-fine distant background star dust baked into the rich cosmic dome
     let seed = 88231;
     const rand = () => {
       seed = (seed * 16807) % 2147483647;
       return (seed - 1) / 2147483646;
     };
-    for (let i = 0; i < 2200; i++) {
+    for (let i = 0; i < 2800; i++) {
       const x = rand() * 2048;
       const y = rand() * 1024;
-      const alpha = 0.14 + rand() * 0.56;
-      const size = rand() > 0.93 ? 1.6 : 1.0;
+      const alpha = 0.18 + rand() * 0.65;
+      const size = rand() > 0.92 ? 1.8 : 1.05;
       ctx.fillStyle =
-        rand() > 0.72
-          ? `rgba(186, 230, 253, ${alpha})`
+        rand() > 0.7
+          ? `rgba(165, 243, 252, ${alpha})`
           : rand() > 0.45
           ? `rgba(255, 255, 255, ${alpha})`
-          : `rgba(254, 243, 199, ${alpha * 0.85})`;
+          : rand() > 0.22
+          ? `rgba(233, 213, 255, ${alpha * 0.9})`
+          : `rgba(254, 240, 138, ${alpha * 0.88})`;
       ctx.fillRect(x, y, size, size);
     }
   }
@@ -235,10 +255,12 @@ function createMoonHaloTexture(): THREE.CanvasTexture {
 export const CosmicBackdrop: React.FC = () => {
   const reducedMotion = useReducedMotionPreference();
   const farStarsRef = useRef<THREE.Points>(null);
+  const farStarsMatRef = useRef<THREE.PointsMaterial>(null);
   const brightStarsRef = useRef<THREE.Points>(null);
   const brightStarsMatRef = useRef<THREE.PointsMaterial>(null);
   const moonRef = useRef<THREE.Mesh>(null);
   const shootingStarRef = useRef<THREE.Mesh>(null);
+  const shootingStar2Ref = useRef<THREE.Mesh>(null);
 
   const domeTex = useMemo(() => createCosmicDomeTexture(), []);
   const moonMaps = useMemo(() => createMoonMaps(), []);
@@ -335,31 +357,52 @@ export const CosmicBackdrop: React.FC = () => {
     if (farStarsRef.current) {
       farStarsRef.current.rotation.y += delta * 0.0045;
     }
+    if (farStarsMatRef.current) {
+      farStarsMatRef.current.opacity = 0.8 + Math.cos(t * 1.4) * 0.1;
+    }
     if (brightStarsRef.current) {
       brightStarsRef.current.rotation.y += delta * 0.0075;
     }
     if (brightStarsMatRef.current) {
-      brightStarsMatRef.current.opacity = 0.78 + Math.sin(t * 2.1) * 0.16;
+      brightStarsMatRef.current.opacity = 0.82 + Math.sin(t * 2.1) * 0.16;
     }
     if (moonRef.current) {
       moonRef.current.rotation.y += delta * 0.008;
     }
 
-    // Periodic subtle distant shooting star gliding high across the night sky every ~11s
+    // Periodic subtle distant shooting star #1 (electric cyan) gliding high across the night sky every ~9.5s
     if (shootingStarRef.current) {
-      const cycle = t % 11.0;
+      const cycle = t % 9.5;
       if (cycle < 1.1) {
         const p = cycle / 1.1;
         shootingStarRef.current.visible = true;
         shootingStarRef.current.position.set(
-          -70 + p * 140,
-          92 - p * 22,
+          -75 + p * 150,
+          96 - p * 22,
           -145 + p * 18
         );
         const mat = shootingStarRef.current.material as THREE.MeshBasicMaterial;
-        mat.opacity = Math.sin(p * Math.PI) * 0.72;
+        mat.opacity = Math.sin(p * Math.PI) * 0.82;
       } else {
         shootingStarRef.current.visible = false;
+      }
+    }
+
+    // Periodic subtle distant shooting star #2 (cyber violet) staggered on opposite skylight arc
+    if (shootingStar2Ref.current) {
+      const cycle2 = (t + 4.8) % 12.5;
+      if (cycle2 < 1.15) {
+        const p = cycle2 / 1.15;
+        shootingStar2Ref.current.visible = true;
+        shootingStar2Ref.current.position.set(
+          85 - p * 155,
+          104 - p * 24,
+          -150 + p * 24
+        );
+        const mat = shootingStar2Ref.current.material as THREE.MeshBasicMaterial;
+        mat.opacity = Math.sin(p * Math.PI) * 0.78;
+      } else {
+        shootingStar2Ref.current.visible = false;
       }
     }
   });
@@ -379,6 +422,7 @@ export const CosmicBackdrop: React.FC = () => {
           <bufferAttribute attach="attributes-color" args={[farStarField.colors, 3]} />
         </bufferGeometry>
         <pointsMaterial
+          ref={farStarsMatRef}
           map={starTex}
           vertexColors
           transparent
@@ -445,11 +489,23 @@ export const CosmicBackdrop: React.FC = () => {
         </mesh>
       </group>
 
-      {/* 5. Periodic Distant Shooting Star gliding high across the night sky */}
+      {/* 5. Periodic Distant Shooting Stars gliding high across the night sky */}
       <mesh ref={shootingStarRef} visible={false} rotation={[0, 0, -0.15]}>
-        <boxGeometry args={[7.5, 0.09, 0.09]} />
+        <boxGeometry args={[8.5, 0.1, 0.1]} />
         <meshBasicMaterial
-          color="#e0f7ff"
+          color="#a5f3fc"
+          transparent
+          opacity={0}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          fog={false}
+          toneMapped={false}
+        />
+      </mesh>
+      <mesh ref={shootingStar2Ref} visible={false} rotation={[0, 0, 0.16]}>
+        <boxGeometry args={[8.0, 0.095, 0.095]} />
+        <meshBasicMaterial
+          color="#e879f9"
           transparent
           opacity={0}
           blending={THREE.AdditiveBlending}
