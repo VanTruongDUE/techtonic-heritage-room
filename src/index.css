@@ -99,6 +99,24 @@
   50% { height: 28%; }
 }
 
+@keyframes portal-orbit-slow {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes portal-orbit-reverse {
+  from {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+}
+
 /* Grounded HUD & Overlay Surfaces */
 @layer components {
   .animate-fade-in {
@@ -159,9 +177,27 @@
 
   .loading-grid-bg {
     background-image:
-      linear-gradient(rgba(0, 245, 255, 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(184, 77, 255, 0.045) 1px, transparent 1px);
-    background-size: 48px 48px;
+      linear-gradient(rgba(0, 245, 255, 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(184, 77, 255, 0.04) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 80% 75% at 50% 50%, #000 45%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 75% at 50% 50%, #000 45%, transparent 100%);
+  }
+
+  .portal-orbit-cw {
+    animation: portal-orbit-slow 72s linear infinite;
+  }
+
+  .portal-orbit-ccw {
+    animation: portal-orbit-reverse 96s linear infinite;
+  }
+
+  .keycap-chip {
+    background: linear-gradient(180deg, rgba(22, 34, 58, 0.95) 0%, rgba(10, 17, 32, 0.98) 100%);
+    border: 1px solid rgba(0, 245, 255, 0.28);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      0 2px 0 rgba(0, 0, 0, 0.55);
   }
 
   .progress-shimmer::after {
