@@ -43,9 +43,33 @@ export const HallParticleField: React.FC = () => {
     return arr;
   }, [count]);
 
+  // Smooth circular radial glow sprite so particles never render as hard squares
+  const spriteTexture = useMemo(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      g.addColorStop(0, 'rgba(255, 255, 255, 1)');
+      g.addColorStop(0.35, 'rgba(186, 230, 253, 0.75)');
+      g.addColorStop(0.7, 'rgba(56, 189, 248, 0.2)');
+      g.addColorStop(1, 'rgba(56, 189, 248, 0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 64, 64);
+    }
+    return new THREE.CanvasTexture(canvas);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      spriteTexture.dispose();
+    };
+  }, [spriteTexture]);
+
   useFrame((_, delta) => {
     if (reducedMotion || !pointsRef.current) return;
-    pointsRef.current.rotation.y += delta * 0.025;
+    pointsRef.current.rotation.y += delta * 0.02;
   });
 
   return (
@@ -54,11 +78,13 @@ export const HallParticleField: React.FC = () => {
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <pointsMaterial
+        map={spriteTexture}
+        alphaTest={0.01}
         blending={THREE.AdditiveBlending}
-        color="#7dd3fc"
+        color="#bae6fd"
         depthWrite={false}
-        opacity={0.38}
-        size={0.038}
+        opacity={0.42}
+        size={0.07}
         sizeAttenuation
         transparent
       />

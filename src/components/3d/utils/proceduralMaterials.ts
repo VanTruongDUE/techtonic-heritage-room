@@ -1,174 +1,404 @@
 import * as THREE from 'three';
 
-export interface MaterialMapPair {
+export interface MaterialMapSet {
   map: THREE.CanvasTexture;
-  roughnessMap?: THREE.CanvasTexture;
-  bumpMap?: THREE.CanvasTexture;
+  roughnessMap: THREE.CanvasTexture;
+  bumpMap: THREE.CanvasTexture;
+}
+
+function makeSeededRand(initialSeed: number) {
+  let seed = initialSeed;
+  return () => {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  };
+}
+
+function configureRepeatedTexture(
+  canvas: HTMLCanvasElement,
+  repeatX: number,
+  repeatY: number,
+  anisotropy = 8
+): THREE.CanvasTexture {
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(repeatX, repeatY);
+  tex.anisotropy = anisotropy;
+  return tex;
 }
 
 /**
- * Architectural terrazzo / micro-cement tile floor diffuse + roughness maps.
+ * Architectural terrazzo / honed stone slab floor diffuse, roughness, and bump maps.
  */
-export function createFloorMaps(): { map: THREE.CanvasTexture; roughnessMap: THREE.CanvasTexture } {
+export function createFloorMaps(): MaterialMapSet {
   const size = 1024;
+  const dCanvas = document.createElement('canvas');
+  dCanvas.width = size;
+  dCanvas.height = size;
+  const dCtx = dCanvas.getContext('2d');
 
-  // Diffuse map
-  const diffuseCanvas = document.createElement('canvas');
-  diffuseCanvas.width = size;
-  diffuseCanvas.height = size;
-  const dCtx = diffuseCanvas.getContext('2d');
+  const rCanvas = document.createElement('canvas');
+  rCanvas.width = size;
+  rCanvas.height = size;
+  const rCtx = rCanvas.getContext('2d');
 
-  // Roughness map (darker = glossier slabs, lighter = matte grout lines)
-  const roughCanvas = document.createElement('canvas');
-  roughCanvas.width = size;
-  roughCanvas.height = size;
-  const rCtx = roughCanvas.getContext('2d');
+  const bCanvas = document.createElement('canvas');
+  bCanvas.width = size;
+  bCanvas.height = size;
+  const bCtx = bCanvas.getContext('2d');
 
-  if (dCtx && rCtx) {
-    dCtx.fillStyle = '#141c2b';
+  if (dCtx && rCtx && bCtx) {
+    dCtx.fillStyle = '#141d2e';
     dCtx.fillRect(0, 0, size, size);
 
-    rCtx.fillStyle = '#5c5c5c'; // ~0.36 base roughness (satin polished concrete)
+    // Honed stone sheen variation (~0.24 - 0.38 roughness)
+    rCtx.fillStyle = '#484848';
     rCtx.fillRect(0, 0, size, size);
 
-    // Subtle mineral terrazzo aggregate speckles (deterministic pseudo-random)
-    let seed = 1337;
-    const nextRand = () => {
-      seed = (seed * 16807) % 2147483647;
-      return (seed - 1) / 2147483646;
-    };
+    bCtx.fillStyle = '#8a8a8a';
+    bCtx.fillRect(0, 0, size, size);
 
-    for (let i = 0; i < 4200; i++) {
-      const x = nextRand() * size;
-      const y = nextRand() * size;
-      const r = 0.6 + nextRand() * 1.8;
-      const shade = nextRand();
+    const rand = makeSeededRand(1337);
+
+    // Subtle stone tonal patches across slabs
+    for (let sx = 0; sx < 4; sx++) {
+      for (let sy = 0; sy < 4; sy++) {
+        const tone = (rand() - 0.5) * 10;
+        dCtx.fillStyle = tone > 0 ? 'rgba(38, 54, 82, 0.16)' : 'rgba(9, 14, 24, 0.16)';
+        dCtx.fillRect(sx * 256, sy * 256, 256, 256);
+
+        rCtx.fillStyle = rand() > 0.5 ? 'rgba(62, 62, 62, 0.25)' : 'rgba(84, 84, 84, 0.25)';
+        rCtx.fillRect(sx * 256, sy * 256, 256, 256);
+      }
+    }
+
+    // Fine terrazzo aggregate flecks
+    for (let i = 0; i < 5200; i++) {
+      const x = rand() * size;
+      const y = rand() * size;
+      const r = 0.6 + rand() * 1.9;
+      const shade = rand();
       dCtx.fillStyle =
-        shade > 0.88
-          ? 'rgba(148, 178, 218, 0.14)'
-          : shade > 0.5
-          ? 'rgba(38, 52, 78, 0.35)'
-          : 'rgba(10, 14, 22, 0.32)';
+        shade > 0.9
+          ? 'rgba(148, 184, 226, 0.18)'
+          : shade > 0.52
+          ? 'rgba(38, 52, 78, 0.34)'
+          : 'rgba(10, 14, 22, 0.3)';
       dCtx.beginPath();
       dCtx.arc(x, y, r, 0, Math.PI * 2);
       dCtx.fill();
 
-      rCtx.fillStyle = shade > 0.7 ? 'rgba(90,90,90,0.22)' : 'rgba(140,140,140,0.18)';
-      rCtx.fillRect(x, y, r * 1.5, r * 1.5);
+      rCtx.fillStyle = shade > 0.72 ? 'rgba(52,52,52,0.28)' : 'rgba(130,130,130,0.2)';
+      rCtx.fillRect(x, y, r * 1.4, r * 1.4);
+
+      bCtx.fillStyle = shade > 0.65 ? '#9c9c9c' : '#767676';
+      bCtx.fillRect(x, y, r, r);
     }
 
-    // Large architectural slab joints (256px grid)
+    // Recessed architectural slab grout lines (256px)
     const slab = 256;
-    dCtx.strokeStyle = '#0b101b';
+    dCtx.strokeStyle = '#090e18';
     dCtx.lineWidth = 4;
-    rCtx.strokeStyle = '#e0e0e0'; // matte grout
+    rCtx.strokeStyle = '#dcdcdc';
     rCtx.lineWidth = 5;
+    bCtx.strokeStyle = '#242424';
+    bCtx.lineWidth = 5;
 
     for (let i = 0; i <= size; i += slab) {
-      dCtx.beginPath();
-      dCtx.moveTo(i, 0);
-      dCtx.lineTo(i, size);
-      dCtx.stroke();
-      dCtx.beginPath();
-      dCtx.moveTo(0, i);
-      dCtx.lineTo(size, i);
-      dCtx.stroke();
-
-      rCtx.beginPath();
-      rCtx.moveTo(i, 0);
-      rCtx.lineTo(i, size);
-      rCtx.stroke();
-      rCtx.beginPath();
-      rCtx.moveTo(0, i);
-      rCtx.lineTo(size, i);
-      rCtx.stroke();
+      [dCtx, rCtx, bCtx].forEach((ctx) => {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, size);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(size, i);
+        ctx.stroke();
+      });
     }
 
-    // Subtle chamfer highlight next to joints
-    dCtx.strokeStyle = 'rgba(125, 211, 252, 0.06)';
+    // Subtle specular chamfer beside grout lines
+    dCtx.strokeStyle = 'rgba(125, 211, 252, 0.08)';
     dCtx.lineWidth = 1.5;
+    bCtx.strokeStyle = '#b6b6b6';
+    bCtx.lineWidth = 1.5;
     for (let i = 3; i < size; i += slab) {
-      dCtx.beginPath();
-      dCtx.moveTo(i, 0);
-      dCtx.lineTo(i, size);
-      dCtx.stroke();
-      dCtx.beginPath();
-      dCtx.moveTo(0, i);
-      dCtx.lineTo(size, i);
-      dCtx.stroke();
+      [dCtx, bCtx].forEach((ctx) => {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, size);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(size, i);
+        ctx.stroke();
+      });
     }
   }
 
-  const map = new THREE.CanvasTexture(diffuseCanvas);
-  map.wrapS = THREE.RepeatWrapping;
-  map.wrapT = THREE.RepeatWrapping;
-  map.repeat.set(6, 6);
-  map.anisotropy = 16;
-
-  const roughnessMap = new THREE.CanvasTexture(roughCanvas);
-  roughnessMap.wrapS = THREE.RepeatWrapping;
-  roughnessMap.wrapT = THREE.RepeatWrapping;
-  roughnessMap.repeat.set(6, 6);
-  roughnessMap.anisotropy = 8;
-
-  return { map, roughnessMap };
+  return {
+    map: configureRepeatedTexture(dCanvas, 6, 6, 16),
+    roughnessMap: configureRepeatedTexture(rCanvas, 6, 6, 8),
+    bumpMap: configureRepeatedTexture(bCanvas, 6, 6, 8),
+  };
 }
 
 /**
- * Dark veined obsidian marble texture for display plinths & trophy bases.
+ * Veined dark obsidian marble PBR map triplet for display plinths & podiums.
  */
-export function createMarbleTexture(): THREE.CanvasTexture {
+export function createMarbleMaps(): MaterialMapSet {
   const size = 512;
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d');
+  const dCanvas = document.createElement('canvas');
+  dCanvas.width = size;
+  dCanvas.height = size;
+  const dCtx = dCanvas.getContext('2d');
 
-  if (ctx) {
-    ctx.fillStyle = '#161f30';
-    ctx.fillRect(0, 0, size, size);
+  const rCanvas = document.createElement('canvas');
+  rCanvas.width = size;
+  rCanvas.height = size;
+  const rCtx = rCanvas.getContext('2d');
 
-    let seed = 4099;
-    const rand = () => {
-      seed = (seed * 16807) % 2147483647;
-      return (seed - 1) / 2147483646;
-    };
+  const bCanvas = document.createElement('canvas');
+  bCanvas.width = size;
+  bCanvas.height = size;
+  const bCtx = bCanvas.getContext('2d');
 
-    // Soft cloudy mineral mottling
-    for (let i = 0; i < 60; i++) {
+  if (dCtx && rCtx && bCtx) {
+    dCtx.fillStyle = '#151e30';
+    dCtx.fillRect(0, 0, size, size);
+
+    rCtx.fillStyle = '#4c4c4c'; // Polished stone base (~0.30 roughness)
+    rCtx.fillRect(0, 0, size, size);
+
+    bCtx.fillStyle = '#848484';
+    bCtx.fillRect(0, 0, size, size);
+
+    const rand = makeSeededRand(4099);
+
+    for (let i = 0; i < 65; i++) {
       const x = rand() * size;
       const y = rand() * size;
-      const r = 30 + rand() * 80;
-      const g = ctx.createRadialGradient(x, y, 2, x, y, r);
-      g.addColorStop(0, 'rgba(36, 51, 78, 0.25)');
-      g.addColorStop(1, 'rgba(22, 31, 48, 0)');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, size, size);
+      const r = 28 + rand() * 84;
+      const g = dCtx.createRadialGradient(x, y, 2, x, y, r);
+      g.addColorStop(0, 'rgba(38, 54, 82, 0.28)');
+      g.addColorStop(1, 'rgba(21, 30, 48, 0)');
+      dCtx.fillStyle = g;
+      dCtx.fillRect(0, 0, size, size);
+
+      rCtx.fillStyle = rand() > 0.5 ? 'rgba(64,64,64,0.2)' : 'rgba(92,92,92,0.18)';
+      rCtx.beginPath();
+      rCtx.arc(x, y, r * 0.45, 0, Math.PI * 2);
+      rCtx.fill();
     }
 
-    // Organic diagonal mineral veins
-    for (let v = 0; v < 14; v++) {
-      ctx.beginPath();
+    for (let v = 0; v < 18; v++) {
+      const points: Array<[number, number]> = [];
       let x = rand() * size;
       let y = 0;
-      ctx.moveTo(x, y);
+      points.push([x, y]);
       while (y < size) {
-        y += 14 + rand() * 18;
-        x += (rand() - 0.42) * 28;
-        ctx.lineTo(x, y);
+        y += 12 + rand() * 18;
+        x += (rand() - 0.42) * 26;
+        points.push([x, y]);
       }
-      ctx.strokeStyle =
-        v % 3 === 0 ? 'rgba(148, 197, 255, 0.14)' : 'rgba(226, 232, 240, 0.08)';
-      ctx.lineWidth = 0.7 + rand() * 1.6;
-      ctx.stroke();
+
+      const lw = 0.7 + rand() * 1.7;
+      dCtx.beginPath();
+      rCtx.beginPath();
+      bCtx.beginPath();
+      points.forEach(([px, py], i) => {
+        if (i === 0) {
+          dCtx.moveTo(px, py);
+          rCtx.moveTo(px, py);
+          bCtx.moveTo(px, py);
+        } else {
+          dCtx.lineTo(px, py);
+          rCtx.lineTo(px, py);
+          bCtx.lineTo(px, py);
+        }
+      });
+
+      dCtx.strokeStyle =
+        v % 3 === 0 ? 'rgba(148, 197, 255, 0.16)' : 'rgba(226, 232, 240, 0.09)';
+      dCtx.lineWidth = lw;
+      dCtx.stroke();
+
+      // Quartz mineral veins polish slightly glossier
+      rCtx.strokeStyle = 'rgba(28, 28, 28, 0.7)';
+      rCtx.lineWidth = lw * 1.3;
+      rCtx.stroke();
+
+      bCtx.strokeStyle = '#6c6c6c';
+      bCtx.lineWidth = lw;
+      bCtx.stroke();
     }
   }
 
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.RepeatWrapping;
-  tex.anisotropy = 8;
-  return tex;
+  return {
+    map: configureRepeatedTexture(dCanvas, 1, 1, 8),
+    roughnessMap: configureRepeatedTexture(rCanvas, 1, 1, 4),
+    bumpMap: configureRepeatedTexture(bCanvas, 1, 1, 4),
+  };
+}
+
+export function createMarbleTexture(): THREE.CanvasTexture {
+  return createMarbleMaps().map;
+}
+
+/**
+ * Brushed anodized titanium / stainless steel grain for architectural trim and frames.
+ */
+export function createBrushedMetalMaps(): {
+  roughnessMap: THREE.CanvasTexture;
+  bumpMap: THREE.CanvasTexture;
+} {
+  const size = 256;
+  const rCanvas = document.createElement('canvas');
+  rCanvas.width = size;
+  rCanvas.height = size;
+  const rCtx = rCanvas.getContext('2d');
+
+  const bCanvas = document.createElement('canvas');
+  bCanvas.width = size;
+  bCanvas.height = size;
+  const bCtx = bCanvas.getContext('2d');
+
+  if (rCtx && bCtx) {
+    rCtx.fillStyle = '#404040';
+    rCtx.fillRect(0, 0, size, size);
+    bCtx.fillStyle = '#808080';
+    bCtx.fillRect(0, 0, size, size);
+
+    const rand = makeSeededRand(7919);
+    for (let y = 0; y < size; y++) {
+      const v = Math.floor(55 + rand() * 38);
+      rCtx.fillStyle = `rgb(${v},${v},${v})`;
+      rCtx.fillRect(0, y, size, 1);
+
+      const bv = Math.floor(110 + rand() * 36);
+      bCtx.fillStyle = `rgb(${bv},${bv},${bv})`;
+      bCtx.fillRect(0, y, size, 1);
+    }
+  }
+
+  return {
+    roughnessMap: configureRepeatedTexture(rCanvas, 2, 2, 4),
+    bumpMap: configureRepeatedTexture(bCanvas, 2, 2, 4),
+  };
+}
+
+/**
+ * Subtle matte architectural plaster wall panels with fine shadow seams.
+ */
+export function createArchitecturalWallMaps(): MaterialMapSet {
+  const size = 512;
+  const dCanvas = document.createElement('canvas');
+  dCanvas.width = size;
+  dCanvas.height = size;
+  const dCtx = dCanvas.getContext('2d');
+
+  const rCanvas = document.createElement('canvas');
+  rCanvas.width = size;
+  rCanvas.height = size;
+  const rCtx = rCanvas.getContext('2d');
+
+  const bCanvas = document.createElement('canvas');
+  bCanvas.width = size;
+  bCanvas.height = size;
+  const bCtx = bCanvas.getContext('2d');
+
+  if (dCtx && rCtx && bCtx) {
+    dCtx.fillStyle = '#151e30';
+    dCtx.fillRect(0, 0, size, size);
+
+    rCtx.fillStyle = '#9c9c9c';
+    rCtx.fillRect(0, 0, size, size);
+
+    bCtx.fillStyle = '#828282';
+    bCtx.fillRect(0, 0, size, size);
+
+    const rand = makeSeededRand(9973);
+    for (let i = 0; i < 2400; i++) {
+      const x = rand() * size;
+      const y = rand() * size;
+      const w = 2 + rand() * 5;
+      const bright = rand() > 0.5;
+      dCtx.fillStyle = bright ? 'rgba(34, 48, 72, 0.2)' : 'rgba(11, 16, 28, 0.2)';
+      dCtx.fillRect(x, y, w, w);
+
+      bCtx.fillStyle = bright ? '#8d8d8d' : '#767676';
+      bCtx.fillRect(x, y, w, w);
+    }
+
+    // Subtle vertical architectural panel seams every 256px
+    dCtx.strokeStyle = 'rgba(8, 12, 22, 0.65)';
+    dCtx.lineWidth = 2;
+    bCtx.strokeStyle = '#383838';
+    bCtx.lineWidth = 3;
+    for (let x = 0; x <= size; x += 256) {
+      dCtx.beginPath();
+      dCtx.moveTo(x, 0);
+      dCtx.lineTo(x, size);
+      dCtx.stroke();
+
+      bCtx.beginPath();
+      bCtx.moveTo(x, 0);
+      bCtx.lineTo(x, size);
+      bCtx.stroke();
+    }
+  }
+
+  return {
+    map: configureRepeatedTexture(dCanvas, 4, 2, 8),
+    roughnessMap: configureRepeatedTexture(rCanvas, 4, 2, 4),
+    bumpMap: configureRepeatedTexture(bCanvas, 4, 2, 4),
+  };
+}
+
+/**
+ * Fine pebbled grain for museum leather benches & hardcover guestbook bindings.
+ */
+export function createLeatherMaps(): {
+  roughnessMap: THREE.CanvasTexture;
+  bumpMap: THREE.CanvasTexture;
+} {
+  const size = 256;
+  const rCanvas = document.createElement('canvas');
+  rCanvas.width = size;
+  rCanvas.height = size;
+  const rCtx = rCanvas.getContext('2d');
+
+  const bCanvas = document.createElement('canvas');
+  bCanvas.width = size;
+  bCanvas.height = size;
+  const bCtx = bCanvas.getContext('2d');
+
+  if (rCtx && bCtx) {
+    rCtx.fillStyle = '#8c8c8c';
+    rCtx.fillRect(0, 0, size, size);
+    bCtx.fillStyle = '#707070';
+    bCtx.fillRect(0, 0, size, size);
+
+    const rand = makeSeededRand(5521);
+    for (let i = 0; i < 3200; i++) {
+      const x = rand() * size;
+      const y = rand() * size;
+      const rad = 1.2 + rand() * 1.8;
+      bCtx.fillStyle = rand() > 0.35 ? '#9e9e9e' : '#565656';
+      bCtx.beginPath();
+      bCtx.arc(x, y, rad, 0, Math.PI * 2);
+      bCtx.fill();
+
+      rCtx.fillStyle = rand() > 0.5 ? '#787878' : '#a4a4a4';
+      rCtx.fillRect(x, y, rad, rad);
+    }
+  }
+
+  return {
+    roughnessMap: configureRepeatedTexture(rCanvas, 2, 2, 4),
+    bumpMap: configureRepeatedTexture(bCanvas, 2, 2, 4),
+  };
 }
 
 /**
@@ -193,73 +423,84 @@ export function createFabricMaps(): { map: THREE.CanvasTexture; bumpMap: THREE.C
     bCtx.fillStyle = '#808080';
     bCtx.fillRect(0, 0, size, size);
 
-    // Fine woven pique knit pattern
     const step = 4;
     for (let y = 0; y < size; y += step) {
       for (let x = 0; x < size; x += step) {
-        const checker = ((x / step) + (y / step)) % 2 === 0;
-        dCtx.fillStyle = checker ? 'rgba(30, 52, 88, 0.45)' : 'rgba(10, 19, 36, 0.45)';
+        const checker = (x / step + y / step) % 2 === 0;
+        dCtx.fillStyle = checker ? 'rgba(32, 56, 94, 0.45)' : 'rgba(10, 19, 36, 0.45)';
         dCtx.fillRect(x, y, step - 1, step - 1);
 
-        bCtx.fillStyle = checker ? '#b8b8b8' : '#4a4a4a';
+        bCtx.fillStyle = checker ? '#bebebe' : '#464646';
         bCtx.fillRect(x, y, step - 1, step - 1);
       }
     }
   }
 
-  const map = new THREE.CanvasTexture(dCanvas);
-  map.wrapS = THREE.RepeatWrapping;
-  map.wrapT = THREE.RepeatWrapping;
-  map.repeat.set(5, 5);
-  map.anisotropy = 8;
-
-  const bumpMap = new THREE.CanvasTexture(bCanvas);
-  bumpMap.wrapS = THREE.RepeatWrapping;
-  bumpMap.wrapT = THREE.RepeatWrapping;
-  bumpMap.repeat.set(5, 5);
-  bumpMap.anisotropy = 8;
-
-  return { map, bumpMap };
+  return {
+    map: configureRepeatedTexture(dCanvas, 5, 5, 8),
+    bumpMap: configureRepeatedTexture(bCanvas, 5, 5, 8),
+  };
 }
 
 /**
- * Engraved brushed-metal nameplate texture for trophy pedestals.
+ * Engraved brushed-metal nameplate texture for trophy & exhibit pedestals.
  */
-export function createPedestalPlaqueTexture(title: string, year: string, highlight?: string): THREE.CanvasTexture {
+export function createPedestalPlaqueTexture(
+  title: string,
+  year: string,
+  highlight?: string
+): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 768;
   canvas.height = 224;
   const ctx = canvas.getContext('2d');
 
   if (ctx) {
-    // Brushed metallic dark plate
     const grad = ctx.createLinearGradient(0, 0, 768, 224);
-    grad.addColorStop(0, '#162033');
+    grad.addColorStop(0, '#141d2e');
     grad.addColorStop(0.5, '#1e2c45');
-    grad.addColorStop(1, '#141d2e');
+    grad.addColorStop(1, '#121b2b');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 768, 224);
 
-    // Thin inner bevel border
-    ctx.strokeStyle = 'rgba(186, 230, 253, 0.5)';
+    // Double metallic border
+    ctx.strokeStyle = 'rgba(186, 230, 253, 0.55)';
     ctx.lineWidth = 4;
     ctx.strokeRect(10, 10, 748, 204);
 
-    // Year + highlight line
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = '600 24px "JetBrains Mono", monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(highlight ? `${year}  •  ${highlight.toUpperCase()}` : year, 384, 64);
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(18, 18, 732, 188);
 
-    // Title wrapping (max 2 lines)
+    // Corner engraved mounting screw heads
+    [
+      [28, 28],
+      [740, 28],
+      [28, 196],
+      [740, 196],
+    ].forEach(([cx, cy]) => {
+      ctx.beginPath();
+      ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#94a3b8';
+      ctx.fill();
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '600 23px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(highlight ? `${year}  •  ${highlight.toUpperCase()}` : year, 384, 66);
+
     ctx.fillStyle = '#f8fafc';
-    ctx.font = 'bold 30px Inter, sans-serif';
+    ctx.font = 'bold 29px Inter, sans-serif';
     const words = title.split(' ');
     const lines: string[] = [];
     let current = '';
     for (const w of words) {
       const test = current ? `${current} ${w}` : w;
-      if (ctx.measureText(test).width > 680) {
+      if (ctx.measureText(test).width > 660) {
         lines.push(current);
         current = w;
       } else {
@@ -270,7 +511,7 @@ export function createPedestalPlaqueTexture(title: string, year: string, highlig
 
     const startY = lines.length > 1 ? 124 : 142;
     lines.slice(0, 2).forEach((line, idx) => {
-      ctx.fillText(line, 384, startY + idx * 42);
+      ctx.fillText(line, 384, startY + idx * 40);
     });
   }
 
@@ -292,7 +533,6 @@ export function createCertificateTexture(title: string, year: string): THREE.Can
     ctx.fillStyle = '#f8fafc';
     ctx.fillRect(0, 0, 768, 1024);
 
-    // Double classic border
     ctx.strokeStyle = '#0f172a';
     ctx.lineWidth = 10;
     ctx.strokeRect(32, 32, 704, 960);
@@ -321,7 +561,6 @@ export function createCertificateTexture(title: string, year: string): THREE.Can
     ctx.lineTo(608, 345);
     ctx.stroke();
 
-    // Title
     ctx.fillStyle = '#0f172a';
     ctx.font = 'bold 34px Inter, sans-serif';
     const words = title.split(' ');
@@ -345,7 +584,6 @@ export function createCertificateTexture(title: string, year: string): THREE.Can
     ctx.font = '400 24px Inter, sans-serif';
     ctx.fillText(`Niên khóa vinh danh: ${year}`, 384, 650);
 
-    // Gold Embossed Seal
     ctx.beginPath();
     ctx.arc(384, 790, 62, 0, Math.PI * 2);
     ctx.fillStyle = '#f59e0b';
@@ -377,7 +615,6 @@ export function createOpenBookPageTexture(side: 'left' | 'right'): THREE.CanvasT
     ctx.fillStyle = '#f1f5f9';
     ctx.fillRect(0, 0, 512, 640);
 
-    // Subtle page gutter shadow
     const gutter = ctx.createLinearGradient(
       side === 'left' ? 450 : 0,
       0,
@@ -394,7 +631,6 @@ export function createOpenBookPageTexture(side: 'left' | 'right'): THREE.CanvasT
     ctx.fillStyle = gutter;
     ctx.fillRect(0, 0, 512, 640);
 
-    // Ruled writing lines
     ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
     ctx.lineWidth = 1.5;
     for (let y = 140; y <= 570; y += 38) {

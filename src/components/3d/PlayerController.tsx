@@ -17,12 +17,12 @@ const DRAG_THRESHOLD_PX = 5;
 
 function detectZone(x: number, z: number): string {
   if (z > 8.2) return 'Hành Lang Lối Vào';
-  if (Math.hypot(x + 9.6, z + 12.2) < 5.5) return 'Cây Sơ Đồ Ban Chủ Nhiệm';
+  if (Math.hypot(x + 9.6, z + 12.2) < 8.2) return 'Cây Sơ Đồ Ban Chủ Nhiệm';
   if (z > 0.2 && x < -4.2) return 'Đối Tác & Kết Nối';
   if (z > 0.2 && x > 4.2) return 'Cảm Nhận Thành Viên';
-  if (x > 2.8 && z < -9.5) return 'Góc Truyền Thông & Lưu Bút';
+  if (x > 2.8 && z < -11.5) return 'Góc Truyền Thông & Lưu Bút';
   if (z < -10.2 && x < 4.2) return 'Vách Tâm Điểm';
-  if (x > 4.5 && z >= -9.5) return 'Áo CLB & Ban Chủ Nhiệm';
+  if (x > 4.5 && z >= -11.5) return 'Áo CLB & Ban Chủ Nhiệm';
   if (x < -4.5 && z >= -9.5) return 'Dòng Thời Gian & Hoạt Động';
   if (Math.hypot(x, z + 5) < 6.2) return 'Đảo Vinh Danh 360°';
   return 'Đại Sảnh Danh Dự';

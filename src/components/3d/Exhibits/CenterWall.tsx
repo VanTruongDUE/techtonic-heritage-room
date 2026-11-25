@@ -447,11 +447,22 @@ export const CenterWall: React.FC = () => {
         <meshBasicMaterial map={textTexture} transparent />
       </mesh>
 
-      {/* Back-Left Wing: Framed 7 Core Values & Metrics Board */}
+      {/* Back-Left Wing: Framed 7 Core Values & Metrics Board with Corner Bolts */}
       <group position={[-13.4, 3.25, 0.02]}>
-        <RoundedBox position={[0, 0, -0.05]} args={[5.72, 4.22, 0.1]} radius={0.04} smoothness={4}>
-          <meshStandardMaterial color="#334155" metalness={0.82} roughness={0.26} />
+        <RoundedBox position={[0, 0, -0.05]} args={[5.72, 4.22, 0.1]} radius={0.04} smoothness={4} castShadow>
+          <meshStandardMaterial color="#334155" metalness={0.86} roughness={0.22} />
         </RoundedBox>
+        {[
+          [-2.74, 1.98],
+          [2.74, 1.98],
+          [-2.74, -1.98],
+          [2.74, -1.98],
+        ].map(([bx, by], i) => (
+          <mesh key={`val-bolt-${i}`} position={[bx, by, 0.012]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.032, 0.032, 0.035, 16]} />
+            <meshStandardMaterial color="#94a3b8" metalness={0.92} roughness={0.18} />
+          </mesh>
+        ))}
         <mesh
           position={[0, 0, 0.01]}
           onClick={(e) => {

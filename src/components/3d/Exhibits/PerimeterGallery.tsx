@@ -3,8 +3,101 @@ import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { CLUB_PROFILE } from '../../../data/heritageSeed';
+import { createBrushedMetalMaps } from '../utils/proceduralMaterials';
 import { ClubShirtExhibit } from './ClubShirtExhibit';
 import type { ExhibitItem, HoverPreview } from '../../../types/heritage';
+
+interface MuseumWallBoardProps {
+  position: [number, number, number];
+  rotation: [number, number, number];
+  frameArgs: [number, number, number];
+  planeArgs: [number, number];
+  texture: THREE.CanvasTexture;
+  metalMaps: { roughnessMap: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture };
+  tooltip: string;
+  preview: HoverPreview;
+  onInteract: () => void;
+  onHover: (
+    hovering: boolean,
+    tooltip?: string,
+    action?: (() => void) | null,
+    preview?: HoverPreview | null
+  ) => void;
+}
+
+const MuseumWallBoard: React.FC<MuseumWallBoardProps> = ({
+  position,
+  rotation,
+  frameArgs,
+  planeArgs,
+  texture,
+  metalMaps,
+  tooltip,
+  preview,
+  onInteract,
+  onHover,
+}) => {
+  const [fw, fh] = frameArgs;
+  const boltX = fw / 2 - 0.14;
+  const boltY = fh / 2 - 0.14;
+
+  return (
+    <group position={position} rotation={rotation}>
+      <RoundedBox position={[0, 0, -0.05]} args={frameArgs} radius={0.04} smoothness={4} castShadow>
+        <meshStandardMaterial
+          color="#334155"
+          roughnessMap={metalMaps.roughnessMap}
+          bumpMap={metalMaps.bumpMap}
+          bumpScale={0.004}
+          metalness={0.86}
+          roughness={0.22}
+        />
+      </RoundedBox>
+      {/* 4 Brushed Titanium Corner Standoff Bolts */}
+      {[
+        [-boltX, boltY],
+        [boltX, boltY],
+        [-boltX, -boltY],
+        [boltX, -boltY],
+      ].map(([bx, by], i) => (
+        <mesh key={`bolt-${i}`} position={[bx, by, 0.015]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.028, 0.028, 0.03, 14]} />
+          <meshStandardMaterial color="#94a3b8" metalness={0.92} roughness={0.18} />
+        </mesh>
+      ))}
+      {/* Museum Picture Light Bar mounted on top bezel */}
+      <group position={[0, fh / 2 + 0.06, 0.24]}>
+        <mesh position={[0, 0, -0.14]}>
+          <boxGeometry args={[0.06, 0.03, 0.28]} />
+          <meshStandardMaterial color="#475569" metalness={0.85} roughness={0.22} />
+        </mesh>
+        <mesh rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.026, 0.026, Math.min(fw * 0.45, 2.8), 16]} />
+          <meshStandardMaterial color="#64748b" metalness={0.88} roughness={0.2} />
+        </mesh>
+        <mesh position={[0, -0.024, 0]}>
+          <boxGeometry args={[Math.min(fw * 0.42, 2.65), 0.008, 0.024]} />
+          <meshBasicMaterial color="#e0f2fe" />
+        </mesh>
+      </group>
+      <mesh
+        position={[0, 0, 0.01]}
+        onClick={(e) => {
+          e.stopPropagation();
+          onInteract();
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          onHover(true, tooltip, onInteract, preview);
+        }}
+        onPointerOut={() => onHover(false)}
+      >
+        <planeGeometry args={planeArgs} />
+        <meshBasicMaterial map={texture} />
+      </mesh>
+    </group>
+  );
+};
 
 function drawWrappedText(
   ctx: CanvasRenderingContext2D,
@@ -670,50 +763,42 @@ export const PerimeterGallery: React.FC = () => {
   const openAcademicModal = () => openModal('exhibit', academicExhibit);
   const openPartnersModal = () => openModal('exhibit', partnersContactExhibit);
 
+  const metalMaps = useMemo(() => createBrushedMetalMaps(), []);
+  useEffect(() => {
+    return () => {
+      metalMaps.roughnessMap.dispose();
+      metalMaps.bumpMap.dispose();
+    };
+  }, [metalMaps]);
+
   return (
     <group>
       {/* ================= LEFT WALL: TIMELINE + 6 TERM ACTIVITIES ================= */}
-      <group position={[-16.52, 3.2, -6]} rotation={[0, Math.PI / 2, 0]}>
-        <RoundedBox position={[0, 0, -0.05]} args={[11.32, 4.52, 0.1]} radius={0.04} smoothness={4}>
-          <meshStandardMaterial color="#334155" metalness={0.82} roughness={0.26} />
-        </RoundedBox>
-        <mesh
-          position={[0, 0, 0.01]}
-          onClick={(e) => {
-            e.stopPropagation();
-            openTimelineModal();
-          }}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            setHoveringInteractive(true, 'Xem Hành trình phát triển CLB', openTimelineModal, timelinePreview);
-          }}
-          onPointerOut={() => setHoveringInteractive(false)}
-        >
-          <planeGeometry args={[11, 4.2]} />
-          <meshBasicMaterial map={timelineTexture} />
-        </mesh>
-      </group>
+      <MuseumWallBoard
+        position={[-16.52, 3.2, -6]}
+        rotation={[0, Math.PI / 2, 0]}
+        frameArgs={[11.32, 4.52, 0.1]}
+        planeArgs={[11, 4.2]}
+        texture={timelineTexture}
+        metalMaps={metalMaps}
+        tooltip="Xem Hành trình phát triển CLB"
+        preview={timelinePreview}
+        onInteract={openTimelineModal}
+        onHover={setHoveringInteractive}
+      />
 
-      <group position={[-16.52, 3.2, 3.6]} rotation={[0, Math.PI / 2, 0]}>
-        <RoundedBox position={[0, 0, -0.05]} args={[7.42, 4.52, 0.1]} radius={0.04} smoothness={4}>
-          <meshStandardMaterial color="#334155" metalness={0.82} roughness={0.26} />
-        </RoundedBox>
-        <mesh
-          position={[0, 0, 0.01]}
-          onClick={(e) => {
-            e.stopPropagation();
-            openActivityModal();
-          }}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            setHoveringInteractive(true, 'Xem Chuỗi hoạt động trọng tâm', openActivityModal, activityPreview);
-          }}
-          onPointerOut={() => setHoveringInteractive(false)}
-        >
-          <planeGeometry args={[7.1, 4.2]} />
-          <meshBasicMaterial map={activityTexture} />
-        </mesh>
-      </group>
+      <MuseumWallBoard
+        position={[-16.52, 3.2, 3.6]}
+        rotation={[0, Math.PI / 2, 0]}
+        frameArgs={[7.42, 4.52, 0.1]}
+        planeArgs={[7.1, 4.2]}
+        texture={activityTexture}
+        metalMaps={metalMaps}
+        tooltip="Xem Chuỗi hoạt động trọng tâm"
+        preview={activityPreview}
+        onInteract={openActivityModal}
+        onHover={setHoveringInteractive}
+      />
 
       {/* ================= RIGHT WALL: CLUB SHIRT + BCN + WEEKLY ACADEMICS ================= */}
       <ClubShirtExhibit
@@ -723,90 +808,58 @@ export const PerimeterGallery: React.FC = () => {
         }
       />
 
-      <group position={[16.52, 3.2, -4.2]} rotation={[0, -Math.PI / 2, 0]}>
-        <RoundedBox position={[0, 0, -0.05]} args={[7.52, 4.12, 0.1]} radius={0.04} smoothness={4}>
-          <meshStandardMaterial color="#334155" metalness={0.82} roughness={0.26} />
-        </RoundedBox>
-        <mesh
-          position={[0, 0, 0.01]}
-          onClick={(e) => {
-            e.stopPropagation();
-            openShirtModal();
-          }}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            setHoveringInteractive(true, 'Xem Cơ cấu & Ban Chủ Nhiệm', openShirtModal, shirtPreview);
-          }}
-          onPointerOut={() => setHoveringInteractive(false)}
-        >
-          <planeGeometry args={[7.2, 3.8]} />
-          <meshBasicMaterial map={shirtPlaqueTexture} />
-        </mesh>
-      </group>
+      <MuseumWallBoard
+        position={[16.52, 3.2, -4.2]}
+        rotation={[0, -Math.PI / 2, 0]}
+        frameArgs={[7.52, 4.12, 0.1]}
+        planeArgs={[7.2, 3.8]}
+        texture={shirtPlaqueTexture}
+        metalMaps={metalMaps}
+        tooltip="Xem Cơ cấu & Ban Chủ Nhiệm"
+        preview={shirtPreview}
+        onInteract={openShirtModal}
+        onHover={setHoveringInteractive}
+      />
 
-      <group position={[16.52, 3.2, 3.8]} rotation={[0, -Math.PI / 2, 0]}>
-        <RoundedBox position={[0, 0, -0.05]} args={[7.12, 4.12, 0.1]} radius={0.04} smoothness={4}>
-          <meshStandardMaterial color="#334155" metalness={0.82} roughness={0.26} />
-        </RoundedBox>
-        <mesh
-          position={[0, 0, 0.01]}
-          onClick={(e) => {
-            e.stopPropagation();
-            openAcademicModal();
-          }}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            setHoveringInteractive(true, 'Xem Chuyên môn hằng tuần', openAcademicModal, academicPreview);
-          }}
-          onPointerOut={() => setHoveringInteractive(false)}
-        >
-          <planeGeometry args={[6.8, 3.8]} />
-          <meshBasicMaterial map={academicTexture} />
-        </mesh>
-      </group>
+      <MuseumWallBoard
+        position={[16.52, 3.2, 3.8]}
+        rotation={[0, -Math.PI / 2, 0]}
+        frameArgs={[7.12, 4.12, 0.1]}
+        planeArgs={[6.8, 3.8]}
+        texture={academicTexture}
+        metalMaps={metalMaps}
+        tooltip="Xem Chuyên môn hằng tuần"
+        preview={academicPreview}
+        onInteract={openAcademicModal}
+        onHover={setHoveringInteractive}
+      />
 
       {/* ================= FRONT INNER WALLS: PARTNERS/CONTACT & TESTIMONIALS ================= */}
-      <group position={[-9.6, 3.1, 8.05]} rotation={[0, Math.PI, 0]}>
-        <RoundedBox position={[0, 0, -0.05]} args={[7.12, 3.82, 0.1]} radius={0.04} smoothness={4}>
-          <meshStandardMaterial color="#334155" metalness={0.82} roughness={0.26} />
-        </RoundedBox>
-        <mesh
-          position={[0, 0, 0.01]}
-          onClick={(e) => {
-            e.stopPropagation();
-            openPartnersModal();
-          }}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            setHoveringInteractive(true, 'Xem Đối tác & Kênh kết nối', openPartnersModal, partnersPreview);
-          }}
-          onPointerOut={() => setHoveringInteractive(false)}
-        >
-          <planeGeometry args={[6.8, 3.5]} />
-          <meshBasicMaterial map={partnersContactTexture} />
-        </mesh>
-      </group>
+      <MuseumWallBoard
+        position={[-9.6, 3.1, 8.05]}
+        rotation={[0, Math.PI, 0]}
+        frameArgs={[7.12, 3.82, 0.1]}
+        planeArgs={[6.8, 3.5]}
+        texture={partnersContactTexture}
+        metalMaps={metalMaps}
+        tooltip="Xem Đối tác & Kênh kết nối"
+        preview={partnersPreview}
+        onInteract={openPartnersModal}
+        onHover={setHoveringInteractive}
+      />
 
-      <group position={[9.6, 3.1, 8.05]} rotation={[0, Math.PI, 0]}>
-        <RoundedBox position={[0, 0, -0.05]} args={[7.12, 3.82, 0.1]} radius={0.04} smoothness={4}>
-          <meshStandardMaterial color="#334155" metalness={0.82} roughness={0.26} />
-        </RoundedBox>
-        <mesh
-          position={[0, 0, 0.01]}
-          onClick={(e) => {
-            e.stopPropagation();
-            openShirtModal();
-          }}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            setHoveringInteractive(true, 'Xem Ban Chủ Nhiệm & Mentor', openShirtModal, testimonialsPreview);
-          }}
-          onPointerOut={() => setHoveringInteractive(false)}
-        >
-          <planeGeometry args={[6.8, 3.5]} />
-          <meshBasicMaterial map={testimonialsTexture} />
-        </mesh>
-      </group>
+      <MuseumWallBoard
+        position={[9.6, 3.1, 8.05]}
+        rotation={[0, Math.PI, 0]}
+        frameArgs={[7.12, 3.82, 0.1]}
+        planeArgs={[6.8, 3.5]}
+        texture={testimonialsTexture}
+        metalMaps={metalMaps}
+        tooltip="Xem Ban Chủ Nhiệm & Mentor"
+        preview={testimonialsPreview}
+        onInteract={openShirtModal}
+        onHover={setHoveringInteractive}
+      />
     </group>
   );
 };

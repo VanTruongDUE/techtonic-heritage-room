@@ -30,7 +30,7 @@ export const CanvasContainer: React.FC = () => {
           antialias: true,
           powerPreference: 'high-performance',
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.05,
+          toneMappingExposure: 1.08,
         }}
         dpr={[1, 2]}
         onCreated={({ gl }) => {

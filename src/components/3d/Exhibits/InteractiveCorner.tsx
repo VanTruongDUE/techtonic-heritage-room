@@ -4,7 +4,12 @@ import { RoundedBox } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { useHeritageStore } from '../../../store/useHeritageStore';
-import { createMarbleTexture, createOpenBookPageTexture } from '../utils/proceduralMaterials';
+import {
+  createBrushedMetalMaps,
+  createLeatherMaps,
+  createMarbleMaps,
+  createOpenBookPageTexture,
+} from '../utils/proceduralMaterials';
 
 export const InteractiveCorner: React.FC = () => {
   const { setHoveringInteractive, openModal, guestbookEntries } = useHeritageStore();
@@ -16,15 +21,15 @@ export const InteractiveCorner: React.FC = () => {
   const [isBookHovered, setIsBookHovered] = useState(false);
   const [isScreenPaused, setIsScreenPaused] = useState(false);
 
-  const marbleMap = useMemo(() => createMarbleTexture(), []);
+  const marbleMaps = useMemo(() => createMarbleMaps(), []);
+  const metalMaps = useMemo(() => createBrushedMetalMaps(), []);
+  const leatherMaps = useMemo(() => createLeatherMaps(), []);
   const leftPageTex = useMemo(() => createOpenBookPageTexture('left'), []);
   const rightPageTex = useMemo(() => createOpenBookPageTexture('right'), []);
 
-  // Naturally arched page geometries for open hardcover guestbook
   const { leftPageGeom, rightPageGeom, penBodyGeom } = useMemo(() => {
     const buildPage = (isLeft: boolean) => {
       const shape = new THREE.Shape();
-      // Cross-section from spine (0) outward (0.34), curved bow in middle
       const dir = isLeft ? -1 : 1;
       shape.moveTo(0, 0);
       shape.bezierCurveTo(dir * 0.08, 0.032, dir * 0.24, 0.036, dir * 0.34, 0.008);
@@ -37,16 +42,14 @@ export const InteractiveCorner: React.FC = () => {
         bevelEnabled: false,
         curveSegments: 24,
       });
-      // Center depth along Z
       geom.translate(0, 0, -0.22);
       geom.computeVertexNormals();
       return geom;
     };
 
-    // Sculpted tapered stylus pen via LatheGeometry
     const penPts = [
       new THREE.Vector2(0.0, 0.0),
-      new THREE.Vector2(0.005, 0.022),
+      new THREE.Vector2(0.004, 0.02),
       new THREE.Vector2(0.011, 0.05),
       new THREE.Vector2(0.012, 0.24),
       new THREE.Vector2(0.01, 0.27),
@@ -77,7 +80,13 @@ export const InteractiveCorner: React.FC = () => {
 
   useEffect(() => {
     return () => {
-      marbleMap.dispose();
+      marbleMaps.map.dispose();
+      marbleMaps.roughnessMap.dispose();
+      marbleMaps.bumpMap.dispose();
+      metalMaps.roughnessMap.dispose();
+      metalMaps.bumpMap.dispose();
+      leatherMaps.roughnessMap.dispose();
+      leatherMaps.bumpMap.dispose();
       leftPageTex.dispose();
       rightPageTex.dispose();
       leftPageGeom.dispose();
@@ -85,7 +94,17 @@ export const InteractiveCorner: React.FC = () => {
       penBodyGeom.dispose();
       videoTexture.dispose();
     };
-  }, [marbleMap, leftPageTex, rightPageTex, leftPageGeom, rightPageGeom, penBodyGeom, videoTexture]);
+  }, [
+    marbleMaps,
+    metalMaps,
+    leatherMaps,
+    leftPageTex,
+    rightPageTex,
+    leftPageGeom,
+    rightPageGeom,
+    penBodyGeom,
+    videoTexture,
+  ]);
 
   useFrame((state) => {
     if (penGroupRef.current) {
@@ -174,14 +193,34 @@ export const InteractiveCorner: React.FC = () => {
 
   return (
     <group position={[9.5, 0, -16]}>
-      {/* ================= 1. FRAMED ARCHITECTURAL LED CINEMA DISPLAY ================= */}
+      {/* ================= 1. FRAMED ARCHITECTURAL LED CINEMA DISPLAY & SOUNDBAR ================= */}
       <RoundedBox position={[0, 3.05, -1.84]} args={[7.4, 4.35, 0.22]} radius={0.05} smoothness={6} castShadow>
-        <meshStandardMaterial color="#182235" metalness={0.75} roughness={0.28} />
+        <meshStandardMaterial
+          color="#1b263b"
+          roughnessMap={metalMaps.roughnessMap}
+          bumpMap={metalMaps.bumpMap}
+          bumpScale={0.004}
+          metalness={0.8}
+          roughness={0.25}
+        />
       </RoundedBox>
-      {/* Inner matte black display bezel */}
+      {/* Subtle wall wash ambient rail behind screen */}
+      <mesh position={[0, 3.05, -1.96]}>
+        <planeGeometry args={[7.6, 4.55]} />
+        <meshBasicMaterial color="#0ea5e9" transparent opacity={0.14} />
+      </mesh>
       <RoundedBox position={[0, 3.05, -1.73]} args={[7.08, 4.05, 0.04]} radius={0.02} smoothness={4}>
         <meshStandardMaterial color="#0b101b" roughness={0.5} metalness={0.3} />
       </RoundedBox>
+
+      {/* Architectural Soundbar Module beneath Display */}
+      <RoundedBox position={[0, 0.72, -1.75]} args={[4.4, 0.22, 0.26]} radius={0.03} smoothness={4} castShadow>
+        <meshStandardMaterial color="#182235" metalness={0.75} roughness={0.3} />
+      </RoundedBox>
+      <mesh position={[0, 0.72, -1.61]}>
+        <boxGeometry args={[4.0, 0.12, 0.015]} />
+        <meshStandardMaterial color="#0a0f18" roughness={0.85} metalness={0.2} />
+      </mesh>
 
       <mesh
         position={[0, 3.05, -1.7]}
@@ -215,43 +254,66 @@ export const InteractiveCorner: React.FC = () => {
         <meshBasicMaterial map={videoTexture} />
       </mesh>
 
-      {/* Wall mounting support pillars behind display */}
       {[-2.2, 2.2].map((mx) => (
         <mesh key={`mount-${mx}`} position={[mx, 3.05, -2.1]}>
           <boxGeometry args={[0.22, 1.8, 0.45]} />
-          <meshStandardMaterial color="#1e293b" metalness={0.7} roughness={0.35} />
+          <meshStandardMaterial color="#1e293b" metalness={0.75} roughness={0.32} />
         </mesh>
       ))}
 
       {/* ================= 2. MUSEUM GUESTBOOK LECTERN & OPEN HARDCOVER BOOK ================= */}
-      <RigidBody type="fixed" position={[-4, 0.56, 1.5]}>
-        {/* Brushed steel floor base plate */}
-        <RoundedBox position={[0, -0.5, 0]} args={[1.38, 0.1, 1.08]} radius={0.03} smoothness={4} receiveShadow>
-          <meshStandardMaterial color="#475569" metalness={0.8} roughness={0.28} />
+      <RigidBody type="fixed" position={[-4, 0.46, 1.5]}>
+        <RoundedBox position={[0, -0.4, 0]} args={[1.38, 0.1, 1.08]} radius={0.03} smoothness={4} receiveShadow>
+          <meshStandardMaterial
+            color="#475569"
+            roughnessMap={metalMaps.roughnessMap}
+            metalness={0.85}
+            roughness={0.24}
+          />
         </RoundedBox>
 
-        {/* Tapered architectural marble & brushed metal column */}
-        <RoundedBox position={[0, 0, 0]} args={[1.14, 1.0, 0.84]} radius={0.04} smoothness={6} castShadow receiveShadow>
-          <meshStandardMaterial map={marbleMap} color="#1a253b" roughness={0.38} metalness={0.3} />
+        <RoundedBox position={[0, -0.1, 0]} args={[1.08, 0.54, 0.78]} radius={0.04} smoothness={6} castShadow receiveShadow>
+          <meshStandardMaterial
+            map={marbleMaps.map}
+            roughnessMap={marbleMaps.roughnessMap}
+            bumpMap={marbleMaps.bumpMap}
+            bumpScale={0.008}
+            color="#d8e3f4"
+            roughness={0.34}
+            metalness={0.3}
+          />
         </RoundedBox>
+        {/* Brushed steel pedestal neck column supporting the angled tray cleanly with zero intersection */}
+        <mesh position={[0, 0.27, 0]} castShadow>
+          <cylinderGeometry args={[0.2, 0.24, 0.28, 24]} />
+          <meshStandardMaterial
+            color="#475569"
+            roughnessMap={metalMaps.roughnessMap}
+            metalness={0.86}
+            roughness={0.22}
+          />
+        </mesh>
 
-        {/* Angled brushed-titanium reading desk */}
-        <group position={[0, 0.53, 0.02]} rotation={[-0.38, 0, 0]}>
+        <group position={[0, 0.44, 0.02]} rotation={[0.46, 0, 0]}>
           <RoundedBox args={[1.36, 0.06, 1.04]} radius={0.02} smoothness={4} castShadow>
-            <meshStandardMaterial color="#273654" roughness={0.32} metalness={0.65} />
+            <meshStandardMaterial
+              color="#273654"
+              roughnessMap={metalMaps.roughnessMap}
+              roughness={0.28}
+              metalness={0.72}
+            />
           </RoundedBox>
-          {/* Lower book stop lip */}
           <RoundedBox position={[0, 0.04, 0.48]} args={[1.28, 0.04, 0.04]} radius={0.01} smoothness={4}>
-            <meshStandardMaterial color="#94a3b8" metalness={0.85} roughness={0.22} />
+            <meshStandardMaterial color="#94a3b8" metalness={0.88} roughness={0.2} />
           </RoundedBox>
         </group>
       </RigidBody>
 
-      {/* Open Hardcover Leather Guestbook resting naturally on angled lectern */}
+      {/* Open Hardcover Leather Guestbook resting clearly angled toward standing visitor */}
       <group
         ref={bookGroupRef}
-        position={[-4, 1.15, 1.52]}
-        rotation={[-0.38, 0, 0]}
+        position={[-4, 0.96, 1.54]}
+        rotation={[0.46, 0, 0]}
         onClick={(e) => {
           e.stopPropagation();
           openGuestbook();
@@ -281,21 +343,52 @@ export const InteractiveCorner: React.FC = () => {
           setHoveringInteractive(false);
         }}
       >
-        {/* Rounded pebbled leather spine */}
         <mesh position={[0, -0.015, 0]} rotation={[Math.PI / 2, 0, 0]}>
           <cylinderGeometry args={[0.03, 0.03, 0.48, 24]} />
-          <meshStandardMaterial color="#1e3a8a" roughness={0.6} metalness={0.15} />
+          <meshStandardMaterial
+            color="#1e3a8a"
+            roughnessMap={leatherMaps.roughnessMap}
+            bumpMap={leatherMaps.bumpMap}
+            bumpScale={0.012}
+            roughness={0.58}
+            metalness={0.18}
+          />
         </mesh>
 
-        {/* Left & Right Hardcover Boards */}
         <RoundedBox position={[-0.19, -0.025, 0]} args={[0.38, 0.024, 0.49]} radius={0.008} smoothness={4} castShadow>
-          <meshStandardMaterial color="#1e3a8a" roughness={0.58} metalness={0.18} />
+          <meshStandardMaterial
+            color="#1e3a8a"
+            roughnessMap={leatherMaps.roughnessMap}
+            bumpMap={leatherMaps.bumpMap}
+            bumpScale={0.012}
+            roughness={0.58}
+            metalness={0.18}
+          />
         </RoundedBox>
         <RoundedBox position={[0.19, -0.025, 0]} args={[0.38, 0.024, 0.49]} radius={0.008} smoothness={4} castShadow>
-          <meshStandardMaterial color="#1e3a8a" roughness={0.58} metalness={0.18} />
+          <meshStandardMaterial
+            color="#1e3a8a"
+            roughnessMap={leatherMaps.roughnessMap}
+            bumpMap={leatherMaps.bumpMap}
+            bumpScale={0.012}
+            roughness={0.58}
+            metalness={0.18}
+          />
         </RoundedBox>
 
-        {/* Arched Left & Right Paper Page Blocks */}
+        {/* 4 Brass Bookbinding Corner Guards */}
+        {[
+          [-0.365, -0.23],
+          [-0.365, 0.23],
+          [0.365, -0.23],
+          [0.365, 0.23],
+        ].map(([cx, cz], i) => (
+          <mesh key={`book-corner-${i}`} position={[cx, -0.024, cz]}>
+            <boxGeometry args={[0.035, 0.028, 0.035]} />
+            <meshStandardMaterial color="#d4af37" metalness={0.9} roughness={0.2} />
+          </mesh>
+        ))}
+
         <mesh geometry={leftPageGeom} position={[0, 0.008, 0]}>
           <meshStandardMaterial color="#e2e8f0" roughness={0.85} />
         </mesh>
@@ -303,7 +396,6 @@ export const InteractiveCorner: React.FC = () => {
           <meshStandardMaterial color="#e2e8f0" roughness={0.85} />
         </mesh>
 
-        {/* Printed calligraphic open pages overlay */}
         <mesh position={[-0.175, 0.036, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[0.31, 0.42]} />
           <meshStandardMaterial map={leftPageTex} roughness={0.85} />
@@ -313,22 +405,29 @@ export const InteractiveCorner: React.FC = () => {
           <meshStandardMaterial map={rightPageTex} roughness={0.85} />
         </mesh>
 
-        {/* Cyan silk ribbon bookmark */}
         <mesh position={[0.02, 0.004, 0.27]} rotation={[0.25, 0, 0]}>
           <boxGeometry args={[0.018, 0.004, 0.14]} />
           <meshStandardMaterial color="#38bdf8" roughness={0.5} />
         </mesh>
 
-        {/* Sculpted Stylus Pen hovering gently beside the open book */}
         <group ref={penGroupRef} position={[0.46, 0.11, 0.05]}>
           <mesh geometry={penBodyGeom} castShadow>
             <meshStandardMaterial
               color="#cbd5e1"
-              metalness={0.88}
-              roughness={0.18}
+              metalness={0.9}
+              roughness={0.16}
               emissive="#38bdf8"
               emissiveIntensity={isBookHovered ? 0.35 : 0.08}
             />
+          </mesh>
+          {/* Gold fountain nib collar & pocket clip */}
+          <mesh position={[0, 0.048, 0]}>
+            <cylinderGeometry args={[0.012, 0.012, 0.012, 16]} />
+            <meshStandardMaterial color="#d4af37" metalness={0.92} roughness={0.18} />
+          </mesh>
+          <mesh position={[0.014, 0.19, 0]}>
+            <boxGeometry args={[0.004, 0.08, 0.004]} />
+            <meshStandardMaterial color="#d4af37" metalness={0.92} roughness={0.18} />
           </mesh>
           <mesh position={[0, 0.25, 0]}>
             <cylinderGeometry args={[0.013, 0.013, 0.025, 16]} />
@@ -336,7 +435,6 @@ export const InteractiveCorner: React.FC = () => {
           </mesh>
         </group>
 
-        {/* Reading desk lamp light */}
         <pointLight
           position={[0, 0.45, 0.15]}
           intensity={isBookHovered ? 5.5 : 3.2}

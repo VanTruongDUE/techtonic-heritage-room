@@ -1,8 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { RoundedBox } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
-import { createFabricMaps, createMarbleTexture, createPedestalPlaqueTexture } from '../utils/proceduralMaterials';
+import {
+  createBrushedMetalMaps,
+  createFabricMaps,
+  createMarbleMaps,
+  createPedestalPlaqueTexture,
+} from '../utils/proceduralMaterials';
 
 interface ClubShirtExhibitProps {
   onInteract: () => void;
@@ -10,7 +16,7 @@ interface ClubShirtExhibitProps {
 }
 
 /**
- * Tailored 3D Club Polo/T-Shirt mounted on a brushed-metal museum mannequin stand.
+ * Tailored 3D Club Polo Shirt mounted on a brushed-metal mannequin & veined marble turntable.
  */
 export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
   onInteract,
@@ -21,7 +27,8 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
   const [hovered, setHovered] = useState(false);
 
   const fabricMaps = useMemo(() => createFabricMaps(), []);
-  const marbleMap = useMemo(() => createMarbleTexture(), []);
+  const marbleMaps = useMemo(() => createMarbleMaps(), []);
+  const metalMaps = useMemo(() => createBrushedMetalMaps(), []);
   const plaqueMap = useMemo(
     () =>
       createPedestalPlaqueTexture(
@@ -35,19 +42,12 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
   // Sculpted organic shirt torso geometry with curved shoulders, waist taper, and rounded hem
   const torsoGeometry = useMemo(() => {
     const shape = new THREE.Shape();
-    // Start at bottom-left hem and trace clockwise cleanly
     shape.moveTo(-0.44, -0.58);
-    // Left waist subtle inward curve to armhole
     shape.bezierCurveTo(-0.43, -0.25, -0.45, 0.05, -0.48, 0.28);
-    // Left shoulder slope up to collar edge
     shape.bezierCurveTo(-0.47, 0.44, -0.34, 0.56, -0.17, 0.62);
-    // Curved neck opening dip
     shape.bezierCurveTo(-0.08, 0.52, 0.08, 0.52, 0.17, 0.62);
-    // Right shoulder slope
     shape.bezierCurveTo(0.34, 0.56, 0.47, 0.44, 0.48, 0.28);
-    // Right armhole down to waist & hem
     shape.bezierCurveTo(0.45, 0.05, 0.43, -0.25, 0.44, -0.58);
-    // Gently curved bottom hem
     shape.bezierCurveTo(0.18, -0.62, -0.18, -0.62, -0.44, -0.58);
 
     const geom = new THREE.ExtrudeGeometry(shape, {
@@ -125,13 +125,25 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
     return () => {
       fabricMaps.map.dispose();
       fabricMaps.bumpMap.dispose();
-      marbleMap.dispose();
+      marbleMaps.map.dispose();
+      marbleMaps.roughnessMap.dispose();
+      marbleMaps.bumpMap.dispose();
+      metalMaps.roughnessMap.dispose();
+      metalMaps.bumpMap.dispose();
       plaqueMap.dispose();
       torsoGeometry.dispose();
       chestBadgeTex.dispose();
       backPrintTex.dispose();
     };
-  }, [fabricMaps, marbleMap, plaqueMap, torsoGeometry, chestBadgeTex, backPrintTex]);
+  }, [
+    fabricMaps,
+    marbleMaps,
+    metalMaps,
+    plaqueMap,
+    torsoGeometry,
+    chestBadgeTex,
+    backPrintTex,
+  ]);
 
   useFrame((state) => {
     if (mannequinTurnRef.current) {
@@ -149,25 +161,67 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
   });
 
   return (
-    <group>
+    <group position={[-0.7, 0, -6.4]}>
+      {/* Dedicated Right-Wall Couture Display Alcove Flush Mounted at World x=16.52, z=-10.4 */}
+      <group position={[17.22, 2.15, -4]} rotation={[0, -Math.PI / 2, 0]}>
+        <RoundedBox args={[3.4, 3.85, 0.14]} radius={0.04} smoothness={4} castShadow>
+          <meshStandardMaterial
+            color="#111a2b"
+            roughnessMap={metalMaps.roughnessMap}
+            metalness={0.62}
+            roughness={0.38}
+          />
+        </RoundedBox>
+        {[-1.56, 1.56].map((rx) => (
+          <mesh key={`alcove-rib-${rx}`} position={[rx, 0, 0.08]}>
+            <boxGeometry args={[0.03, 3.55, 0.03]} />
+            <meshBasicMaterial color="#38bdf8" />
+          </mesh>
+        ))}
+        <mesh position={[0, 1.82, 0.08]}>
+          <boxGeometry args={[3.15, 0.03, 0.03]} />
+          <meshBasicMaterial color="#7dd3fc" />
+        </mesh>
+      </group>
+      {/* Dedicated soft warm-cool fill light for shirt plaque & knit texture */}
+      <pointLight position={[12.8, 2.0, -4]} intensity={9} distance={6.5} decay={1.2} color="#e0f2fe" />
       {/* ================= LAYERED MARBLE PEDESTAL WITH PHYSICS ================= */}
       <RigidBody type="fixed" position={[14.5, 0.45, -4]}>
-        {/* Lower stepped marble plinth */}
         <mesh position={[0, -0.34, 0]} receiveShadow castShadow>
           <cylinderGeometry args={[1.68, 1.78, 0.22, 64]} />
-          <meshStandardMaterial map={marbleMap} color="#1b263b" roughness={0.35} metalness={0.25} />
+          <meshStandardMaterial
+            map={marbleMaps.map}
+            roughnessMap={marbleMaps.roughnessMap}
+            bumpMap={marbleMaps.bumpMap}
+            bumpScale={0.008}
+            color="#d8e3f4"
+            roughness={0.34}
+            metalness={0.28}
+          />
         </mesh>
 
-        {/* Main cylindrical marble column */}
         <mesh position={[0, 0.08, 0]} castShadow receiveShadow>
           <cylinderGeometry args={[1.38, 1.48, 0.66, 64]} />
-          <meshStandardMaterial map={marbleMap} color="#172133" roughness={0.38} metalness={0.25} />
+          <meshStandardMaterial
+            map={marbleMaps.map}
+            roughnessMap={marbleMaps.roughnessMap}
+            bumpMap={marbleMaps.bumpMap}
+            bumpScale={0.008}
+            color="#d8e3f4"
+            roughness={0.34}
+            metalness={0.28}
+          />
         </mesh>
 
         {/* Brushed titanium top collar */}
         <mesh position={[0, 0.43, 0]}>
           <cylinderGeometry args={[1.42, 1.4, 0.05, 64]} />
-          <meshStandardMaterial color="#64748b" metalness={0.85} roughness={0.25} />
+          <meshStandardMaterial
+            color="#64748b"
+            roughnessMap={metalMaps.roughnessMap}
+            metalness={0.88}
+            roughness={0.22}
+          />
         </mesh>
 
         {/* Subtle recessed cyan rim ring */}
@@ -177,13 +231,40 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
         </mesh>
       </RigidBody>
 
+      {/* Two front brushed-steel museum stanchions flanking the Shirt Exhibit */}
+      {[-5.9, -2.1].map((sz) => (
+        <group key={`shirt-stanchion-${sz}`} position={[12.55, 0, sz]}>
+          <mesh position={[0, 0.025, 0]}>
+            <cylinderGeometry args={[0.14, 0.16, 0.05, 24]} />
+            <meshStandardMaterial color="#94a3b8" metalness={0.9} roughness={0.2} />
+          </mesh>
+          <mesh position={[0, 0.4, 0]} castShadow>
+            <cylinderGeometry args={[0.022, 0.025, 0.74, 16]} />
+            <meshStandardMaterial color="#cbd5e1" metalness={0.92} roughness={0.18} />
+          </mesh>
+          <mesh position={[0, 0.79, 0]}>
+            <sphereGeometry args={[0.036, 16, 12]} />
+            <meshStandardMaterial color="#e2e8f0" metalness={0.92} roughness={0.16} />
+          </mesh>
+        </group>
+      ))}
+      {/* Taut architectural barrier rail between shirt stanchions */}
+      <mesh position={[12.55, 0.74, -4]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.012, 0.012, 3.8, 12]} />
+        <meshStandardMaterial color="#38bdf8" metalness={0.6} roughness={0.35} />
+      </mesh>
+
       {/* Engraved Front Nameplate on Pedestal facing the hall (-X) */}
       <group position={[13.06, 0.62, -4]} rotation={[0, -Math.PI / 2, -0.18]}>
-        <mesh>
-          <boxGeometry args={[1.05, 0.32, 0.04]} />
-          <meshStandardMaterial color="#475569" metalness={0.8} roughness={0.3} />
-        </mesh>
-        <mesh position={[0, 0, 0.022]}>
+        <RoundedBox args={[1.07, 0.34, 0.044]} radius={0.01} smoothness={4}>
+          <meshStandardMaterial
+            color="#475569"
+            roughnessMap={metalMaps.roughnessMap}
+            metalness={0.85}
+            roughness={0.25}
+          />
+        </RoundedBox>
+        <mesh position={[0, 0, 0.024]}>
           <planeGeometry args={[0.98, 0.28]} />
           <meshBasicMaterial map={plaqueMap} />
         </mesh>
@@ -217,20 +298,20 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
         {/* Brushed Steel Mannequin Stand Base & Pole */}
         <mesh position={[0, 0.02, 0]} castShadow>
           <cylinderGeometry args={[0.38, 0.42, 0.05, 48]} />
-          <meshStandardMaterial color="#94a3b8" metalness={0.88} roughness={0.22} />
+          <meshStandardMaterial color="#94a3b8" metalness={0.9} roughness={0.2} />
         </mesh>
         <mesh position={[0, 0.65, 0]}>
           <cylinderGeometry args={[0.032, 0.038, 1.25, 32]} />
-          <meshStandardMaterial color="#cbd5e1" metalness={0.9} roughness={0.18} />
+          <meshStandardMaterial color="#cbd5e1" metalness={0.92} roughness={0.16} />
         </mesh>
         {/* Mannequin Neck Cap Finial */}
         <mesh position={[0, 1.98, 0]} castShadow>
           <cylinderGeometry args={[0.095, 0.11, 0.14, 36]} />
-          <meshStandardMaterial color="#334155" metalness={0.65} roughness={0.35} />
+          <meshStandardMaterial color="#334155" metalness={0.68} roughness={0.32} />
         </mesh>
         <mesh position={[0, 2.06, 0]}>
           <sphereGeometry args={[0.095, 32, 24]} />
-          <meshStandardMaterial color="#475569" metalness={0.7} roughness={0.3} />
+          <meshStandardMaterial color="#475569" metalness={0.74} roughness={0.28} />
         </mesh>
 
         {/* Tailored Shirt Torso */}
@@ -239,7 +320,7 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
             <meshStandardMaterial
               map={fabricMaps.map}
               bumpMap={fabricMaps.bumpMap}
-              bumpScale={0.012}
+              bumpScale={0.015}
               color="#1b3157"
               roughness={0.78}
               metalness={0.08}
@@ -248,25 +329,38 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
             />
           </mesh>
 
-          {/* Left Tailored Sleeve + Ribbed Cuff */}
-          <group position={[-0.55, 0.25, 0]} rotation={[0, 0, -Math.PI / 4.2]}>
-            <mesh castShadow receiveShadow>
-              <cylinderGeometry args={[0.155, 0.185, 0.44, 36]} />
+          {/* Left & Right Seamless Shoulder Caps joining Sleeves to Torso */}
+          {[-0.42, 0.42].map((sx) => (
+            <mesh key={`shoulder-cap-${sx}`} position={[sx, 0.36, 0]} scale={[1.1, 0.9, 1.1]}>
+              <sphereGeometry args={[0.165, 24, 20]} />
               <meshStandardMaterial
                 map={fabricMaps.map}
                 bumpMap={fabricMaps.bumpMap}
-                bumpScale={0.012}
+                bumpScale={0.015}
                 color="#1b3157"
                 roughness={0.78}
                 metalness={0.08}
               />
             </mesh>
-            {/* Cyan piped cuff trim */}
+          ))}
+
+          {/* Left Tailored Sleeve + Ribbed Cuff */}
+          <group position={[-0.54, 0.24, 0]} rotation={[0, 0, -Math.PI / 4.2]}>
+            <mesh castShadow receiveShadow>
+              <cylinderGeometry args={[0.155, 0.175, 0.44, 36]} />
+              <meshStandardMaterial
+                map={fabricMaps.map}
+                bumpMap={fabricMaps.bumpMap}
+                bumpScale={0.015}
+                color="#1b3157"
+                roughness={0.78}
+                metalness={0.08}
+              />
+            </mesh>
             <mesh position={[0, -0.21, 0]}>
               <cylinderGeometry args={[0.158, 0.158, 0.035, 36]} />
               <meshStandardMaterial color="#38bdf8" roughness={0.5} metalness={0.15} />
             </mesh>
-            {/* Dark interior sleeve shadow */}
             <mesh position={[0, -0.226, 0]} rotation={[Math.PI / 2, 0, 0]}>
               <circleGeometry args={[0.145, 32]} />
               <meshStandardMaterial color="#090e1a" roughness={0.9} />
@@ -274,13 +368,13 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
           </group>
 
           {/* Right Tailored Sleeve + Ribbed Cuff */}
-          <group position={[0.55, 0.25, 0]} rotation={[0, 0, Math.PI / 4.2]}>
+          <group position={[0.54, 0.24, 0]} rotation={[0, 0, Math.PI / 4.2]}>
             <mesh castShadow receiveShadow>
-              <cylinderGeometry args={[0.155, 0.185, 0.44, 36]} />
+              <cylinderGeometry args={[0.155, 0.175, 0.44, 36]} />
               <meshStandardMaterial
                 map={fabricMaps.map}
                 bumpMap={fabricMaps.bumpMap}
-                bumpScale={0.012}
+                bumpScale={0.015}
                 color="#1b3157"
                 roughness={0.78}
                 metalness={0.08}
@@ -296,7 +390,7 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
             </mesh>
           </group>
 
-          {/* Ribbed Polo Collar Ring */}
+          {/* Ribbed Polo Collar Ring + Left/Right Folded Collar Wings */}
           <mesh position={[0, 0.62, 0]} rotation={[Math.PI / 2, 0, 0]}>
             <torusGeometry args={[0.155, 0.038, 20, 48]} />
             <meshStandardMaterial color="#0f1d36" roughness={0.7} metalness={0.1} />
@@ -305,8 +399,20 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
             <torusGeometry args={[0.158, 0.01, 16, 48]} />
             <meshStandardMaterial color="#38bdf8" roughness={0.4} metalness={0.2} />
           </mesh>
+          {[-0.085, 0.085].map((cx) => (
+            <RoundedBox
+              key={`collar-wing-${cx}`}
+              position={[cx, 0.56, 0.175]}
+              rotation={[0.32, cx > 0 ? -0.22 : 0.22, cx > 0 ? 0.32 : -0.32]}
+              args={[0.13, 0.09, 0.024]}
+              radius={0.008}
+              smoothness={4}
+            >
+              <meshStandardMaterial color="#10203d" roughness={0.68} />
+            </RoundedBox>
+          ))}
 
-          {/* Front Polo Placket & Snap Buttons */}
+          {/* Front Polo Placket & Metallic Snap Buttons */}
           <mesh position={[0, 0.42, 0.195]}>
             <boxGeometry args={[0.07, 0.28, 0.022]} />
             <meshStandardMaterial color="#101f3a" roughness={0.7} />
@@ -314,9 +420,15 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
           {[0.49, 0.39].map((btnY, i) => (
             <mesh key={`btn-${i}`} position={[0, btnY, 0.21]} rotation={[Math.PI / 2, 0, 0]}>
               <cylinderGeometry args={[0.014, 0.014, 0.008, 16]} />
-              <meshStandardMaterial color="#cbd5e1" metalness={0.85} roughness={0.2} />
+              <meshStandardMaterial color="#cbd5e1" metalness={0.88} roughness={0.18} />
             </mesh>
           ))}
+
+          {/* Bottom Tailored Hem Double Stitch Rim */}
+          <mesh position={[0, -0.585, 0]}>
+            <boxGeometry args={[0.88, 0.022, 0.32]} />
+            <meshStandardMaterial color="#0e1b33" roughness={0.75} />
+          </mesh>
 
           {/* Subtle Vertical Technical Seam Accent */}
           <mesh position={[0, -0.14, 0.196]}>
