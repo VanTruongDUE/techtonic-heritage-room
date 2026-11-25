@@ -6,8 +6,8 @@ import type {
   GuestbookEntry,
   GuestbookStorageMode,
   MuseumAnalyticsPayload,
-} from '../../src/types/heritage';
-import { GUESTBOOK_ENTRIES_SEED } from '../../src/data/heritageSeed';
+} from '../../src/types/heritage.js';
+import { GUESTBOOK_ENTRIES_SEED } from '../../src/data/heritageSeed.js';
 
 const KV_GUESTBOOK_KEY = 'techtonic:heritage:guestbook:v2';
 const KV_ANALYTICS_KEY = 'techtonic:heritage:analytics:v1';

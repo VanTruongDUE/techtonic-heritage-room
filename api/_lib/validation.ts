@@ -1,4 +1,4 @@
-import type { ApiErrorResponse, GuestbookCreateInput, GuestbookTag } from '../../src/types/heritage';
+import type { ApiErrorResponse, GuestbookCreateInput, GuestbookTag } from '../../src/types/heritage.js';
 
 const CONTROL_CHARS_RE = /[\u0000-\u001F\u007F]/g;
 const ANGLE_BRACKETS_RE = /[<>]/g;

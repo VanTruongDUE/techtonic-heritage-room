@@ -3,9 +3,9 @@ import {
   EXECUTIVE_MEMBERS_SEED,
   EXHIBIT_ITEMS_SEED,
   TIMELINE_MILESTONES_SEED,
-} from '../src/data/heritageSeed';
-import type { HeritageDataPayload } from '../src/types/heritage';
-import { getQueryParams, sendJson, type ApiRequest, type ApiResponse } from './_lib/http';
+} from '../src/data/heritageSeed.js';
+import type { HeritageDataPayload } from '../src/types/heritage.js';
+import { getQueryParams, sendJson, type ApiRequest, type ApiResponse } from './_lib/http.js';
 
 export default function handler(req: ApiRequest, res: ApiResponse): void {
   if (req.method !== 'GET') {

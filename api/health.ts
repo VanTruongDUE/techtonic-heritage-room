@@ -1,5 +1,5 @@
-import { getActiveStorageMode, getMuseumAnalytics } from './_lib/storage';
-import { sendJson, type ApiRequest, type ApiResponse } from './_lib/http';
+import { getActiveStorageMode, getMuseumAnalytics } from './_lib/storage.js';
+import { sendJson, type ApiRequest, type ApiResponse } from './_lib/http.js';
 
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   if (req.method !== 'GET') {

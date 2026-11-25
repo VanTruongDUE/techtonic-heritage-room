@@ -3,8 +3,8 @@ import {
   checkRateLimit,
   likeGuestbookEntry,
   listGuestbookEntries,
-} from './_lib/storage';
-import { sanitizeExhibitId, sanitizeText, validateGuestbookInput } from './_lib/validation';
+} from './_lib/storage.js';
+import { sanitizeExhibitId, sanitizeText, validateGuestbookInput } from './_lib/validation.js';
 import {
   getClientKey,
   getQueryParams,
@@ -12,7 +12,7 @@ import {
   sendJson,
   type ApiRequest,
   type ApiResponse,
-} from './_lib/http';
+} from './_lib/http.js';
 
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   if (req.method === 'GET') {

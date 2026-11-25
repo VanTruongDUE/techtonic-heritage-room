@@ -3,9 +3,9 @@ import {
   getMuseumAnalytics,
   incrementExhibitLike,
   recordMuseumVisit,
-} from './_lib/storage';
-import { sanitizeExhibitId } from './_lib/validation';
-import { getClientKey, readJsonBody, sendJson, type ApiRequest, type ApiResponse } from './_lib/http';
+} from './_lib/storage.js';
+import { sanitizeExhibitId } from './_lib/validation.js';
+import { getClientKey, readJsonBody, sendJson, type ApiRequest, type ApiResponse } from './_lib/http.js';
 
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   if (req.method === 'GET') {
