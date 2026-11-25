@@ -5,7 +5,13 @@ import { Scene } from './Scene';
 import { useHeritageStore } from '../../store/useHeritageStore';
 
 export const CanvasContainer: React.FC = () => {
-  const { controlMode, isHoveringInteractive, isDraggingCamera, activeModal } = useHeritageStore();
+  const {
+    controlMode,
+    isHoveringInteractive,
+    isDraggingCamera,
+    activeModal,
+    graphicsQuality,
+  } = useHeritageStore();
 
   const cursorClass =
     activeModal || controlMode === 'fps'
@@ -15,6 +21,8 @@ export const CanvasContainer: React.FC = () => {
       : isHoveringInteractive
       ? 'cursor-pointer'
       : 'cursor-default';
+
+  const dpr: [number, number] = graphicsQuality === 'high' ? [1.5, 2] : [1, 1.5];
 
   return (
     <div className={`absolute inset-0 w-full h-full bg-[#050811] ${cursorClass}`}>
@@ -32,7 +40,7 @@ export const CanvasContainer: React.FC = () => {
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.15,
         }}
-        dpr={[1.5, 2]}
+        dpr={dpr}
         onCreated={({ gl }) => {
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.domElement.setAttribute('role', 'img');

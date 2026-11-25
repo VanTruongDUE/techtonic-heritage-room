@@ -11,13 +11,20 @@ import {
   ApiRequestError,
   createGuestbookEntry,
   fetchGuestbook,
+  fetchHealthStatus,
   fetchHeritageData,
+  fetchMuseumAnalytics,
+  likeExhibitApi,
+  likeGuestbookEntryApi,
+  recordVisitApi,
+  type HealthStatusPayload,
 } from '../services/heritageApi';
 import type {
   ActivityHighlight,
   ApiErrorResponse,
   ExecutiveMember,
   ExhibitItem,
+  GraphicsQuality,
   GuestbookCreateInput,
   GuestbookEntry,
   GuestbookStorageMode,
@@ -25,7 +32,58 @@ import type {
   ModalType,
   TeleportZone,
   TimelineMilestone,
+  ToastItem,
 } from '../types/heritage';
+
+const QUALITY_STORAGE_KEY = 'techtonic_heritage_quality_v2';
+const VOLUME_STORAGE_KEY = 'techtonic_heritage_volume_v2';
+const LIKED_EXHIBITS_KEY = 'techtonic_heritage_liked_exhibits_v2';
+const LIKED_GUESTBOOK_KEY = 'techtonic_heritage_liked_guestbook_v2';
+
+function readStoredQuality(): GraphicsQuality {
+  try {
+    const val = window.localStorage.getItem(QUALITY_STORAGE_KEY);
+    return val === 'balanced' ? 'balanced' : 'high';
+  } catch {
+    return 'high';
+  }
+}
+
+function readStoredVolume(): number {
+  try {
+    const raw = window.localStorage.getItem(VOLUME_STORAGE_KEY);
+    if (!raw) return 0.7;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? Math.min(1, Math.max(0, parsed)) : 0.7;
+  } catch {
+    return 0.7;
+  }
+}
+
+function readStoredStringArray(key: string): string[] {
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeStoredStringArray(key: string, items: string[]): void {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(items.slice(-200)));
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+export interface PlayerPose {
+  x: number;
+  z: number;
+  yaw: number;
+}
 
 interface HeritageState {
   // Entry, Controls & Pointer state
@@ -40,12 +98,34 @@ interface HeritageState {
   mouseSensitivity: number;
   setMouseSensitivity: (value: number) => void;
 
-  // Spatial navigation & teleportation
+  // Quality, MiniMap & Guided Tour
+  graphicsQuality: GraphicsQuality;
+  setGraphicsQuality: (quality: GraphicsQuality) => void;
+  showMiniMap: boolean;
+  toggleMiniMap: () => void;
+  isGuidedTourActive: boolean;
+  toggleGuidedTour: () => void;
+  stopGuidedTour: () => void;
+
+  // Spatial navigation, telemetry & smooth camera glide
   currentZone: string;
+  visitedZones: string[];
   setCurrentZone: (zone: string) => void;
+  playerPose: PlayerPose;
+  setPlayerPose: (x: number, z: number, yaw: number) => void;
   teleportTarget: TeleportZone | null;
-  requestTeleport: (zoneId: string) => void;
+  requestTeleport: (zoneId: string, options?: { fromTour?: boolean }) => void;
+  requestCustomGlide: (
+    position: [number, number, number],
+    lookAt: [number, number, number],
+    label: string
+  ) => void;
   clearTeleportTarget: () => void;
+
+  // Toasts
+  toasts: ToastItem[];
+  pushToast: (title: string, detail?: string, tone?: ToastItem['tone']) => void;
+  dismissToast: (id: string) => void;
 
   // Crosshair / cursor hover, rich live preview & [E] quick-interact state
   isHoveringInteractive: boolean;
@@ -74,6 +154,8 @@ interface HeritageState {
   // Audio state
   isMuted: boolean;
   toggleMute: () => void;
+  audioVolume: number;
+  setAudioVolume: (volume: number) => void;
 
   // Data sets
   executiveMembers: ExecutiveMember[];
@@ -81,6 +163,13 @@ interface HeritageState {
   timelineMilestones: TimelineMilestone[];
   activityHighlights: ActivityHighlight[];
   guestbookEntries: GuestbookEntry[];
+
+  // Live analytics & user likes
+  totalVisits: number;
+  exhibitLikes: Record<string, number>;
+  likedExhibitIds: string[];
+  likedGuestbookIds: string[];
+  apiHealth: HealthStatusPayload | null;
 
   // Backend sync & states
   isLoadingData: boolean;
@@ -91,9 +180,16 @@ interface HeritageState {
   storageMode: GuestbookStorageMode;
   loadHeritageData: () => Promise<void>;
   loadGuestbook: () => Promise<void>;
+  loadAnalytics: () => Promise<void>;
+  loadHealthStatus: () => Promise<void>;
+  recordVisit: () => Promise<void>;
+  likeExhibit: (exhibitId: string) => Promise<boolean>;
+  likeGuestbook: (entryId: string) => Promise<boolean>;
   submitGuestbookEntry: (entry: GuestbookCreateInput) => Promise<boolean>;
   clearGuestbookErrors: () => void;
 }
+
+let toastCounter = 0;
 
 export const useHeritageStore = create<HeritageState>((set, get) => ({
   hasEntered: false,
@@ -118,22 +214,124 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
   setMouseSensitivity: (value) =>
     set({ mouseSensitivity: Math.min(1.8, Math.max(0.4, Number(value.toFixed(2)))) }),
 
+  graphicsQuality: readStoredQuality(),
+  setGraphicsQuality: (quality) => {
+    try {
+      window.localStorage.setItem(QUALITY_STORAGE_KEY, quality);
+    } catch {
+      // Ignore
+    }
+    set({ graphicsQuality: quality });
+    get().pushToast(
+      quality === 'high' ? 'Đồ họa: Chất lượng cao' : 'Đồ họa: Mượt mà tối ưu',
+      quality === 'high'
+        ? 'Phản chiếu sàn độ phân giải cao và khử răng cưa sắc nét.'
+        : 'Tối ưu khung hình ổn định cho máy cấu hình trung bình.',
+      'info'
+    );
+  },
+
+  showMiniMap: true,
+  toggleMiniMap: () => set((state) => ({ showMiniMap: !state.showMiniMap })),
+
+  isGuidedTourActive: false,
+  toggleGuidedTour: () => {
+    const next = !get().isGuidedTourActive;
+    set({ isGuidedTourActive: next, activeModal: null, modalData: null });
+    get().pushToast(
+      next ? 'Bắt đầu tham quan tự động' : 'Đã tạm dừng tham quan tự động',
+      next
+        ? 'Camera sẽ lướt mượt qua từng phân khu. Nhấn WASD hoặc kéo chuột để tự điều khiển.'
+        : 'Bạn có thể tự do di chuyển và khám phá.',
+      next ? 'accent' : 'info'
+    );
+  },
+  stopGuidedTour: () => {
+    if (get().isGuidedTourActive) {
+      set({ isGuidedTourActive: false });
+    }
+  },
+
   currentZone: 'Hành Lang Lối Vào',
-  setCurrentZone: (zone) =>
-    set((state) => (state.currentZone === zone ? state : { currentZone: zone })),
+  visitedZones: ['Hành Lang Lối Vào'],
+  setCurrentZone: (zone) => {
+    const state = get();
+    if (state.currentZone === zone) return;
+    const isNewZone = !state.visitedZones.includes(zone);
+    const nextVisited = isNewZone ? [...state.visitedZones, zone] : state.visitedZones;
+    set({ currentZone: zone, visitedZones: nextVisited });
+    if (isNewZone && state.hasEntered) {
+      const totalTrackable = TELEPORT_ZONES.length;
+      const clampedCount = Math.min(nextVisited.length, totalTrackable);
+      get().pushToast(
+        `Khám phá khu vực mới: ${zone}`,
+        `Tiến độ tham quan ${clampedCount}/${totalTrackable} phân khu chính`,
+        'accent'
+      );
+    }
+  },
+
+  playerPose: { x: 0, z: 25.8, yaw: 0 },
+  setPlayerPose: (x, z, yaw) =>
+    set((state) => {
+      if (
+        Math.abs(state.playerPose.x - x) < 0.04 &&
+        Math.abs(state.playerPose.z - z) < 0.04 &&
+        Math.abs(state.playerPose.yaw - yaw) < 0.025
+      ) {
+        return state;
+      }
+      return { playerPose: { x, z, yaw } };
+    }),
 
   teleportTarget: null,
-  requestTeleport: (zoneId) => {
+  requestTeleport: (zoneId, options) => {
     const target = TELEPORT_ZONES.find((z) => z.id === zoneId);
     if (!target) return;
-    set({
+    set((state) => ({
       teleportTarget: target,
       currentZone: target.label,
+      visitedZones: state.visitedZones.includes(target.label)
+        ? state.visitedZones
+        : [...state.visitedZones, target.label],
+      isGuidedTourActive: options?.fromTour ? state.isGuidedTourActive : false,
+      activeModal: null,
+      modalData: null,
+    }));
+  },
+  requestCustomGlide: (position, lookAt, label) => {
+    const customTarget: TeleportZone = {
+      id: `custom-${Date.now()}`,
+      label,
+      shortLabel: label,
+      description: label,
+      position,
+      lookAt,
+    };
+    set({
+      teleportTarget: customTarget,
+      currentZone: label,
+      isGuidedTourActive: false,
       activeModal: null,
       modalData: null,
     });
   },
   clearTeleportTarget: () => set({ teleportTarget: null }),
+
+  toasts: [],
+  pushToast: (title, detail, tone = 'info') => {
+    const id = `toast-${++toastCounter}`;
+    set((state) => ({
+      toasts: [...state.toasts.slice(-2), { id, title, detail, tone }],
+    }));
+    window.setTimeout(() => {
+      get().dismissToast(id);
+    }, 3400);
+  },
+  dismissToast: (id) =>
+    set((state) => ({
+      toasts: state.toasts.filter((t) => t.id !== id),
+    })),
 
   isHoveringInteractive: false,
   hoverTooltip: '',
@@ -170,6 +368,7 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
     set({
       activeModal: type,
       modalData: data,
+      isGuidedTourActive: false,
       isLocked: false,
       isDraggingCamera: false,
       isHoveringInteractive: false,
@@ -191,6 +390,7 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
       modalData: null,
       boardDepartmentFilter: department,
       boardTermFilter: term,
+      isGuidedTourActive: false,
       isLocked: false,
       isDraggingCamera: false,
       isHoveringInteractive: false,
@@ -205,12 +405,32 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
 
   isMuted: false,
   toggleMute: () => set((state) => ({ isMuted: !state.isMuted })),
+  audioVolume: readStoredVolume(),
+  setAudioVolume: (volume) => {
+    const clamped = Math.min(1, Math.max(0, Number(volume.toFixed(2))));
+    try {
+      window.localStorage.setItem(VOLUME_STORAGE_KEY, String(clamped));
+    } catch {
+      // Ignore
+    }
+    set({ audioVolume: clamped, isMuted: clamped === 0 });
+  },
 
   executiveMembers: EXECUTIVE_MEMBERS_SEED,
   exhibitItems: EXHIBIT_ITEMS_SEED,
   timelineMilestones: TIMELINE_MILESTONES_SEED,
   activityHighlights: ACTIVITY_HIGHLIGHTS_SEED,
   guestbookEntries: GUESTBOOK_ENTRIES_SEED,
+
+  totalVisits: 128,
+  exhibitLikes: {
+    'mission-vision': 42,
+    'club-shirt-3d': 35,
+    'trophy-sv-it': 29,
+  },
+  likedExhibitIds: readStoredStringArray(LIKED_EXHIBITS_KEY),
+  likedGuestbookIds: readStoredStringArray(LIKED_GUESTBOOK_KEY),
+  apiHealth: null,
 
   isLoadingData: false,
   dataError: null,
@@ -250,6 +470,83 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
     }
   },
 
+  loadAnalytics: async () => {
+    const payload = await fetchMuseumAnalytics();
+    set({
+      totalVisits: payload.totalVisits,
+      exhibitLikes: payload.exhibitLikes,
+      storageMode: payload.storage,
+    });
+  },
+
+  loadHealthStatus: async () => {
+    const health = await fetchHealthStatus();
+    if (health) {
+      set({ apiHealth: health });
+    }
+  },
+
+  recordVisit: async () => {
+    const payload = await recordVisitApi();
+    set({
+      totalVisits: payload.totalVisits,
+      exhibitLikes: payload.exhibitLikes,
+      storageMode: payload.storage,
+    });
+  },
+
+  likeExhibit: async (exhibitId) => {
+    const state = get();
+    if (state.likedExhibitIds.includes(exhibitId)) {
+      return false;
+    }
+
+    const nextLiked = [...state.likedExhibitIds, exhibitId];
+    writeStoredStringArray(LIKED_EXHIBITS_KEY, nextLiked);
+    set({
+      likedExhibitIds: nextLiked,
+      exhibitLikes: {
+        ...state.exhibitLikes,
+        [exhibitId]: (state.exhibitLikes[exhibitId] ?? 0) + 1,
+      },
+    });
+
+    const payload = await likeExhibitApi(exhibitId);
+    set({
+      totalVisits: payload.totalVisits,
+      exhibitLikes: payload.exhibitLikes,
+      storageMode: payload.storage,
+    });
+    return true;
+  },
+
+  likeGuestbook: async (entryId) => {
+    const state = get();
+    if (state.likedGuestbookIds.includes(entryId)) {
+      return false;
+    }
+
+    const nextLiked = [...state.likedGuestbookIds, entryId];
+    writeStoredStringArray(LIKED_GUESTBOOK_KEY, nextLiked);
+    set({
+      likedGuestbookIds: nextLiked,
+      guestbookEntries: state.guestbookEntries.map((entry) =>
+        entry.id === entryId ? { ...entry, likes: (entry.likes ?? 0) + 1 } : entry
+      ),
+    });
+
+    const res = await likeGuestbookEntryApi(entryId);
+    if (res) {
+      set((curr) => ({
+        guestbookEntries: curr.guestbookEntries.map((entry) =>
+          entry.id === res.entry.id ? res.entry : entry
+        ),
+        storageMode: res.storage,
+      }));
+    }
+    return true;
+  },
+
   submitGuestbookEntry: async (input) => {
     set({
       guestbookStatus: 'submitting',
@@ -267,6 +564,7 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
         storageMode: res.storage,
         guestbookStatus: 'idle',
       }));
+      get().pushToast('Đã lưu lời chúc vào Sổ Lưu Bút', `Cảm ơn ${res.entry.author}!`, 'success');
       return true;
     } catch (err) {
       if (err instanceof ApiRequestError) {

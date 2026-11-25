@@ -1,44 +1,45 @@
 import {
   appendGuestbookEntry,
   checkRateLimit,
+  likeGuestbookEntry,
   listGuestbookEntries,
 } from './_lib/storage';
-import { validateGuestbookInput } from './_lib/validation';
-import { sendJson, type ApiRequest, type ApiResponse } from './_lib/http';
-
-async function readJsonBody(req: ApiRequest): Promise<unknown> {
-  if (req.body !== undefined) {
-    if (typeof req.body === 'string') {
-      return JSON.parse(req.body);
-    }
-    return req.body;
-  }
-
-  const chunks: Buffer[] = [];
-  for await (const chunk of req) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-    if (chunks.reduce((sum, b) => sum + b.length, 0) > 16_384) {
-      throw new Error('PAYLOAD_TOO_LARGE');
-    }
-  }
-  const raw = Buffer.concat(chunks).toString('utf-8').trim();
-  if (!raw) return null;
-  return JSON.parse(raw);
-}
-
-function getClientKey(req: ApiRequest): string {
-  const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string' && forwarded.length > 0) {
-    return forwarded.split(',')[0].trim();
-  }
-  return req.socket?.remoteAddress || 'local';
-}
+import { sanitizeExhibitId, sanitizeText, validateGuestbookInput } from './_lib/validation';
+import {
+  getClientKey,
+  getQueryParams,
+  readJsonBody,
+  sendJson,
+  type ApiRequest,
+  type ApiResponse,
+} from './_lib/http';
 
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   if (req.method === 'GET') {
     try {
       const result = await listGuestbookEntries();
-      sendJson(res, 200, result);
+      const params = getQueryParams(req);
+      const query = sanitizeText(params.get('q') ?? '', 80).toLowerCase();
+      const tag = sanitizeText(params.get('tag') ?? '', 32);
+
+      let filtered = result.entries;
+      if (tag && tag !== 'all') {
+        filtered = filtered.filter((e) => (e.tag ?? 'Lời chúc') === tag);
+      }
+      if (query) {
+        filtered = filtered.filter(
+          (e) =>
+            e.author.toLowerCase().includes(query) ||
+            e.roleOrAffiliation.toLowerCase().includes(query) ||
+            e.message.toLowerCase().includes(query)
+        );
+      }
+
+      sendJson(res, 200, {
+        entries: filtered,
+        total: result.entries.length,
+        storage: result.storage,
+      });
     } catch (err) {
       console.error('GET /api/guestbook error:', err);
       sendJson(res, 500, { error: 'Không thể tải danh sách sổ lưu bút.' });
@@ -48,7 +49,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
 
   if (req.method === 'POST') {
     const clientKey = getClientKey(req);
-    if (!checkRateLimit(clientKey)) {
+    if (!checkRateLimit(clientKey, 'guestbook-post', 5, 60_000)) {
       sendJson(res, 429, {
         error: 'Bạn gửi quá nhanh. Vui lòng đợi ít giây trước khi gửi lời chúc tiếp theo.',
       });
@@ -83,6 +84,42 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     return;
   }
 
-  res.setHeader('Allow', 'GET, POST');
+  if (req.method === 'PATCH') {
+    const clientKey = getClientKey(req);
+    if (!checkRateLimit(clientKey, 'guestbook-like', 20, 60_000)) {
+      sendJson(res, 429, { error: 'Bạn thao tác quá nhanh, vui lòng thử lại sau giây lát.' });
+      return;
+    }
+
+    let parsedBody: unknown;
+    try {
+      parsedBody = await readJsonBody(req, 4096);
+    } catch {
+      sendJson(res, 400, { error: 'Định dạng JSON không hợp lệ.' });
+      return;
+    }
+
+    const record = parsedBody as Record<string, unknown> | null;
+    const id = sanitizeExhibitId(record?.id);
+    if (!id) {
+      sendJson(res, 400, { error: 'Thiếu mã lời chúc hợp lệ.' });
+      return;
+    }
+
+    try {
+      const result = await likeGuestbookEntry(id);
+      if (!result.entry) {
+        sendJson(res, 404, { error: 'Không tìm thấy lời chúc.' });
+        return;
+      }
+      sendJson(res, 200, result);
+    } catch (err) {
+      console.error('PATCH /api/guestbook error:', err);
+      sendJson(res, 500, { error: 'Không thể cập nhật lượt yêu thích.' });
+    }
+    return;
+  }
+
+  res.setHeader('Allow', 'GET, POST, PATCH');
   sendJson(res, 405, { error: 'Method Not Allowed' });
 }

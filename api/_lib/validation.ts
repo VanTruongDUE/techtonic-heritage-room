@@ -1,7 +1,13 @@
-import type { ApiErrorResponse, GuestbookCreateInput } from '../../src/types/heritage';
+import type { ApiErrorResponse, GuestbookCreateInput, GuestbookTag } from '../../src/types/heritage';
 
 const CONTROL_CHARS_RE = /[\u0000-\u001F\u007F]/g;
 const ANGLE_BRACKETS_RE = /[<>]/g;
+const VALID_TAGS: ReadonlySet<GuestbookTag> = new Set([
+  'Lời chúc',
+  'Kỷ niệm',
+  'Cựu thành viên',
+  'Góp ý',
+]);
 
 export function sanitizeText(value: unknown, maxLength: number): string {
   if (typeof value !== 'string') return '';
@@ -11,6 +17,11 @@ export function sanitizeText(value: unknown, maxLength: number): string {
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, maxLength);
+}
+
+export function sanitizeExhibitId(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  return value.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
 }
 
 export function validateGuestbookInput(raw: unknown): {
@@ -29,6 +40,8 @@ export function validateGuestbookInput(raw: unknown): {
   const author = sanitizeText(record.author, 80);
   const roleOrAffiliation = sanitizeText(record.roleOrAffiliation, 100) || 'Khách tham quan';
   const message = sanitizeText(record.message, 500);
+  const rawTag = sanitizeText(record.tag, 32) as GuestbookTag;
+  const tag: GuestbookTag = VALID_TAGS.has(rawTag) ? rawTag : 'Lời chúc';
 
   const fieldErrors: NonNullable<ApiErrorResponse['fieldErrors']> = {};
 
@@ -55,6 +68,7 @@ export function validateGuestbookInput(raw: unknown): {
       author,
       roleOrAffiliation,
       message,
+      tag,
     },
   };
 }

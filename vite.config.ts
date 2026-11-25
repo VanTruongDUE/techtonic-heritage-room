@@ -16,6 +16,7 @@ function localApiDevPlugin(): Plugin {
           '/api/health': '/api/health.ts',
           '/api/heritage': '/api/heritage.ts',
           '/api/guestbook': '/api/guestbook.ts',
+          '/api/analytics': '/api/analytics.ts',
         };
 
         const modulePath = routeMap[urlPath];

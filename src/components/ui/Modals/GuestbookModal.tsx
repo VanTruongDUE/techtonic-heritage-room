@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useHeritageStore } from '../../../store/useHeritageStore';
+import { soundFx } from '../../../hooks/useAudio';
 import {
   X,
   BookOpen,
@@ -11,10 +12,13 @@ import {
   RefreshCw,
   Database,
   Loader2,
+  Search,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import type { GuestbookTag } from '../../../types/heritage';
 
 const MAX_MESSAGE_LEN = 500;
+const GUESTBOOK_TAGS: GuestbookTag[] = ['Lời chúc', 'Kỷ niệm', 'Cựu thành viên', 'Góp ý'];
 
 export const GuestbookModal: React.FC = () => {
   const {
@@ -25,14 +29,19 @@ export const GuestbookModal: React.FC = () => {
     guestbookError,
     guestbookFieldErrors,
     storageMode,
+    likedGuestbookIds,
     loadGuestbook,
     submitGuestbookEntry,
+    likeGuestbook,
     clearGuestbookErrors,
   } = useHeritageStore();
 
   const [author, setAuthor] = useState('');
   const [roleOrAffiliation, setRoleOrAffiliation] = useState('');
   const [message, setMessage] = useState('');
+  const [selectedTag, setSelectedTag] = useState<GuestbookTag>('Lời chúc');
+  const [filterTag, setFilterTag] = useState<'ALL' | GuestbookTag>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const authorInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,10 +53,25 @@ export const GuestbookModal: React.FC = () => {
     }
   }, [activeModal, loadGuestbook]);
 
+  const filteredEntries = useMemo(() => {
+    const needle = searchQuery.trim().toLowerCase();
+    return guestbookEntries.filter((entry) => {
+      const entryTag = entry.tag || 'Lời chúc';
+      const matchTag = filterTag === 'ALL' || entryTag === filterTag;
+      const matchSearch =
+        !needle ||
+        entry.author.toLowerCase().includes(needle) ||
+        entry.roleOrAffiliation.toLowerCase().includes(needle) ||
+        entry.message.toLowerCase().includes(needle);
+      return matchTag && matchSearch;
+    });
+  }, [guestbookEntries, filterTag, searchQuery]);
+
   if (activeModal !== 'guestbook') return null;
 
   const isSubmitting = guestbookStatus === 'submitting';
   const isLoadingList = guestbookStatus === 'loading';
+  const messagePct = Math.min(100, Math.round((message.length / MAX_MESSAGE_LEN) * 100));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,10 +81,12 @@ export const GuestbookModal: React.FC = () => {
       author: author.trim(),
       roleOrAffiliation: roleOrAffiliation.trim() || 'Khách tham quan',
       message: message.trim(),
+      tag: selectedTag,
     });
 
     if (!ok) return;
 
+    soundFx.playSuccessChord();
     confetti({
       particleCount: 70,
       spread: 65,
@@ -72,7 +98,15 @@ export const GuestbookModal: React.FC = () => {
     setAuthor('');
     setRoleOrAffiliation('');
     setMessage('');
+    setSelectedTag('Lời chúc');
     window.setTimeout(() => setIsSuccess(false), 3500);
+  };
+
+  const handleLikeEntry = async (id: string) => {
+    const added = await likeGuestbook(id);
+    if (added) {
+      soundFx.playLikePop();
+    }
   };
 
   const storageLabel =
@@ -80,7 +114,7 @@ export const GuestbookModal: React.FC = () => {
       ? 'Lưu cục bộ trên trình duyệt'
       : storageMode === 'kv'
       ? 'Đồng bộ Cloud KV'
-      : 'Đồng bộ máy chủ';
+      : 'Đồng bộ máy chủ API';
 
   return (
     <div
@@ -97,12 +131,12 @@ export const GuestbookModal: React.FC = () => {
       }}
     >
       <div
-        className="relative w-full max-w-3xl max-h-[86vh] flex flex-col rounded-2xl glass-panel-glow overflow-hidden border border-tech-cyan/40 animate-panel-in"
+        className="relative w-full max-w-4xl max-h-[88vh] flex flex-col rounded-2xl glass-panel-glow overflow-hidden border border-tech-cyan/40 animate-panel-in"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative px-6 py-5 border-b border-tech-cyan/20 flex items-center justify-between bg-[#0c101c]/95">
+        <div className="relative px-6 py-4.5 border-b border-tech-cyan/20 flex items-center justify-between bg-[#0c101c]/95">
           <div className="flex items-center space-x-3">
             <BookOpen className="w-6 h-6 text-tech-cyan shrink-0" aria-hidden="true" />
             <div>
@@ -137,7 +171,7 @@ export const GuestbookModal: React.FC = () => {
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Left: Input Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col space-y-4" noValidate>
+          <form onSubmit={handleSubmit} className="flex flex-col space-y-3.5" noValidate>
             <h3 className="text-sm font-semibold text-white flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-tech-cyan" aria-hidden="true" />
               Viết lời chúc của bạn
@@ -172,6 +206,26 @@ export const GuestbookModal: React.FC = () => {
                 </button>
               </div>
             )}
+
+            <div>
+              <span className="block text-xs font-medium text-slate-200 mb-1.5">Chủ đề lời nhắn</span>
+              <div className="flex flex-wrap gap-1.5">
+                {GUESTBOOK_TAGS.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setSelectedTag(tag)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer ${
+                      selectedTag === tag
+                        ? 'bg-tech-cyan text-slate-950 font-semibold'
+                        : 'bg-[#0e1422] border border-white/15 text-slate-200 hover:border-tech-cyan/45'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div>
               <label htmlFor="gb-author" className="block text-xs font-medium text-slate-200 mb-1.5">
@@ -237,6 +291,12 @@ export const GuestbookModal: React.FC = () => {
                 aria-invalid={Boolean(guestbookFieldErrors?.message)}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-[#0e1422] border border-white/15 text-slate-100 placeholder-slate-400 text-sm focus:outline-none focus:border-tech-cyan resize-none"
               />
+              <div className="mt-1.5 h-1 w-full rounded-full bg-white/10 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-tech-cyan transition-all duration-150"
+                  style={{ width: `${messagePct}%` }}
+                />
+              </div>
               {guestbookFieldErrors?.message && (
                 <p className="text-xs text-rose-300 mt-1">{guestbookFieldErrors.message}</p>
               )}
@@ -261,18 +321,53 @@ export const GuestbookModal: React.FC = () => {
             </button>
           </form>
 
-          {/* Right: Existing Messages List */}
+          {/* Right: Existing Messages List with Search, Tag Filter & Likes */}
           <div className="flex flex-col space-y-3 min-h-0">
             <h3 className="text-sm font-semibold text-white flex items-center justify-between">
               <span className="flex items-center gap-2">
-                <Heart className="w-4 h-4 text-tech-accent" aria-hidden="true" /> Lưu bút gần đây
+                <Heart className="w-4 h-4 text-rose-400" aria-hidden="true" /> Lưu bút gần đây
               </span>
               <span className="text-xs text-tech-cyan font-mono tabular-nums">
-                {guestbookEntries.length} lời nhắn
+                {filteredEntries.length}/{guestbookEntries.length} lời nhắn
               </span>
             </h3>
 
-            <div className="flex-1 max-h-[360px] overflow-y-auto space-y-3 pr-1">
+            {/* Search & Tag Filter */}
+            <div className="space-y-2">
+              <div className="relative">
+                <Search
+                  className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                  aria-hidden="true"
+                />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Tìm kiếm theo tên hoặc nội dung..."
+                  aria-label="Tìm kiếm lời chúc trong sổ lưu bút"
+                  className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-[#0e1422] border border-white/15 text-slate-100 placeholder-slate-400 text-xs focus:outline-none focus:border-tech-cyan"
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-1">
+                {(['ALL', ...GUESTBOOK_TAGS] as const).map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setFilterTag(tag)}
+                    className={`px-2 py-1 rounded-md text-[11px] font-medium transition cursor-pointer ${
+                      filterTag === tag
+                        ? 'bg-tech-cyan/20 text-tech-cyan border border-tech-cyan/50'
+                        : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'
+                    }`}
+                  >
+                    {tag === 'ALL' ? 'Tất cả' : tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex-1 max-h-[340px] overflow-y-auto space-y-2.5 pr-1">
               {isLoadingList ? (
                 <div className="space-y-3" aria-label="Đang tải danh sách lưu bút">
                   {[1, 2, 3].map((item) => (
@@ -286,32 +381,72 @@ export const GuestbookModal: React.FC = () => {
                     </div>
                   ))}
                 </div>
-              ) : guestbookEntries.length === 0 ? (
+              ) : filteredEntries.length === 0 ? (
                 <div className="p-8 rounded-xl bg-[#0e1422]/60 border border-white/10 text-center">
                   <p className="text-xs text-slate-300">
-                    Chưa có lời chúc nào. Hãy là người đầu tiên lưu lại dấu ấn tại phòng truyền thống!
+                    Không tìm thấy lời nhắn phù hợp. Hãy thử từ khóa khác hoặc viết lời chúc đầu tiên!
                   </p>
                 </div>
               ) : (
-                guestbookEntries.map((entry) => (
-                  <article
-                    key={entry.id}
-                    className="p-3.5 rounded-xl bg-[#0e1422]/85 border border-white/10 hover:border-tech-cyan/35 transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <div>
-                        <div className="text-sm font-bold text-white">{entry.author}</div>
-                        <div className="text-xs text-tech-cyan">{entry.roleOrAffiliation}</div>
+                filteredEntries.map((entry) => {
+                  const initial = entry.author.trim().split(/\s+/).slice(-1)[0]?.[0]?.toUpperCase() || 'T';
+                  const isLiked = likedGuestbookIds.includes(entry.id);
+                  const likeCount = entry.likes ?? 0;
+
+                  return (
+                    <article
+                      key={entry.id}
+                      className="p-3.5 rounded-xl bg-[#0e1422]/85 border border-white/10 hover:border-tech-cyan/35 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-[#152238] border border-tech-cyan/30 text-tech-cyan font-bold text-xs flex items-center justify-center shrink-0">
+                            {initial}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-bold text-white truncate">{entry.author}</div>
+                            <div className="text-[11px] text-tech-cyan truncate">
+                              {entry.roleOrAffiliation}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <time className="text-[10px] text-slate-400 font-mono tabular-nums">
+                            {entry.timestamp}
+                          </time>
+                          {entry.tag && (
+                            <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] text-slate-300">
+                              {entry.tag}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <time className="text-[11px] text-slate-400 font-mono tabular-nums shrink-0">
-                        {entry.timestamp}
-                      </time>
-                    </div>
-                    <p className="text-xs text-slate-200 leading-relaxed italic">
-                      "{entry.message}"
-                    </p>
-                  </article>
-                ))
+
+                      <p className="text-xs text-slate-200 leading-relaxed italic mb-2">
+                        "{entry.message}"
+                      </p>
+
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => void handleLikeEntry(entry.id)}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] border transition cursor-pointer ${
+                            isLiked
+                              ? 'bg-rose-500/20 border-rose-400/50 text-rose-200'
+                              : 'bg-white/5 border-white/10 text-slate-300 hover:border-rose-400/40 hover:text-rose-200'
+                          }`}
+                          aria-label={`Thả tim cho lời chúc của ${entry.author}`}
+                        >
+                          <Heart
+                            className={`w-3 h-3 ${isLiked ? 'fill-rose-400 text-rose-400' : ''}`}
+                            aria-hidden="true"
+                          />
+                          <span className="font-mono tabular-nums">{likeCount}</span>
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })
               )}
             </div>
           </div>

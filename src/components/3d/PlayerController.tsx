@@ -4,7 +4,9 @@ import { PointerLockControls } from '@react-three/drei';
 import type { PointerLockControls as PointerLockControlsImpl } from 'three-stdlib';
 import { CapsuleCollider, RapierRigidBody, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
+import { TELEPORT_ZONES } from '../../data/heritageSeed';
 import { useKeyboardControls } from '../../hooks/useKeyboardControls';
+import { soundFx } from '../../hooks/useAudio';
 import { useHeritageStore } from '../../store/useHeritageStore';
 import type { ModalType } from '../../types/heritage';
 
@@ -14,17 +16,32 @@ const JUMP_FORCE = 4.5;
 const BASE_FOV = 65;
 const SPRINT_FOV = 67.5;
 const DRAG_THRESHOLD_PX = 5;
+const GLIDE_DURATION_SEC = 0.85;
+const GUIDED_TOUR_INTERVAL_MS = 7200;
+
+function easeInOutCubic(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
 
 function detectZone(x: number, z: number): string {
   if (z > 8.2) return 'Hành Lang Lối Vào';
   if (z > 0.2 && x < -4.2) return 'Đối Tác & Kết Nối';
   if (z > 0.2 && x > 4.2) return 'Cảm Nhận Thành Viên';
-  if (x < -7.5 && z < -11.5) return 'Mô Hình Động & Lưu Bút';
-  if (z < -10.2 && x >= -7.5 && x <= 7.8) return 'Vách Tâm Điểm';
+  if (x < -7.2 && z < -10.5) return 'Sự Kiện Động & Lưu Bút';
+  if (z < -8.2 && x >= -7.2 && x <= 7.8) return 'Vách Tâm Điểm';
   if (x > 4.5 && z >= -11.5) return 'Áo CLB & Ban Chủ Nhiệm';
-  if (x < -4.5 && z >= -9.5) return 'Dòng Thời Gian & Hoạt Động';
-  if (Math.hypot(x, z + 5) < 6.2) return 'Đảo Vinh Danh 360°';
+  if (x < -4.2 && z >= -10.5) return 'Dòng Thời Gian & Giá Trị';
+  if (Math.abs(x) <= 4.2 && z >= -8.2 && z <= 4.2) return 'Đảo Vinh Danh 360°';
   return 'Đại Sảnh Danh Dự';
+}
+
+interface GlideState {
+  startPos: THREE.Vector3;
+  endPos: THREE.Vector3;
+  startQuat: THREE.Quaternion;
+  endQuat: THREE.Quaternion;
+  elapsed: number;
+  duration: number;
 }
 
 interface PlayerControllerProps {
@@ -47,8 +64,13 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
     activeModal,
     mouseSensitivity,
     setCurrentZone,
+    setPlayerPose,
     teleportTarget,
     clearTeleportTarget,
+    requestTeleport,
+    isGuidedTourActive,
+    stopGuidedTour,
+    isHoveringInteractive,
     triggerHoveredInteraction,
   } = useHeritageStore();
 
@@ -60,6 +82,18 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
   const bobPhase = useRef(0);
   const bobAmount = useRef(0);
   const prevModalRef = useRef<ModalType>(null);
+  const prevHoverRef = useRef(false);
+
+  // Smooth inertial drag-to-look angular targets
+  const dragVelocityRef = useRef({ yaw: 0, pitch: 0 });
+  const glideRef = useRef<GlideState | null>(null);
+  const lastPoseEmitRef = useRef(0);
+  const tourIndexRef = useRef(1);
+  const tempMatrix = useRef(new THREE.Matrix4());
+  const tempUp = useRef(new THREE.Vector3(0, 1, 0));
+  const tempEye = useRef(new THREE.Vector3());
+  const tempTarget = useRef(new THREE.Vector3());
+  const tempPos = useRef(new THREE.Vector3());
 
   // Drag-to-look state for Free-Cursor mode
   const isPointerDownRef = useRef(false);
@@ -72,6 +106,33 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
   const handleLock = () => setLocked(true);
   const handleUnlock = () => setLocked(false);
 
+  // Subtle hover micro-tick sound when targeting interactive 3D exhibits
+  useEffect(() => {
+    if (isHoveringInteractive && !prevHoverRef.current && hasEntered && !activeModal) {
+      soundFx.playHoverTick();
+    }
+    prevHoverRef.current = isHoveringInteractive;
+  }, [isHoveringInteractive, hasEntered, activeModal]);
+
+  // Guided Auto-Tour scheduler
+  useEffect(() => {
+    if (!isGuidedTourActive || !hasEntered || activeModal) return;
+
+    const currentLabel = useHeritageStore.getState().currentZone;
+    const foundIdx = TELEPORT_ZONES.findIndex((z) => z.label === currentLabel);
+    tourIndexRef.current = foundIdx >= 0 ? (foundIdx + 1) % TELEPORT_ZONES.length : 1;
+
+    // Immediately glide to first highlight stop
+    requestTeleport(TELEPORT_ZONES[tourIndexRef.current].id, { fromTour: true });
+
+    const interval = window.setInterval(() => {
+      tourIndexRef.current = (tourIndexRef.current + 1) % TELEPORT_ZONES.length;
+      requestTeleport(TELEPORT_ZONES[tourIndexRef.current].id, { fromTour: true });
+    }, GUIDED_TOUR_INTERVAL_MS);
+
+    return () => window.clearInterval(interval);
+  }, [isGuidedTourActive, hasEntered, activeModal, requestTeleport]);
+
   // Support [E] shortcut to inspect targeted 3D exhibit in both Free-Cursor and FPS modes
   useEffect(() => {
     const handleInteractKey = (e: KeyboardEvent) => {
@@ -83,7 +144,7 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
     return () => window.removeEventListener('keydown', handleInteractKey);
   }, [hasEntered, activeModal, triggerHoveredInteraction]);
 
-  // Drag-to-look on WebGL canvas while keeping OS mouse cursor visible everywhere
+  // Drag-to-look on WebGL canvas with smooth inertial impulse while keeping OS cursor visible
   useEffect(() => {
     const dom = gl.domElement;
     if (!dom) return;
@@ -118,23 +179,19 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
       );
       if (!dragExceededRef.current && totalDist > DRAG_THRESHOLD_PX) {
         dragExceededRef.current = true;
+        glideRef.current = null;
+        stopGuidedTour();
         setDraggingCamera(true);
       }
 
       if (dragExceededRef.current) {
         const dx = e.clientX - pointerLastRef.current.x;
         const dy = e.clientY - pointerLastRef.current.y;
-        const sensitivity = 0.0028 * mouseSensitivity;
+        const sensitivity = 0.0029 * mouseSensitivity;
 
-        cameraEuler.current.setFromQuaternion(camera.quaternion, 'YXZ');
-        cameraEuler.current.y -= dx * sensitivity;
-        cameraEuler.current.x = THREE.MathUtils.clamp(
-          cameraEuler.current.x - dy * sensitivity,
-          -1.32,
-          1.32
-        );
-        cameraEuler.current.z = 0;
-        camera.quaternion.setFromEuler(cameraEuler.current);
+        // Add to damped angular target deltas for silky smooth gimbal feel
+        dragVelocityRef.current.yaw -= dx * sensitivity;
+        dragVelocityRef.current.pitch -= dy * sensitivity;
       }
 
       pointerLastRef.current = { x: e.clientX, y: e.clientY };
@@ -169,7 +226,7 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
       dom.removeEventListener('click', onClickCapture, true);
       dom.removeEventListener('contextmenu', onContextMenu);
     };
-  }, [gl, camera, hasEntered, activeModal, controlMode, mouseSensitivity, setDraggingCamera]);
+  }, [gl, camera, hasEntered, activeModal, controlMode, mouseSensitivity, setDraggingCamera, stopGuidedTour]);
 
   // Unlock pointer when modal opens; only re-lock automatically if user explicitly chose FPS mode
   useEffect(() => {
@@ -208,27 +265,125 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
     if (!rigidBodyRef.current) return;
 
     const dt = Math.min(delta, 0.05);
+    const pos = rigidBodyRef.current.translation();
 
-    // Handle quick teleport requests
+    // Start silky cinematic glide whenever a teleportTarget is queued
     if (teleportTarget) {
       const [tx, ty, tz] = teleportTarget.position;
       const [lx, ly, lz] = teleportTarget.lookAt;
-      rigidBodyRef.current.setTranslation({ x: tx, y: ty, z: tz }, true);
-      rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+
+      tempEye.current.set(tx, ty + 0.6, tz);
+      tempTarget.current.set(lx, ly, lz);
+      tempMatrix.current.lookAt(tempEye.current, tempTarget.current, tempUp.current);
+      const endQuat = new THREE.Quaternion().setFromRotationMatrix(tempMatrix.current);
+
+      const dist = Math.hypot(tx - pos.x, tz - pos.z);
+      const duration = THREE.MathUtils.clamp(0.45 + dist * 0.022, 0.55, GLIDE_DURATION_SEC);
+
+      glideRef.current = {
+        startPos: new THREE.Vector3(pos.x, pos.y, pos.z),
+        endPos: new THREE.Vector3(tx, ty, tz),
+        startQuat: state.camera.quaternion.clone(),
+        endQuat,
+        elapsed: 0,
+        duration,
+      };
+
+      dragVelocityRef.current = { yaw: 0, pitch: 0 };
       smoothVel.current = { x: 0, z: 0 };
-      state.camera.position.set(tx, ty + 0.6, tz);
-      state.camera.lookAt(lx, ly, lz);
+      rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      soundFx.playGlideWhoosh();
       clearTeleportTarget();
+    }
+
+    const hasMoveKey = forward || backward || left || right || jump;
+    if (hasMoveKey && (glideRef.current || isGuidedTourActive)) {
+      glideRef.current = null;
+      stopGuidedTour();
+    }
+
+    // Active cinematic glide interpolation
+    if (glideRef.current) {
+      const g = glideRef.current;
+      g.elapsed += dt;
+      const rawT = Math.min(1, g.elapsed / g.duration);
+      const eased = easeInOutCubic(rawT);
+
+      tempPos.current.lerpVectors(g.startPos, g.endPos, eased);
+      // Subtle graceful arc in eye height during longer glides
+      const arcLift = Math.sin(rawT * Math.PI) * 0.08;
+
+      rigidBodyRef.current.setTranslation(
+        { x: tempPos.current.x, y: tempPos.current.y, z: tempPos.current.z },
+        true
+      );
+      rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+
+      state.camera.position.set(
+        tempPos.current.x,
+        tempPos.current.y + 0.6 + arcLift,
+        tempPos.current.z
+      );
+      state.camera.quaternion.slerpQuaternions(g.startQuat, g.endQuat, eased);
+
+      if (rawT >= 1) {
+        glideRef.current = null;
+      }
+
+      // Still emit MiniMap pose & zone while gliding
+      setCurrentZone(detectZone(tempPos.current.x, tempPos.current.z));
+      const nowMs = state.clock.elapsedTime * 1000;
+      if (nowMs - lastPoseEmitRef.current > 85) {
+        cameraEuler.current.setFromQuaternion(state.camera.quaternion, 'YXZ');
+        setPlayerPose(tempPos.current.x, tempPos.current.z, cameraEuler.current.y);
+        lastPoseEmitRef.current = nowMs;
+      }
       return;
     }
 
+    // Apply smooth damped drag-to-look inertia in cursor mode
+    if (controlMode === 'cursor' && hasEntered && !activeModal) {
+      const { yaw, pitch } = dragVelocityRef.current;
+      if (Math.abs(yaw) > 0.00008 || Math.abs(pitch) > 0.00008) {
+        const angularStep = 1 - Math.exp(-22 * dt);
+        const applyYaw = yaw * angularStep;
+        const applyPitch = pitch * angularStep;
+
+        cameraEuler.current.setFromQuaternion(state.camera.quaternion, 'YXZ');
+        cameraEuler.current.y += applyYaw;
+        cameraEuler.current.x = THREE.MathUtils.clamp(
+          cameraEuler.current.x + applyPitch,
+          -1.32,
+          1.32
+        );
+        cameraEuler.current.z = 0;
+        state.camera.quaternion.setFromEuler(cameraEuler.current);
+
+        dragVelocityRef.current.yaw -= applyYaw;
+        dragVelocityRef.current.pitch -= applyPitch;
+      } else if (isGuidedTourActive) {
+        // Gentle museum pan sway while admiring each zone during Guided Tour
+        cameraEuler.current.setFromQuaternion(state.camera.quaternion, 'YXZ');
+        cameraEuler.current.y += Math.sin(state.clock.elapsedTime * 0.55) * 0.0014;
+        cameraEuler.current.z = 0;
+        state.camera.quaternion.setFromEuler(cameraEuler.current);
+      }
+    }
+
     const currentVelocity = rigidBodyRef.current.linvel();
-    const pos = rigidBodyRef.current.translation();
 
     // Update active museum zone indicator
     setCurrentZone(detectZone(pos.x, pos.z));
 
-    const damping = 1 - Math.exp(-14 * dt);
+    // Emit throttled MiniMap pose (~11fps)
+    const nowMs = state.clock.elapsedTime * 1000;
+    if (nowMs - lastPoseEmitRef.current > 90) {
+      cameraEuler.current.setFromQuaternion(state.camera.quaternion, 'YXZ');
+      setPlayerPose(pos.x, pos.z, cameraEuler.current.y);
+      lastPoseEmitRef.current = nowMs;
+    }
+
+    const damping = 1 - Math.exp(-13 * dt);
     const canExplore = hasEntered && !activeModal && (controlMode === 'cursor' || isLocked);
 
     if (!canExplore) {
@@ -277,8 +432,8 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
 
     const horizSpeed = Math.hypot(smoothVel.current.x, smoothVel.current.z);
     if (isGrounded && horizSpeed > 0.4) {
-      bobPhase.current += dt * (shift ? 11.5 : 8.2);
-      bobAmount.current = THREE.MathUtils.lerp(bobAmount.current, 0.018, damping);
+      bobPhase.current += dt * (shift ? 11.2 : 8.0);
+      bobAmount.current = THREE.MathUtils.lerp(bobAmount.current, 0.016, damping);
     } else {
       bobAmount.current = THREE.MathUtils.lerp(bobAmount.current, 0, damping);
     }

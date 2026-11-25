@@ -60,12 +60,16 @@ export interface ActivityHighlight {
   audience?: string;
 }
 
+export type GuestbookTag = 'Lời chúc' | 'Kỷ niệm' | 'Cựu thành viên' | 'Góp ý';
+
 export interface GuestbookEntry {
   id: string;
   author: string;
   roleOrAffiliation: string;
   message: string;
   timestamp: string;
+  tag?: GuestbookTag;
+  likes?: number;
 }
 
 export type GuestbookStorageMode = 'kv' | 'file' | 'memory' | 'local';
@@ -75,11 +79,17 @@ export interface HeritageDataPayload {
   exhibitItems: ExhibitItem[];
   timelineMilestones: TimelineMilestone[];
   activityHighlights: ActivityHighlight[];
+  stats?: {
+    totalMembers: number;
+    totalTerms: number;
+    totalExhibits: number;
+  };
   updatedAt: string;
 }
 
 export interface GuestbookListResponse {
   entries: GuestbookEntry[];
+  total?: number;
   storage: GuestbookStorageMode;
 }
 
@@ -87,11 +97,25 @@ export interface GuestbookCreateInput {
   author: string;
   roleOrAffiliation: string;
   message: string;
+  tag?: GuestbookTag;
 }
 
 export interface GuestbookCreateResponse {
   entry: GuestbookEntry;
   storage: GuestbookStorageMode;
+}
+
+export interface GuestbookLikeResponse {
+  entry: GuestbookEntry;
+  storage: GuestbookStorageMode;
+}
+
+export interface MuseumAnalyticsPayload {
+  totalVisits: number;
+  exhibitLikes: Record<string, number>;
+  guestbookCount: number;
+  storage: GuestbookStorageMode;
+  updatedAt: string;
 }
 
 export interface ApiErrorResponse {
@@ -100,6 +124,15 @@ export interface ApiErrorResponse {
 }
 
 export type ModalType = 'shirt' | 'guestbook' | 'exhibit' | 'instructions' | null;
+
+export type GraphicsQuality = 'high' | 'balanced';
+
+export interface ToastItem {
+  id: string;
+  title: string;
+  detail?: string;
+  tone?: 'info' | 'success' | 'accent';
+}
 
 export interface TeleportZone {
   id: string;

@@ -9,6 +9,7 @@ import {
   createFloorMaps,
   createLeatherMaps,
 } from '../utils/proceduralMaterials';
+import { useHeritageStore } from '../../../store/useHeritageStore';
 
 const CEILING_DOWNLIGHTS: [number, number, number][] = [
   [0, 6.32, 26],
@@ -61,6 +62,7 @@ const TUNNEL_RIB_Z = [26, 22, 18, 14, 10];
 const PILASTER_Z = [-18.1, -11.9, -4, 1, 6];
 
 export const MuseumRoom: React.FC = () => {
+  const graphicsQuality = useHeritageStore((s) => s.graphicsQuality);
   const floorMaps = useMemo(() => createFloorMaps(), []);
   const wallMaps = useMemo(() => createArchitecturalWallMaps(), []);
   const metalMaps = useMemo(() => createBrushedMetalMaps(), []);
@@ -127,10 +129,11 @@ export const MuseumRoom: React.FC = () => {
       <mesh position={[0, 0.002, -5]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[34, 28]} />
         <MeshReflectorMaterial
-          blur={[360, 100]}
-          resolution={512}
+          key={`floor-reflector-${graphicsQuality}`}
+          blur={graphicsQuality === 'high' ? [360, 100] : [220, 80]}
+          resolution={graphicsQuality === 'high' ? 512 : 256}
           mixBlur={0.94}
-          mixStrength={0.48}
+          mixStrength={graphicsQuality === 'high' ? 0.48 : 0.4}
           roughness={0.56}
           depthScale={0.85}
           minDepthThreshold={0.4}

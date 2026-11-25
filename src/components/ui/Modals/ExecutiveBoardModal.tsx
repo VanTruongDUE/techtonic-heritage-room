@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useHeritageStore } from '../../../store/useHeritageStore';
-import { X, Users, Shield, Search, RotateCcw, Star } from 'lucide-react';
+import { X, Users, Shield, Search, RotateCcw, Star, Navigation } from 'lucide-react';
 import type { Department } from '../../../types/heritage';
 
 const DEPARTMENTS: Array<'all' | Department> = [
@@ -12,6 +12,47 @@ const DEPARTMENTS: Array<'all' | Department> = [
   'Ban Truyền Thông',
 ];
 
+const DEPT_STAGE_META: Record<
+  Department,
+  {
+    color: string;
+    badgeClass: string;
+    glidePos: [number, number, number];
+    glideLook: [number, number, number];
+  }
+> = {
+  'Ban Chủ Nhiệm': {
+    color: '#fbbf24',
+    badgeClass: 'text-amber-300 border-amber-400/35 bg-amber-400/10',
+    glidePos: [14.8, 1.4, 3.0],
+    glideLook: [14.8, 2.7, 8.05],
+  },
+  'Ban Chuyên Môn': {
+    color: '#f97316',
+    badgeClass: 'text-orange-300 border-orange-400/35 bg-orange-400/10',
+    glidePos: [-11.4, 1.4, -15.1],
+    glideLook: [-16.5, 2.7, -15.1],
+  },
+  'Ban Sự Kiện': {
+    color: '#a855f7',
+    badgeClass: 'text-purple-300 border-purple-400/35 bg-purple-400/10',
+    glidePos: [11.4, 1.4, -15.1],
+    glideLook: [16.5, 2.7, -15.1],
+  },
+  'Ban Nhân Sự': {
+    color: '#10b981',
+    badgeClass: 'text-emerald-300 border-emerald-400/35 bg-emerald-400/10',
+    glidePos: [4.4, 1.4, 3.0],
+    glideLook: [4.4, 2.7, 8.05],
+  },
+  'Ban Truyền Thông': {
+    color: '#00E5FF',
+    badgeClass: 'text-cyan-300 border-cyan-400/35 bg-cyan-400/10',
+    glidePos: [-5.8, 1.4, 3.0],
+    glideLook: [-5.8, 2.7, 8.05],
+  },
+};
+
 export const ExecutiveBoardModal: React.FC = () => {
   const {
     activeModal,
@@ -21,6 +62,7 @@ export const ExecutiveBoardModal: React.FC = () => {
     setBoardDepartmentFilter,
     boardTermFilter,
     setBoardTermFilter,
+    requestCustomGlide,
   } = useHeritageStore();
   const [selectedTerm, setSelectedTerm] = useState<string>('Nhiệm kỳ 2026 - 2027');
   const [selectedDept, setSelectedDept] = useState<'all' | Department>('all');
@@ -49,6 +91,12 @@ export const ExecutiveBoardModal: React.FC = () => {
     setBoardDepartmentFilter('ALL');
     setBoardTermFilter('Nhiệm kỳ 2026 - 2027');
     closeModal();
+  };
+
+  const handleGlideToDepartment = (dept: Department) => {
+    const meta = DEPT_STAGE_META[dept];
+    setBoardDepartmentFilter('ALL');
+    requestCustomGlide(meta.glidePos, meta.glideLook, dept);
   };
 
   if (activeModal !== 'shirt') return null;
@@ -96,12 +144,12 @@ export const ExecutiveBoardModal: React.FC = () => {
       }}
     >
       <div
-        className="relative w-full max-w-4xl max-h-[86vh] flex flex-col rounded-2xl glass-panel-glow overflow-hidden border border-tech-cyan/40 animate-panel-in"
+        className="relative w-full max-w-4xl max-h-[88vh] flex flex-col rounded-2xl glass-panel-glow overflow-hidden border border-tech-cyan/40 animate-panel-in"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative px-6 py-5 border-b border-tech-cyan/20 flex items-center justify-between bg-[#0c101c]/95">
+        <div className="relative px-6 py-4.5 border-b border-tech-cyan/20 flex items-center justify-between bg-[#0c101c]/95">
           <div className="flex items-center space-x-3">
             <Users className="w-6 h-6 text-tech-cyan shrink-0" aria-hidden="true" />
             <div>
@@ -183,21 +231,44 @@ export const ExecutiveBoardModal: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5">
-            {DEPARTMENTS.map((dept) => (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {DEPARTMENTS.map((dept) => {
+                const dotColor = dept === 'all' ? '#00F0FF' : DEPT_STAGE_META[dept].color;
+                return (
+                  <button
+                    key={dept}
+                    type="button"
+                    onClick={() => setSelectedDept(dept)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                      selectedDept === dept
+                        ? 'bg-tech-cyan text-slate-950 font-semibold'
+                        : 'bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10'
+                    }`}
+                  >
+                    {dept !== 'all' && (
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: selectedDept === dept ? '#050811' : dotColor }}
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span>{dept === 'all' ? 'Tất cả ban' : dept}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {selectedDept !== 'all' && (
               <button
-                key={dept}
                 type="button"
-                onClick={() => setSelectedDept(dept)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                  selectedDept === dept
-                    ? 'bg-tech-cyan text-slate-950 font-semibold'
-                    : 'bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10'
-                }`}
+                onClick={() => handleGlideToDepartment(selectedDept)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-tech-cyan/15 border border-tech-cyan/45 text-tech-cyan hover:bg-tech-cyan hover:text-slate-950 text-xs font-semibold transition cursor-pointer"
               >
-                {dept === 'all' ? 'Tất cả ban' : dept}
+                <Navigation className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Lướt tới sân khấu 3D</span>
               </button>
-            ))}
+            )}
           </div>
         </div>
 
@@ -224,56 +295,74 @@ export const ExecutiveBoardModal: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredMembers.map((member) => (
-                <article
-                  key={member.id}
-                  className="group p-4 rounded-xl bg-[#0e1422]/85 border border-white/10 hover:border-tech-cyan/45 hover:bg-[#121a2c] hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between"
-                >
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <div className="flex items-center space-x-3 min-w-0">
-                      {member.avatar ? (
-                        <img
-                          src={member.avatar}
-                          alt={member.name}
-                          loading="lazy"
-                          className="w-11 h-11 shrink-0 rounded-xl object-cover border border-tech-cyan/35 bg-[#152036]"
-                        />
-                      ) : (
-                        <div className="w-11 h-11 shrink-0 rounded-xl bg-[#152036] flex items-center justify-center text-tech-cyan font-bold text-base">
-                          {member.name.trim().split(/\s+/).slice(-1)[0]?.[0] ?? 'T'}
+              {filteredMembers.map((member) => {
+                const stageMeta = DEPT_STAGE_META[member.department];
+                return (
+                  <article
+                    key={member.id}
+                    className="group p-4 rounded-xl bg-[#0e1422]/85 border border-white/10 hover:border-tech-cyan/45 hover:bg-[#121a2c] hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div className="flex items-center space-x-3 min-w-0">
+                        {member.avatar ? (
+                          <img
+                            src={member.avatar}
+                            alt={member.name}
+                            loading="lazy"
+                            style={{ objectPosition: member.avatarPosition || '50% 20%' }}
+                            className="w-12 h-12 shrink-0 rounded-xl object-cover border border-white/20 bg-[#152036]"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 shrink-0 rounded-xl bg-[#152036] flex items-center justify-center text-tech-cyan font-bold text-base">
+                            {member.name.trim().split(/\s+/).slice(-1)[0]?.[0] ?? 'T'}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <h3 className="text-base font-bold text-white group-hover:text-tech-cyan transition-colors truncate">
+                            {member.name}
+                          </h3>
+                          <div className="text-xs text-tech-cyan font-medium">{member.role}</div>
                         </div>
-                      )}
-                      <div className="min-w-0">
-                        <h3 className="text-base font-bold text-white group-hover:text-tech-cyan transition-colors truncate">
-                          {member.name}
-                        </h3>
-                        <div className="text-xs text-tech-cyan font-medium">{member.role}</div>
+                      </div>
+                      <span className="shrink-0 px-2.5 py-0.5 rounded text-[11px] font-mono bg-white/5 border border-white/15 text-slate-200 tabular-nums">
+                        {member.term}
+                      </span>
+                    </div>
+
+                    {member.bio && (
+                      <p className="text-xs text-slate-300 leading-relaxed mb-3">{member.bio}</p>
+                    )}
+
+                    <div className="pt-2.5 border-t border-white/10 flex items-center justify-between text-xs gap-2">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[11px] font-medium ${stageMeta.badgeClass}`}
+                      >
+                        <Shield className="w-3 h-3" aria-hidden="true" />
+                        {member.department}
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        {member.isFounder ? (
+                          <span className="text-amber-300 font-mono text-[11px] font-semibold">
+                            Co-Founder
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-mono text-[11px]">TechTonic</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleGlideToDepartment(member.department)}
+                          className="p-1 rounded-md text-slate-300 hover:text-tech-cyan hover:bg-white/10 transition cursor-pointer"
+                          title={`Lướt tới khu vực 3D của ${member.department}`}
+                          aria-label={`Lướt tới khu vực 3D của ${member.department}`}
+                        >
+                          <Navigation className="w-3.5 h-3.5" aria-hidden="true" />
+                        </button>
                       </div>
                     </div>
-                    <span className="shrink-0 px-2.5 py-0.5 rounded text-[11px] font-mono bg-white/5 border border-white/15 text-slate-200 tabular-nums">
-                      {member.term}
-                    </span>
-                  </div>
-
-                  {member.bio && (
-                    <p className="text-xs text-slate-300 leading-relaxed mb-3">{member.bio}</p>
-                  )}
-
-                  <div className="pt-2.5 border-t border-white/10 flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1.5 text-slate-200">
-                      <Shield className="w-3.5 h-3.5 text-tech-cyan" aria-hidden="true" />
-                      {member.department}
-                    </span>
-                    {member.isFounder ? (
-                      <span className="text-amber-300 font-mono text-[11px] font-semibold">
-                        Co-Founder
-                      </span>
-                    ) : (
-                      <span className="text-tech-cyan font-mono text-[11px]">TechTonic Leader</span>
-                    )}
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           )}
         </div>
@@ -285,7 +374,7 @@ export const ExecutiveBoardModal: React.FC = () => {
           </span>
           <button
             type="button"
-            onClick={closeModal}
+            onClick={handleClose}
             className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium transition cursor-pointer"
           >
             Đóng cửa sổ

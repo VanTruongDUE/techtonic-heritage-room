@@ -1,17 +1,16 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useHeritageStore } from '../store/useHeritageStore';
 
-export const useAudio = () => {
-  const isMuted = useHeritageStore((s) => s.isMuted);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const ambientOsc1Ref = useRef<OscillatorNode | null>(null);
-  const ambientOsc2Ref = useRef<OscillatorNode | null>(null);
-  const gainNodeRef = useRef<GainNode | null>(null);
+class MuseumAudioEngine {
+  private ctx: AudioContext | null = null;
+  private masterGain: GainNode | null = null;
+  private ambientOscs: OscillatorNode[] = [];
+  private lfoOsc: OscillatorNode | null = null;
 
-  const initAudio = useCallback(() => {
-    if (audioCtxRef.current) {
-      if (audioCtxRef.current.state === 'suspended') {
-        audioCtxRef.current.resume().catch(() => {});
+  init() {
+    if (this.ctx) {
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
       }
       return;
     }
@@ -21,94 +20,216 @@ export const useAudio = () => {
         window.AudioContext ||
         (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       const ctx = new AudioCtx();
-      audioCtxRef.current = ctx;
+      this.ctx = ctx;
 
+      const { isMuted, audioVolume } = useHeritageStore.getState();
       const masterGain = ctx.createGain();
-      const targetVolume = useHeritageStore.getState().isMuted ? 0 : 0.035;
-      masterGain.gain.setValueAtTime(targetVolume, ctx.currentTime);
+      const targetGain = isMuted ? 0 : audioVolume * 0.036;
+      masterGain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      masterGain.gain.exponentialRampToValueAtTime(Math.max(0.0001, targetGain), ctx.currentTime + 1.1);
       masterGain.connect(ctx.destination);
-      gainNodeRef.current = masterGain;
+      this.masterGain = masterGain;
 
-      // Low harmonic ambient drone (Tech museum atmosphere)
-      const osc1 = ctx.createOscillator();
-      osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(110, ctx.currentTime); // A2
-
-      const osc2 = ctx.createOscillator();
-      osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(164.81, ctx.currentTime); // E3
-
+      // Warm breathing museum pad (A2 + E3 + B3) with gentle LFO low-pass sweep
       const filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';
       filter.frequency.setValueAtTime(260, ctx.currentTime);
-
-      osc1.connect(filter);
-      osc2.connect(filter);
+      filter.Q.setValueAtTime(0.7, ctx.currentTime);
       filter.connect(masterGain);
 
-      osc1.start();
-      osc2.start();
+      const lfo = ctx.createOscillator();
+      const lfoGain = ctx.createGain();
+      lfo.type = 'sine';
+      lfo.frequency.setValueAtTime(0.11, ctx.currentTime);
+      lfoGain.gain.setValueAtTime(55, ctx.currentTime);
+      lfo.connect(lfoGain);
+      lfoGain.connect(filter.frequency);
+      lfo.start();
+      this.lfoOsc = lfo;
 
-      ambientOsc1Ref.current = osc1;
-      ambientOsc2Ref.current = osc2;
-    } catch (e) {
-      console.warn('Web Audio not available:', e);
+      const voices: Array<{ freq: number; type: OscillatorType; gain: number }> = [
+        { freq: 110, type: 'sine', gain: 0.55 },
+        { freq: 164.81, type: 'sine', gain: 0.32 },
+        { freq: 246.94, type: 'triangle', gain: 0.14 },
+      ];
+
+      this.ambientOscs = voices.map((v) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = v.type;
+        osc.frequency.setValueAtTime(v.freq, ctx.currentTime);
+        g.gain.setValueAtTime(v.gain, ctx.currentTime);
+        osc.connect(g);
+        g.connect(filter);
+        osc.start();
+        return osc;
+      });
+    } catch {
+      // Web Audio unavailable in headless / restricted environment
     }
-  }, []);
+  }
 
-  const playChime = useCallback((freq = 660) => {
-    const ctx = audioCtxRef.current;
-    if (!ctx || useHeritageStore.getState().isMuted) return;
+  syncVolume(isMuted: boolean, audioVolume: number) {
+    if (!this.ctx || !this.masterGain) return;
+    if (!isMuted && audioVolume > 0 && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
+    }
+    const target = isMuted ? 0 : audioVolume * 0.036;
+    this.masterGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.14);
+  }
+
+  private getSfxScale(): number {
+    const { isMuted, audioVolume } = useHeritageStore.getState();
+    if (isMuted || audioVolume <= 0) return 0;
+    return audioVolume;
+  }
+
+  playChime(freq = 660) {
+    const scale = this.getSfxScale();
+    if (!this.ctx || scale <= 0) return;
     try {
-      if (ctx.state === 'suspended') {
-        ctx.resume().catch(() => {});
-      }
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(freq * 1.25, ctx.currentTime + 0.09);
+      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.25, now + 0.09);
 
-      gain.gain.setValueAtTime(0.03, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.16);
+      gain.gain.setValueAtTime(0.032 * scale, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.17);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.19);
     } catch {
-      // Ignore transient audio scheduling issues
+      // Ignore transient audio issues
     }
-  }, []);
+  }
 
-  // Mute / Unmute smoothly
-  useEffect(() => {
-    const ctx = audioCtxRef.current;
-    const gainNode = gainNodeRef.current;
-    if (!ctx || !gainNode) return;
-
-    if (!isMuted && ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
+  playHoverTick() {
+    const scale = this.getSfxScale();
+    if (!this.ctx || scale <= 0) return;
+    try {
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(920, now);
+      osc.frequency.exponentialRampToValueAtTime(1180, now + 0.035);
+      gain.gain.setValueAtTime(0.012 * scale, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.05);
+    } catch {
+      // Ignore
     }
-    gainNode.gain.setTargetAtTime(isMuted ? 0 : 0.035, ctx.currentTime, 0.12);
-  }, [isMuted]);
+  }
 
-  // Clean up AudioContext on unmount
-  useEffect(() => {
-    return () => {
+  playGlideWhoosh() {
+    const scale = this.getSfxScale();
+    if (!this.ctx || scale <= 0) return;
+    try {
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const filter = this.ctx.createBiquadFilter();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(190, now);
+      osc.frequency.exponentialRampToValueAtTime(360, now + 0.24);
+      osc.frequency.exponentialRampToValueAtTime(150, now + 0.55);
+
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(340, now);
+      filter.Q.setValueAtTime(1.4, now);
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.022 * scale, now + 0.14);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.58);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.6);
+    } catch {
+      // Ignore
+    }
+  }
+
+  playSuccessChord() {
+    const scale = this.getSfxScale();
+    if (!this.ctx || scale <= 0) return;
+    const notes = [523.25, 659.25, 783.99];
+    notes.forEach((freq, idx) => {
+      if (!this.ctx) return;
       try {
-        ambientOsc1Ref.current?.stop();
-        ambientOsc2Ref.current?.stop();
-        audioCtxRef.current?.close();
+        const now = this.ctx.currentTime + idx * 0.055;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(0.024 * scale, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.3);
       } catch {
-        // Already closed
+        // Ignore
       }
-      audioCtxRef.current = null;
-      ambientOsc1Ref.current = null;
-      ambientOsc2Ref.current = null;
-      gainNodeRef.current = null;
-    };
-  }, []);
+    });
+  }
 
-  return { initAudio, playChime };
+  playLikePop() {
+    const scale = this.getSfxScale();
+    if (!this.ctx || scale <= 0) return;
+    try {
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+      gain.gain.setValueAtTime(0.028 * scale, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    } catch {
+      // Ignore
+    }
+  }
+}
+
+export const soundFx = new MuseumAudioEngine();
+
+export const useAudio = () => {
+  const isMuted = useHeritageStore((s) => s.isMuted);
+  const audioVolume = useHeritageStore((s) => s.audioVolume);
+
+  useEffect(() => {
+    soundFx.syncVolume(isMuted, audioVolume);
+  }, [isMuted, audioVolume]);
+
+  const initAudio = useCallback(() => soundFx.init(), []);
+  const playChime = useCallback((freq = 660) => soundFx.playChime(freq), []);
+  const playHoverTick = useCallback(() => soundFx.playHoverTick(), []);
+  const playGlideWhoosh = useCallback(() => soundFx.playGlideWhoosh(), []);
+  const playSuccessChord = useCallback(() => soundFx.playSuccessChord(), []);
+  const playLikePop = useCallback(() => soundFx.playLikePop(), []);
+
+  return {
+    initAudio,
+    playChime,
+    playHoverTick,
+    playGlideWhoosh,
+    playSuccessChord,
+    playLikePop,
+  };
 };

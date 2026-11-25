@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useHeritageStore } from '../../../store/useHeritageStore';
+import { soundFx } from '../../../hooks/useAudio';
 import {
   X,
   Trophy,
@@ -10,7 +11,10 @@ import {
   History,
   ExternalLink,
   CheckCircle2,
+  Heart,
+  Maximize2,
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import type { ExhibitCategory, ExhibitItem } from '../../../types/heritage';
 
 const CATEGORY_LABELS: Record<ExhibitCategory, string> = {
@@ -21,8 +25,18 @@ const CATEGORY_LABELS: Record<ExhibitCategory, string> = {
 };
 
 export const ExhibitDetailModal: React.FC = () => {
-  const { activeModal, closeModal, modalData, exhibitItems, openModal } = useHeritageStore();
+  const {
+    activeModal,
+    closeModal,
+    modalData,
+    exhibitItems,
+    openModal,
+    exhibitLikes,
+    likedExhibitIds,
+    likeExhibit,
+  } = useHeritageStore();
   const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const [isZoomed, setIsZoomed] = useState(false);
 
   const item: ExhibitItem | null = activeModal === 'exhibit' ? modalData : null;
   const currentIndex = item ? exhibitItems.findIndex((ex) => ex.id === item.id) : -1;
@@ -31,6 +45,7 @@ export const ExhibitDetailModal: React.FC = () => {
   const goToRelative = useCallback(
     (offset: number) => {
       if (!canNavigate) return;
+      setIsZoomed(false);
       const nextIdx = (currentIndex + offset + exhibitItems.length) % exhibitItems.length;
       openModal('exhibit', exhibitItems[nextIdx]);
     },
@@ -38,11 +53,20 @@ export const ExhibitDetailModal: React.FC = () => {
   );
 
   useEffect(() => {
+    setIsZoomed(false);
+  }, [item?.id, activeModal]);
+
+  useEffect(() => {
     if (activeModal !== 'exhibit') return;
     const timer = window.setTimeout(() => closeBtnRef.current?.focus(), 40);
 
-    const handleArrows = (e: KeyboardEvent) => {
-      if (!canNavigate) return;
+    const handleKeys = (e: KeyboardEvent) => {
+      if (isZoomed && e.key === 'Escape') {
+        e.stopPropagation();
+        setIsZoomed(false);
+        return;
+      }
+      if (!canNavigate || isZoomed) return;
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         goToRelative(-1);
@@ -51,14 +75,30 @@ export const ExhibitDetailModal: React.FC = () => {
         goToRelative(1);
       }
     };
-    window.addEventListener('keydown', handleArrows);
+    window.addEventListener('keydown', handleKeys, true);
     return () => {
       window.clearTimeout(timer);
-      window.removeEventListener('keydown', handleArrows);
+      window.removeEventListener('keydown', handleKeys, true);
     };
-  }, [activeModal, canNavigate, goToRelative]);
+  }, [activeModal, canNavigate, goToRelative, isZoomed]);
 
   if (activeModal !== 'exhibit' || !item) return null;
+
+  const likeCount = exhibitLikes[item.id] ?? 0;
+  const isLiked = likedExhibitIds.includes(item.id);
+
+  const handleLikeClick = async () => {
+    const added = await likeExhibit(item.id);
+    if (added) {
+      soundFx.playLikePop();
+      confetti({
+        particleCount: 24,
+        spread: 45,
+        origin: { y: 0.72 },
+        colors: ['#00F0FF', '#fb7185', '#fbbf24'],
+      });
+    }
+  };
 
   return (
     <div
@@ -75,12 +115,12 @@ export const ExhibitDetailModal: React.FC = () => {
       }}
     >
       <div
-        className="relative w-full max-w-2xl max-h-[86vh] flex flex-col rounded-2xl glass-panel-glow overflow-hidden border border-tech-cyan/40 animate-panel-in"
+        className="relative w-full max-w-2xl max-h-[88vh] flex flex-col rounded-2xl glass-panel-glow overflow-hidden border border-tech-cyan/40 animate-panel-in"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative px-6 py-5 border-b border-tech-cyan/20 flex items-center justify-between bg-[#0c101c]/95">
+        <div className="relative px-6 py-4.5 border-b border-tech-cyan/20 flex items-center justify-between bg-[#0c101c]/95">
           <div className="flex items-center space-x-3">
             {item.category === 'trophy' ? (
               <Trophy className="w-6 h-6 text-amber-400 shrink-0" aria-hidden="true" />
@@ -122,20 +162,52 @@ export const ExhibitDetailModal: React.FC = () => {
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#0a0d14]/85">
           {item.image && (
-            <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0e1422]">
+            <button
+              type="button"
+              onClick={() => setIsZoomed(true)}
+              className="group relative block w-full overflow-hidden rounded-xl border border-white/15 bg-[#0e1422] cursor-zoom-in text-left"
+              title="Nhấn để phóng to hình ảnh"
+            >
               <img
                 src={item.image}
                 alt={item.title}
-                className="w-full h-44 object-cover"
+                className="w-full h-52 object-cover transition-transform duration-300 group-hover:scale-[1.03]"
               />
-            </div>
+              <span className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-black/70 border border-white/15 text-[11px] text-white inline-flex items-center gap-1.5 backdrop-blur-sm">
+                <Maximize2 className="w-3.5 h-3.5 text-tech-cyan" aria-hidden="true" />
+                Phóng to ảnh
+              </span>
+            </button>
           )}
 
-          {item.highlight && (
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-tech-cyan/15 border border-tech-cyan/35 text-tech-cyan">
-              {item.highlight}
-            </div>
-          )}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {item.highlight ? (
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-tech-cyan/15 border border-tech-cyan/35 text-tech-cyan">
+                {item.highlight}
+              </div>
+            ) : (
+              <span />
+            )}
+
+            <button
+              type="button"
+              onClick={() => void handleLikeClick()}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                isLiked
+                  ? 'bg-rose-500/20 border-rose-400/60 text-rose-200'
+                  : 'bg-white/5 border-white/15 text-slate-200 hover:border-rose-400/50 hover:text-rose-200'
+              }`}
+              aria-pressed={isLiked}
+              title={isLiked ? 'Bạn đã yêu thích hiện vật này' : 'Thả tim yêu thích hiện vật này'}
+            >
+              <Heart
+                className={`w-3.5 h-3.5 ${isLiked ? 'fill-rose-400 text-rose-400' : 'text-rose-300'}`}
+                aria-hidden="true"
+              />
+              <span>{isLiked ? 'Đã yêu thích' : 'Yêu thích'}</span>
+              <span className="font-mono tabular-nums text-white ml-0.5">{likeCount}</span>
+            </button>
+          </div>
 
           <h3 className="text-xl font-bold text-white tracking-tight leading-snug">
             {item.title}
@@ -175,7 +247,10 @@ export const ExhibitDetailModal: React.FC = () => {
           {item.bullets && item.bullets.length > 0 && (
             <ul className="space-y-2 bg-[#0e1422]/75 p-4 rounded-xl border border-white/10">
               {item.bullets.map((bullet, idx) => (
-                <li key={idx} className="flex items-start gap-2.5 text-xs md:text-sm text-slate-200 leading-relaxed">
+                <li
+                  key={idx}
+                  className="flex items-start gap-2.5 text-xs md:text-sm text-slate-200 leading-relaxed"
+                >
                   <CheckCircle2 className="w-4 h-4 text-tech-cyan shrink-0 mt-0.5" aria-hidden="true" />
                   <span>{bullet}</span>
                 </li>
@@ -238,6 +313,35 @@ export const ExhibitDetailModal: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Fullscreen Lightbox Overlay */}
+      {isZoomed && item.image && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/92 backdrop-blur-lg flex items-center justify-center p-6 animate-fade-in cursor-zoom-out"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsZoomed(false);
+          }}
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsZoomed(false);
+            }}
+            className="absolute top-6 right-6 p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
+            aria-label="Thu nhỏ ảnh"
+          >
+            <X className="w-6 h-6" aria-hidden="true" />
+          </button>
+          <img
+            src={item.image}
+            alt={item.title}
+            className="max-w-full max-h-[86vh] rounded-2xl object-contain border border-white/15 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 };

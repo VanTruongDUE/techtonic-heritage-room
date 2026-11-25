@@ -103,9 +103,9 @@ export const Crosshair: React.FC = () => {
       <div
         className={`-translate-x-1/2 -translate-y-1/2 rounded-full border transition-all duration-150 ${
           isDraggingCamera
-            ? 'w-7 h-7 border-sky-300/70 scale-90'
+            ? 'w-8 h-8 border-tech-cyan/80 bg-tech-cyan/10 scale-95'
             : isHoveringInteractive
-            ? 'w-9 h-9 border-tech-cyan shadow-[0_0_12px_rgba(0,240,255,0.45)] scale-100'
+            ? 'w-9 h-9 border-tech-cyan shadow-[0_0_14px_rgba(0,240,255,0.45)] scale-100'
             : 'w-5 h-5 border-sky-300/35 scale-100'
         }`}
       />

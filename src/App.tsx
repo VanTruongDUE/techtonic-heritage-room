@@ -3,23 +3,42 @@ import { CanvasContainer } from './components/3d/CanvasContainer';
 import { LoadingScreen } from './components/ui/LoadingScreen';
 import { HUD } from './components/ui/HUD';
 import { Crosshair } from './components/ui/Crosshair';
+import { ToastStack } from './components/ui/ToastStack';
 import { ExecutiveBoardModal } from './components/ui/Modals/ExecutiveBoardModal';
 import { GuestbookModal } from './components/ui/Modals/GuestbookModal';
 import { ExhibitDetailModal } from './components/ui/Modals/ExhibitDetailModal';
 import { InstructionsModal } from './components/ui/Modals/InstructionsModal';
+import { TELEPORT_ZONES } from './data/heritageSeed';
 import { useHeritageStore } from './store/useHeritageStore';
 import { useAudio } from './hooks/useAudio';
 
 export const App: React.FC = () => {
-  const { activeModal, openModal, closeModal, setHasEntered, loadHeritageData, loadGuestbook } =
-    useHeritageStore();
-  const { initAudio, playChime } = useAudio();
+  const {
+    hasEntered,
+    activeModal,
+    openModal,
+    closeModal,
+    setHasEntered,
+    loadHeritageData,
+    loadGuestbook,
+    loadAnalytics,
+    loadHealthStatus,
+    recordVisit,
+    requestTeleport,
+    toggleMiniMap,
+    toggleGuidedTour,
+    stopGuidedTour,
+    isGuidedTourActive,
+  } = useHeritageStore();
+  const { initAudio, playChime, playSuccessChord } = useAudio();
 
-  // Fetch initial heritage & guestbook data from BE API (with resilient local fallback)
+  // Fetch initial heritage, guestbook, analytics & API health (deduplicated + local fallback)
   useEffect(() => {
     void loadHeritageData();
     void loadGuestbook();
-  }, [loadHeritageData, loadGuestbook]);
+    void loadAnalytics();
+    void loadHealthStatus();
+  }, [loadHeritageData, loadGuestbook, loadAnalytics, loadHealthStatus]);
 
   // Play subtle chime when opening an exhibit/board/guestbook modal
   useEffect(() => {
@@ -31,16 +50,23 @@ export const App: React.FC = () => {
   // Handle Enter Experience from LoadingScreen (keeps visible console mouse cursor enabled)
   const handleEnter = () => {
     initAudio();
-    playChime(523.25);
+    playSuccessChord();
     setHasEntered(true);
+    void recordVisit();
   };
 
-  // Global ESC & [H] keyboard shortcuts
+  // Global keyboard shortcuts: ESC, H, M, T, and 1–8 zone glides
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && activeModal) {
-        closeModal();
-        return;
+      if (e.key === 'Escape') {
+        if (activeModal) {
+          closeModal();
+          return;
+        }
+        if (isGuidedTourActive) {
+          stopGuidedTour();
+          return;
+        }
       }
 
       const tag = document.activeElement?.tagName;
@@ -54,30 +80,64 @@ export const App: React.FC = () => {
         } else if (!activeModal) {
           openModal('instructions');
         }
+        return;
+      }
+
+      if (!hasEntered || activeModal) return;
+
+      if (e.code === 'KeyM') {
+        toggleMiniMap();
+        return;
+      }
+
+      if (e.code === 'KeyT') {
+        toggleGuidedTour();
+        return;
+      }
+
+      // Digits 1–8 smoothly glide to teleport zones
+      if (e.code.startsWith('Digit')) {
+        const digit = Number(e.code.replace('Digit', ''));
+        if (digit >= 1 && digit <= TELEPORT_ZONES.length) {
+          requestTeleport(TELEPORT_ZONES[digit - 1].id);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeModal, openModal, closeModal]);
+  }, [
+    hasEntered,
+    activeModal,
+    isGuidedTourActive,
+    openModal,
+    closeModal,
+    toggleMiniMap,
+    toggleGuidedTour,
+    stopGuidedTour,
+    requestTeleport,
+  ]);
 
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-[#05070a] select-none">
       {/* 1. 3D Canvas Layer */}
       <CanvasContainer />
 
-      {/* 2. 2D Interactive HUD Layer */}
+      {/* 2. 2D Interactive HUD Layer (including MiniMap) */}
       <HUD />
 
-      {/* 3. Center Crosshair targeting reticle */}
+      {/* 3. Subtle Toast Notifications */}
+      <ToastStack />
+
+      {/* 4. Cursor Halo / Center Crosshair targeting reticle */}
       <Crosshair />
 
-      {/* 4. Interactive Modals outside Canvas */}
+      {/* 5. Interactive Modals outside Canvas */}
       <ExecutiveBoardModal />
       <GuestbookModal />
       <ExhibitDetailModal />
       <InstructionsModal />
 
-      {/* 5. Mandatory Loading Screen with Progress and Entry Button */}
+      {/* 6. Mandatory Loading Screen with Progress and Entry Button */}
       <LoadingScreen onEnter={handleEnter} />
     </main>
   );
