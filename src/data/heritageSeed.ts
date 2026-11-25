@@ -888,8 +888,8 @@ export const TELEPORT_ZONES: TeleportZone[] = [
     label: 'Đối Tác & Kết Nối',
     shortLabel: 'Đối tác',
     description: 'Đối tác VTC Academy, MGM Technology, lộ trình TechXplore & kênh liên hệ.',
-    position: [-6.5, 1.4, 1.0],
-    lookAt: [-9.6, 2.9, 8.05],
+    position: [-8.5, 1.4, 1.5],
+    lookAt: [-12.6, 2.9, 8.05],
   },
   {
     id: 'testimonials-wall',

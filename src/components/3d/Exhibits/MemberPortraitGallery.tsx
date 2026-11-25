@@ -3,53 +3,119 @@ import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { createBrushedMetalMaps } from '../utils/proceduralMaterials';
-import type { ExecutiveMember, HoverPreview } from '../../../types/heritage';
+import type { Department, ExecutiveMember, HoverPreview } from '../../../types/heritage';
 
-interface WallSlot {
+const CURRENT_TERM = 'Nhiệm kỳ 2026 - 2027';
+
+interface DeptWallTreeConfig {
+  dept: Department;
+  title: string;
+  accent: string;
   position: [number, number, number];
   rotationY: number;
+  bannerWidth: number;
+  rowSteps: [number, number, number];
+  cardWidth: [number, number]; // [normal, compact row3]
 }
 
-const DEPT_ACCENTS: Record<string, string> = {
-  'Ban Chủ Nhiệm': '#fbbf24',
-  'Ban Chuyên Môn': '#38bdf8',
-  'Ban Sự Kiện': '#a855f7',
-  'Ban Nhân Sự': '#34d399',
-  'Ban Truyền Thông': '#f59e0b',
-};
-
-// Clear, non-overlapping museum portrait bays spread harmoniously across Left, Right & Front Hall walls
-const PORTRAIT_SLOTS: WallSlot[] = [
-  // 1. Left Back Bay (10 portraits: x = -16.52, facing +X, z = -17.4 .. -12.8 — clear of Timeline & pilasters)
-  ...[-17.4, -16.25, -15.1, -13.95, -12.8].flatMap((z) => [
-    { position: [-16.52, 4.05, z] as [number, number, number], rotationY: Math.PI / 2 },
-    { position: [-16.52, 2.52, z] as [number, number, number], rotationY: Math.PI / 2 },
-  ]),
-
-  // 2. Right Back Bay (8 portraits: x = 16.52, facing -X, z = -17.3 .. -13.85 — clear of Shirt Alcove)
-  ...[-17.3, -16.15, -15.0, -13.85].flatMap((z) => [
-    { position: [16.52, 4.05, z] as [number, number, number], rotationY: -Math.PI / 2 },
-    { position: [16.52, 2.52, z] as [number, number, number], rotationY: -Math.PI / 2 },
-  ]),
-
-  // 3. Front-Left Flanking Bays (8 portraits: z = 8.05, facing -Z, clear on either side of Partners board)
-  ...[-15.5, -14.35, -4.95, -3.8].flatMap((x) => [
-    { position: [x, 4.05, 8.05] as [number, number, number], rotationY: Math.PI },
-    { position: [x, 2.52, 8.05] as [number, number, number], rotationY: Math.PI },
-  ]),
-
-  // 4. Front-Right Flanking Bays (8 portraits: z = 8.05, facing -Z, clear on either side of Testimonials board)
-  ...[3.8, 4.95, 14.35, 15.5].flatMap((x) => [
-    { position: [x, 4.05, 8.05] as [number, number, number], rotationY: Math.PI },
-    { position: [x, 2.52, 8.05] as [number, number, number], rotationY: Math.PI },
-  ]),
+// Each Department gets its own dedicated wall bay arranged strictly as a 3-tier Portrait Tree:
+// Level 1 (Chủ nhiệm / Trưởng ban) -> Level 2 (Phó Chủ nhiệm / Phó ban) -> Level 3 (Thành viên)
+const DEPT_WALL_TREES: DeptWallTreeConfig[] = [
+  {
+    dept: 'Ban Sự Kiện',
+    title: 'BAN SỰ KIỆN • NHIỆM KỲ 2026–2027',
+    accent: '#a855f7',
+    position: [16.52, 0, -15.1],
+    rotationY: -Math.PI / 2,
+    bannerWidth: 4.5,
+    rowSteps: [0, 1.18, 1.24],
+    cardWidth: [0.84, 0.84],
+  },
+  {
+    dept: 'Ban Chuyên Môn',
+    title: 'BAN CHUYÊN MÔN • NHIỆM KỲ 2026–2027',
+    accent: '#38bdf8',
+    position: [-16.52, 0, -15.1],
+    rotationY: Math.PI / 2,
+    bannerWidth: 4.5,
+    rowSteps: [0, 1.32, 1.32],
+    cardWidth: [0.84, 0.84],
+  },
+  {
+    dept: 'Ban Truyền Thông',
+    title: 'BAN TRUYỀN THÔNG • NHIỆM KỲ 2026–2027',
+    accent: '#f59e0b',
+    position: [-5.8, 0, 8.05],
+    rotationY: Math.PI,
+    bannerWidth: 4.8,
+    rowSteps: [0, 0, 0.84],
+    cardWidth: [0.84, 0.72],
+  },
+  {
+    dept: 'Ban Nhân Sự',
+    title: 'BAN NHÂN SỰ (2026–2027)',
+    accent: '#34d399',
+    position: [4.4, 0, 8.05],
+    rotationY: Math.PI,
+    bannerWidth: 2.5,
+    rowSteps: [0, 0, 0],
+    cardWidth: [0.84, 0.84],
+  },
+  {
+    dept: 'Ban Chủ Nhiệm',
+    title: 'BAN CHỦ NHIỆM (2026–2027)',
+    accent: '#fbbf24',
+    position: [14.8, 0, 8.05],
+    rotationY: Math.PI,
+    bannerWidth: 2.6,
+    rowSteps: [0, 1.15, 0],
+    cardWidth: [0.84, 0.84],
+  },
 ];
+
+function classifyTier(role: string): 1 | 2 | 3 {
+  const lower = role.toLowerCase();
+  if (lower.includes('chủ nhiệm') && !lower.includes('phó')) return 1;
+  if (lower.includes('trưởng ban')) return 1;
+  if (lower.includes('phó chủ nhiệm') || lower.includes('phó ban')) return 2;
+  return 3;
+}
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   return parts.length > 1
     ? `${parts[0][0] ?? ''}${parts[parts.length - 1][0] ?? ''}`.toUpperCase()
     : parts[0].slice(0, 2).toUpperCase();
+}
+
+function createBannerTexture(title: string, accent: string, memberCount: number): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.fillStyle = '#0c1526';
+    ctx.fillRect(0, 0, 1024, 128);
+
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(4, 4, 1016, 120);
+
+    ctx.fillStyle = accent;
+    ctx.fillRect(4, 4, 12, 120);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 34px Inter, sans-serif';
+    ctx.fillText(title, 512, 58, 960);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '600 22px "JetBrains Mono", monospace';
+    ctx.fillText(`SƠ ĐỒ CÂY NHÂN SỰ (${memberCount} THÀNH VIÊN)`, 512, 100, 960);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 16;
+  return tex;
 }
 
 function createPortraitFallbackTexture(member: ExecutiveMember, accent: string): THREE.CanvasTexture {
@@ -100,32 +166,66 @@ function createPortraitLabelTexture(member: ExecutiveMember, accent: string): TH
 
     ctx.textAlign = 'center';
     ctx.fillStyle = '#f8fafc';
-    ctx.font = 'bold 31px Inter, sans-serif';
-    ctx.fillText(member.name, 256, 62, 470);
+    ctx.font = 'bold 30px Inter, sans-serif';
+    ctx.fillText(member.name, 256, 60, 476);
 
     ctx.fillStyle = accent;
-    ctx.font = '600 21px "JetBrains Mono", monospace';
-    ctx.fillText(`${member.role} • ${member.department}`, 256, 108, 470);
+    ctx.font = '600 22px "JetBrains Mono", monospace';
+    ctx.fillText(`${member.role} • ${member.department}`, 256, 108, 476);
   }
   const tex = new THREE.CanvasTexture(canvas);
   tex.anisotropy = 16;
   return tex;
 }
 
-const PortraitFrame: React.FC<{
+const ConnectorLine: React.FC<{
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  accent: string;
+}> = ({ x1, y1, x2, y2, accent }) => {
+  const dx = Math.abs(x2 - x1);
+  const dy = Math.abs(y2 - y1);
+  if (dx < 0.001 && dy < 0.001) return null;
+  const thickness = 0.024;
+  return (
+    <group>
+      <mesh position={[(x1 + x2) / 2, (y1 + y2) / 2, -0.015]}>
+        <boxGeometry args={[Math.max(dx, thickness), Math.max(dy, thickness), 0.016]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={0.55}
+          metalness={0.75}
+          roughness={0.25}
+        />
+      </mesh>
+      <mesh position={[x1, y1, -0.012]}>
+        <sphereGeometry args={[0.022, 10, 8]} />
+        <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.75} />
+      </mesh>
+    </group>
+  );
+};
+
+const PortraitCard: React.FC<{
   member: ExecutiveMember;
-  slot: WallSlot;
+  x: number;
+  y: number;
+  width: number;
+  accent: string;
+  isTopTier: boolean;
   metalMaps: { roughnessMap: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture };
-}> = ({ member, slot, metalMaps }) => {
+}> = ({ member, x, y, width, accent, isTopTier, metalMaps }) => {
   const { setHoveringInteractive, openExecutiveBoard } = useHeritageStore();
   const [hovered, setHovered] = useState(false);
   const [photoTex, setPhotoTex] = useState<THREE.CanvasTexture | null>(null);
 
-  const accent = DEPT_ACCENTS[member.department] ?? '#38bdf8';
+  const height = width * 1.24;
   const fallbackTex = useMemo(() => createPortraitFallbackTexture(member, accent), [member, accent]);
   const labelTex = useMemo(() => createPortraitLabelTexture(member, accent), [member, accent]);
 
-  // Load real portrait URL onto cropped square-aspect canvas texture so faces always frame cleanly
   useEffect(() => {
     if (!member.avatar) return;
     let cancelled = false;
@@ -152,7 +252,6 @@ const PortraitFrame: React.FC<{
           sx = (img.width - sw) / 2;
         } else {
           sh = img.width / targetRatio;
-          // Bias crop cleanly toward upper portrait head/shoulders
           sy = Math.max(0, (img.height - sh) * 0.16);
         }
         ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 480, 540);
@@ -188,16 +287,14 @@ const PortraitFrame: React.FC<{
     [member]
   );
 
-  const handleOpen = () =>
-    openExecutiveBoard(
-      member.department,
-      member.term.includes('2026 - 2027') ? 'Nhiệm kỳ 2026 - 2027' : 'all'
-    );
+  const handleOpen = () => openExecutiveBoard(member.department, CURRENT_TERM);
+  const innerW = width - 0.1;
+  const photoH = height * 0.72;
+  const labelH = height * 0.18;
 
   return (
     <group
-      position={slot.position}
-      rotation={[0, slot.rotationY, 0]}
+      position={[x, y, hovered ? 0.025 : 0.01]}
       onClick={(e) => {
         e.stopPropagation();
         handleOpen();
@@ -212,31 +309,209 @@ const PortraitFrame: React.FC<{
         setHoveringInteractive(false);
       }}
     >
-      {/* Museum Brushed Titanium Portrait Frame */}
-      <RoundedBox position={[0, 0, -0.025]} args={[0.92, 1.24, 0.05]} radius={0.025} smoothness={4} castShadow>
+      <RoundedBox position={[0, 0, -0.025]} args={[width, height, 0.05]} radius={0.022} smoothness={4} castShadow>
         <meshStandardMaterial
-          color="#24324a"
+          color={isTopTier ? '#2b3954' : '#223048'}
           roughnessMap={metalMaps.roughnessMap}
           bumpMap={metalMaps.bumpMap}
           bumpScale={0.004}
           emissive={accent}
-          emissiveIntensity={hovered ? 0.45 : 0.08}
+          emissiveIntensity={hovered ? 0.48 : isTopTier ? 0.2 : 0.08}
           metalness={0.86}
           roughness={0.24}
         />
       </RoundedBox>
 
-      {/* Portrait Photo Plane */}
-      <mesh position={[0, 0.1, 0.006]}>
-        <planeGeometry args={[0.8, 0.9]} />
+      <mesh position={[0, height * 0.085, 0.006]}>
+        <planeGeometry args={[innerW, photoH]} />
         <meshBasicMaterial map={photoTex ?? fallbackTex} />
       </mesh>
 
-      {/* Nameplate Strip underneath Portrait */}
-      <mesh position={[0, -0.47, 0.006]}>
-        <planeGeometry args={[0.8, 0.22]} />
+      <mesh position={[0, -height * 0.375, 0.006]}>
+        <planeGeometry args={[innerW, labelH]} />
         <meshBasicMaterial map={labelTex} />
       </mesh>
+    </group>
+  );
+};
+
+const DepartmentPortraitTree: React.FC<{
+  config: DeptWallTreeConfig;
+  members: ExecutiveMember[];
+  metalMaps: { roughnessMap: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture };
+}> = ({ config, members, metalMaps }) => {
+  const row1 = members.filter((m) => classifyTier(m.role) === 1);
+  const row2 = members.filter((m) => classifyTier(m.role) === 2);
+  const row3 = members.filter((m) => classifyTier(m.role) === 3);
+
+  const bannerTex = useMemo(
+    () => createBannerTexture(config.title, config.accent, members.length),
+    [config.title, config.accent, members.length]
+  );
+
+  useEffect(() => {
+    return () => {
+      bannerTex.dispose();
+    };
+  }, [bannerTex]);
+
+  const row1Y = 4.66;
+  const row2Y = 3.22;
+  const row3Y = 1.78;
+  const [normW, row3W] = config.cardWidth;
+  const cardH = normW * 1.24;
+  const row3H = row3W * 1.24;
+
+  const layoutRow = (list: ExecutiveMember[], step: number, y: number, w: number) =>
+    list.map((m, idx) => ({
+      member: m,
+      x: (idx - (list.length - 1) / 2) * step,
+      y,
+      w,
+    }));
+
+  const r1Nodes = layoutRow(row1, config.rowSteps[0], row1Y, normW);
+  const r2Nodes = layoutRow(row2, config.rowSteps[1], row2Y, normW);
+  const r3Nodes = layoutRow(row3, config.rowSteps[2], row3Y, row3W);
+
+  const bus1Y = (row1Y - cardH / 2 + (row2Y + cardH / 2)) / 2;
+  const bus2Y = (row2Y - cardH / 2 + (row3Y + row3H / 2)) / 2;
+
+  return (
+    <group position={config.position} rotation={[0, config.rotationY, 0]}>
+      {/* Wall Section Title Banner */}
+      <group position={[0, 5.52, 0]}>
+        <RoundedBox position={[0, 0, -0.025]} args={[config.bannerWidth, 0.44, 0.045]} radius={0.02} smoothness={4}>
+          <meshStandardMaterial color="#1e293b" metalness={0.85} roughness={0.24} />
+        </RoundedBox>
+        <mesh position={[0, 0, 0.006]}>
+          <planeGeometry args={[config.bannerWidth - 0.1, 0.36]} />
+          <meshBasicMaterial map={bannerTex} />
+        </mesh>
+      </group>
+
+      {/* Connector from Row 1 (Trưởng ban) -> Row 2 (Phó ban) */}
+      {r1Nodes.length > 0 && r2Nodes.length > 0 && (
+        <>
+          <ConnectorLine
+            x1={r1Nodes[0].x}
+            y1={row1Y - cardH / 2}
+            x2={r1Nodes[0].x}
+            y2={bus1Y}
+            accent={config.accent}
+          />
+          {r2Nodes.length > 1 && (
+            <ConnectorLine
+              x1={r2Nodes[0].x}
+              y1={bus1Y}
+              x2={r2Nodes[r2Nodes.length - 1].x}
+              y2={bus1Y}
+              accent={config.accent}
+            />
+          )}
+          {r2Nodes.map((n) => (
+            <ConnectorLine
+              key={`c12-${n.member.id}`}
+              x1={n.x}
+              y1={bus1Y}
+              x2={n.x}
+              y2={row2Y + cardH / 2}
+              accent={config.accent}
+            />
+          ))}
+        </>
+      )}
+
+      {/* Connector from Row 2 (Phó ban) -> Row 3 (Thành viên) */}
+      {r2Nodes.length > 0 && r3Nodes.length > 0 && (
+        <>
+          {r2Nodes.length > 1 && (
+            <ConnectorLine
+              x1={r2Nodes[0].x}
+              y1={bus2Y + 0.07}
+              x2={r2Nodes[r2Nodes.length - 1].x}
+              y2={bus2Y + 0.07}
+              accent={config.accent}
+            />
+          )}
+          {r2Nodes.map((n) => (
+            <ConnectorLine
+              key={`c2d-${n.member.id}`}
+              x1={n.x}
+              y1={row2Y - cardH / 2}
+              x2={n.x}
+              y2={r2Nodes.length > 1 ? bus2Y + 0.07 : bus2Y}
+              accent={config.accent}
+            />
+          ))}
+          {r2Nodes.length > 1 && (
+            <ConnectorLine
+              x1={0}
+              y1={bus2Y + 0.07}
+              x2={0}
+              y2={bus2Y}
+              accent={config.accent}
+            />
+          )}
+          {r3Nodes.length > 1 && (
+            <ConnectorLine
+              x1={r3Nodes[0].x}
+              y1={bus2Y}
+              x2={r3Nodes[r3Nodes.length - 1].x}
+              y2={bus2Y}
+              accent={config.accent}
+            />
+          )}
+          {r3Nodes.map((n) => (
+            <ConnectorLine
+              key={`c23-${n.member.id}`}
+              x1={n.x}
+              y1={bus2Y}
+              x2={n.x}
+              y2={row3Y + row3H / 2}
+              accent={config.accent}
+            />
+          ))}
+        </>
+      )}
+
+      {/* Render Tier Cards */}
+      {r1Nodes.map((n) => (
+        <PortraitCard
+          key={n.member.id}
+          member={n.member}
+          x={n.x}
+          y={n.y}
+          width={n.w}
+          accent={config.accent}
+          isTopTier
+          metalMaps={metalMaps}
+        />
+      ))}
+      {r2Nodes.map((n) => (
+        <PortraitCard
+          key={n.member.id}
+          member={n.member}
+          x={n.x}
+          y={n.y}
+          width={n.w}
+          accent={config.accent}
+          isTopTier={false}
+          metalMaps={metalMaps}
+        />
+      ))}
+      {r3Nodes.map((n) => (
+        <PortraitCard
+          key={n.member.id}
+          member={n.member}
+          x={n.x}
+          y={n.y}
+          width={n.w}
+          accent={config.accent}
+          isTopTier={false}
+          metalMaps={metalMaps}
+        />
+      ))}
     </group>
   );
 };
@@ -252,23 +527,18 @@ export const MemberPortraitGallery: React.FC = () => {
     };
   }, [metalMaps]);
 
-  // Prioritize all 29 current-term 2026-2027 members first, then unique Co-Founders up to 34 wall frames
-  const displayMembers = useMemo(() => {
-    const current = executiveMembers.filter((m) => m.term === 'Nhiệm kỳ 2026 - 2027');
-    const seenNames = new Set(current.map((m) => m.name));
-    const founders = executiveMembers.filter(
-      (m) => m.isFounder && !seenNames.has(m.name)
-    );
-    return [...current, ...founders].slice(0, PORTRAIT_SLOTS.length);
-  }, [executiveMembers]);
+  const currentMembers = useMemo(
+    () => executiveMembers.filter((m) => m.term === CURRENT_TERM),
+    [executiveMembers]
+  );
 
   return (
     <group>
-      {displayMembers.map((member, idx) => (
-        <PortraitFrame
-          key={`wall-portrait-${member.id}`}
-          member={member}
-          slot={PORTRAIT_SLOTS[idx]}
+      {DEPT_WALL_TREES.map((config) => (
+        <DepartmentPortraitTree
+          key={`wall-tree-${config.dept}`}
+          config={config}
+          members={currentMembers.filter((m) => m.department === config.dept)}
           metalMaps={metalMaps}
         />
       ))}

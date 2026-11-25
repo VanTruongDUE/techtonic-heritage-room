@@ -836,7 +836,7 @@ export const PerimeterGallery: React.FC = () => {
 
       {/* ================= FRONT INNER WALLS: PARTNERS/CONTACT & TESTIMONIALS ================= */}
       <MuseumWallBoard
-        position={[-9.6, 3.1, 8.05]}
+        position={[-12.6, 3.1, 8.05]}
         rotation={[0, Math.PI, 0]}
         frameArgs={[7.12, 3.82, 0.1]}
         planeArgs={[6.8, 3.5]}
