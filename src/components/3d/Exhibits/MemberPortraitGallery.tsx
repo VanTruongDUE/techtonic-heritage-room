@@ -285,7 +285,7 @@ const PortraitCard: React.FC<{
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       if (cancelled) return;
-      const { canvas, ctx } = createHiResCanvas(PORTRAIT_CANVAS_W, PORTRAIT_CANVAS_H, 2);
+      const { canvas, ctx } = createHiResCanvas(PORTRAIT_CANVAS_W, PORTRAIT_CANVAS_H, 2.25);
       if (ctx) {
         ctx.fillStyle = '#0d172a';
         ctx.fillRect(0, 0, PORTRAIT_CANVAS_W, PORTRAIT_CANVAS_H);
@@ -305,7 +305,9 @@ const PortraitCard: React.FC<{
           dw = PORTRAIT_CANVAS_H * imgRatio;
           dx = (PORTRAIT_CANVAS_W - dw) / 2;
         }
+        ctx.filter = 'contrast(1.07) saturate(1.05)';
         ctx.drawImage(img, 0, 0, img.width, img.height, dx, dy, dw, dh);
+        ctx.filter = 'none';
       }
       setPhotoTex(finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true }));
     };
@@ -373,10 +375,11 @@ const PortraitCard: React.FC<{
         <planeGeometry args={[innerW, photoH]} />
         <meshStandardMaterial
           map={photoTex ?? fallbackTex}
+          color="#c8d4e6"
           emissive="#ffffff"
           emissiveMap={photoTex ?? fallbackTex}
-          emissiveIntensity={hovered ? 0.44 : 0.3}
-          roughness={0.88}
+          emissiveIntensity={hovered ? 0.56 : 0.44}
+          roughness={0.96}
           metalness={0}
         />
       </mesh>
@@ -385,10 +388,11 @@ const PortraitCard: React.FC<{
         <planeGeometry args={[innerW, labelH]} />
         <meshStandardMaterial
           map={labelTex}
+          color="#d2deee"
           emissive="#ffffff"
           emissiveMap={labelTex}
-          emissiveIntensity={hovered ? 0.46 : 0.34}
-          roughness={0.88}
+          emissiveIntensity={hovered ? 0.56 : 0.45}
+          roughness={0.94}
           metalness={0}
         />
       </mesh>
@@ -432,10 +436,10 @@ const DepartmentPortraitTree: React.FC<{
   useFrame((state) => {
     const pulse = Math.sin(state.clock.elapsedTime * 1.45 + phaseOffset) * 0.5 + 0.5;
     if (colorSpotRef.current) {
-      colorSpotRef.current.intensity = 52 + pulse * 10;
+      colorSpotRef.current.intensity = 22 + pulse * 5;
     }
     if (outerBeamMatRef.current) {
-      outerBeamMatRef.current.opacity = 0.13 + pulse * 0.035;
+      outerBeamMatRef.current.opacity = 0.075 + pulse * 0.02;
     }
     if (wallAuraMatRef.current) {
       wallAuraMatRef.current.opacity = 0.42 + pulse * 0.1;
@@ -500,15 +504,15 @@ const DepartmentPortraitTree: React.FC<{
           <meshBasicMaterial color={config.accent} toneMapped={false} />
         </mesh>
 
-        {/* Outer Colored Stage Beam Cone (natural top-to-bottom fade via alphaMap) */}
-        <mesh position={[0, -2.55, 0]}>
-          <cylinderGeometry args={[0.15, beamRadiusBottom * 1.08, 4.7, 36, 1, true]} />
+        {/* Outer Colored Stage Beam Cone (fades naturally before reaching portraits so zero milky washout) */}
+        <mesh position={[0, -2.05, 0]}>
+          <cylinderGeometry args={[0.15, beamRadiusBottom * 0.88, 3.7, 36, 1, true]} />
           <meshBasicMaterial
             ref={outerBeamMatRef}
             color={config.stageGlow}
             alphaMap={beamAlphaTex}
             transparent
-            opacity={0.14}
+            opacity={0.085}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
             side={THREE.DoubleSide}
@@ -516,13 +520,13 @@ const DepartmentPortraitTree: React.FC<{
         </mesh>
 
         {/* Inner Crisp Core Stage Beam */}
-        <mesh position={[0, -2.45, 0]}>
-          <cylinderGeometry args={[0.085, beamRadiusBottom * 0.6, 4.5, 28, 1, true]} />
+        <mesh position={[0, -1.9, 0]}>
+          <cylinderGeometry args={[0.085, beamRadiusBottom * 0.46, 3.4, 28, 1, true]} />
           <meshBasicMaterial
             color="#ffffff"
             alphaMap={beamAlphaTex}
             transparent
-            opacity={0.075}
+            opacity={0.036}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
             side={THREE.DoubleSide}
@@ -542,33 +546,33 @@ const DepartmentPortraitTree: React.FC<{
         </mesh>
       ))}
 
-      {/* Real Colored Stage Wash SpotLight + Soft White Key SpotLight (anti-glare balance) */}
+      {/* Balanced Glare-Free Stage SpotLights */}
       <spotLight
         ref={colorSpotRef}
         position={[0, 5.72, 2.72]}
         target={stageTargetRef.current}
-        intensity={54}
+        intensity={24}
         distance={15}
-        decay={1.65}
+        decay={1.75}
         angle={isWideTree ? 0.66 : 0.54}
-        penumbra={0.86}
+        penumbra={0.92}
         color={config.stageGlow}
       />
       <spotLight
         position={[0, 5.72, 2.72]}
         target={stageTargetRef.current}
-        intensity={25}
+        intensity={12}
         distance={13}
-        decay={1.8}
+        decay={1.85}
         angle={isWideTree ? 0.54 : 0.42}
-        penumbra={0.82}
+        penumbra={0.9}
         color="#f8fafc"
       />
-      {/* Soft Floor/Stage Uplight Glow for vivid department identity */}
+      {/* Gentle Floor Stage Uplight Glow */}
       <pointLight
-        position={[0, 0.9, 1.45]}
-        intensity={5.5}
-        distance={6.5}
+        position={[0, 0.85, 1.45]}
+        intensity={3.0}
+        distance={6.0}
         decay={2}
         color={config.stageGlow}
       />
