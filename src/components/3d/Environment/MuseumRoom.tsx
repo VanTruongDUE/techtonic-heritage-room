@@ -285,8 +285,8 @@ export const MuseumRoom: React.FC = () => {
         </mesh>
       ))}
 
-      {/* ================= PANORAMIC GLASS SKYLIGHT OBSERVATORY CEILING ================= */}
-      {/* Ultra-clear tinted cosmic skylight glass panes overhead (revealing stars, nebula & Moon!) */}
+      {/* ================= PANORAMIC GLASS SKYLIGHT (MAIN HALL ONLY) & SOLID TUNNEL CEILING ================= */}
+      {/* Ultra-clear tinted cosmic skylight glass panes overhead in MAIN HALL ONLY */}
       <mesh position={[0, 6.52, -5]} rotation={[Math.PI / 2, 0, 0]}>
         <planeGeometry args={[33.2, 27.2]} />
         <meshPhysicalMaterial
@@ -300,18 +300,10 @@ export const MuseumRoom: React.FC = () => {
           side={THREE.DoubleSide}
         />
       </mesh>
-      <mesh position={[0, 6.52, 18.5]} rotation={[Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[5.2, 20.4]} />
-        <meshPhysicalMaterial
-          color="#0a1933"
-          transparent
-          opacity={0.14}
-          roughness={0.06}
-          metalness={0.18}
-          clearcoat={0.85}
-          depthWrite={false}
-          side={THREE.DoubleSide}
-        />
+      {/* Solid enclosed ceiling over Entrance Tunnel (stars only revealed when entering Main Hall!) */}
+      <mesh position={[0, 6.5, 18.5]}>
+        <boxGeometry args={[5.6, 0.24, 20.6]} />
+        <meshStandardMaterial color="#070c17" roughness={0.8} metalness={0.22} />
       </mesh>
 
       {/* Architectural Titanium Roof Perimeter Fascia & Longitudinal Skylight Girders */}
@@ -595,7 +587,7 @@ export const MuseumRoom: React.FC = () => {
         <CuboidCollider args={[2.8, 3.25, 0.2]} position={[0, 3.25, 28.7]} />
       </RigidBody>
 
-      {/* Architectural Solid Obsidian Dado Bases (y=0..0.92) & Upper Cornice Headers (y=6.0..6.5) */}
+      {/* Architectural Solid Obsidian Dado Bases (y=0..0.92) & Upper Cornice Headers (y=6.0..6.5) for MAIN HALL */}
       {[
         { pos: [0, 0.46, -18.85] as [number, number, number], args: [34, 0.92, 0.45] as [number, number, number] },
         { pos: [0, 6.26, -18.85] as [number, number, number], args: [34, 0.48, 0.45] as [number, number, number] },
@@ -607,13 +599,6 @@ export const MuseumRoom: React.FC = () => {
         { pos: [-9.75, 6.26, 8.35] as [number, number, number], args: [14.5, 0.48, 0.45] as [number, number, number] },
         { pos: [9.75, 0.46, 8.35] as [number, number, number], args: [14.5, 0.92, 0.45] as [number, number, number] },
         { pos: [9.75, 6.26, 8.35] as [number, number, number], args: [14.5, 0.48, 0.45] as [number, number, number] },
-        // Entrance Tunnel dado & header frames
-        { pos: [-2.55, 0.46, 18.5] as [number, number, number], args: [0.28, 0.92, 20.4] as [number, number, number] },
-        { pos: [-2.55, 6.26, 18.5] as [number, number, number], args: [0.28, 0.48, 20.4] as [number, number, number] },
-        { pos: [2.55, 0.46, 18.5] as [number, number, number], args: [0.28, 0.92, 20.4] as [number, number, number] },
-        { pos: [2.55, 6.26, 18.5] as [number, number, number], args: [0.28, 0.48, 20.4] as [number, number, number] },
-        { pos: [0, 0.46, 28.65] as [number, number, number], args: [5.4, 0.92, 0.28] as [number, number, number] },
-        { pos: [0, 6.26, 28.65] as [number, number, number], args: [5.4, 0.48, 0.28] as [number, number, number] },
       ].map((part, idx) => (
         <mesh key={`obs-trim-${idx}`} position={part.pos} receiveShadow>
           <boxGeometry args={part.args} />
@@ -629,17 +614,51 @@ export const MuseumRoom: React.FC = () => {
         </mesh>
       ))}
 
-      {/* Panoramic Smoked Space-Observatory Curtain-Wall Glass (y=0.92..6.02) revealing 360° cosmos outside */}
+      {/* Solid Enclosed Entrance Tunnel Walls (dramatic stadium tunnel — no transparent sky until entering Main Hall) */}
+      <mesh position={[-2.6, 3.25, 18.5]} receiveShadow>
+        <boxGeometry args={[0.4, 6.5, 20.4]} />
+        <meshStandardMaterial
+          map={wallMaps.map}
+          roughnessMap={wallMaps.roughnessMap}
+          bumpMap={wallMaps.bumpMap}
+          bumpScale={0.01}
+          color="#1a2740"
+          roughness={0.62}
+          metalness={0.22}
+        />
+      </mesh>
+      <mesh position={[2.6, 3.25, 18.5]} receiveShadow>
+        <boxGeometry args={[0.4, 6.5, 20.4]} />
+        <meshStandardMaterial
+          map={wallMaps.map}
+          roughnessMap={wallMaps.roughnessMap}
+          bumpMap={wallMaps.bumpMap}
+          bumpScale={0.01}
+          color="#1a2740"
+          roughness={0.62}
+          metalness={0.22}
+        />
+      </mesh>
+      <mesh position={[0, 3.25, 28.7]}>
+        <boxGeometry args={[5.6, 6.5, 0.4]} />
+        <meshStandardMaterial
+          map={wallMaps.map}
+          roughnessMap={wallMaps.roughnessMap}
+          bumpMap={wallMaps.bumpMap}
+          bumpScale={0.01}
+          color="#1a2740"
+          roughness={0.62}
+          metalness={0.22}
+        />
+      </mesh>
+
+      {/* Panoramic Smoked Space-Observatory Curtain-Wall Glass (MAIN HALL ONLY, y=0.92..6.02) */}
       {[
         { pos: [0, 3.47, -18.72] as [number, number, number], rot: [0, 0, 0] as [number, number, number], args: [33.4, 5.1] as [number, number] },
         { pos: [-16.72, 3.47, -5] as [number, number, number], rot: [0, Math.PI / 2, 0] as [number, number, number], args: [27.4, 5.1] as [number, number] },
         { pos: [16.72, 3.47, -5] as [number, number, number], rot: [0, -Math.PI / 2, 0] as [number, number, number], args: [27.4, 5.1] as [number, number] },
         { pos: [-9.75, 3.47, 8.22] as [number, number, number], rot: [0, Math.PI, 0] as [number, number, number], args: [14.2, 5.1] as [number, number] },
         { pos: [9.75, 3.47, 8.22] as [number, number, number], rot: [0, Math.PI, 0] as [number, number, number], args: [14.2, 5.1] as [number, number] },
-        // Entrance Tunnel glass observatory walls (stars glide outside during walkout!)
-        { pos: [-2.52, 3.47, 18.5] as [number, number, number], rot: [0, Math.PI / 2, 0] as [number, number, number], args: [20.2, 5.1] as [number, number] },
-        { pos: [2.52, 3.47, 18.5] as [number, number, number], rot: [0, -Math.PI / 2, 0] as [number, number, number], args: [20.2, 5.1] as [number, number] },
-        { pos: [0, 3.47, 28.58] as [number, number, number], rot: [0, Math.PI, 0] as [number, number, number], args: [5.2, 5.1] as [number, number] },
       ].map((pane, idx) => (
         <mesh key={`obs-glass-${idx}`} position={pane.pos} rotation={pane.rot}>
           <planeGeometry args={pane.args} />

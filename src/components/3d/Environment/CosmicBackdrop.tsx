@@ -245,18 +245,18 @@ export const CosmicBackdrop: React.FC = () => {
   const starTex = useMemo(() => createStarGlowTexture(), []);
   const moonHaloTex = useMemo(() => createMoonHaloTexture(), []);
 
-  // 2,400 Crisp Surrounding Deep-Space Stars (360° all around & above/below the museum)
+  // 3,200 Fine Pinpoint Distant Countryside Night-Sky Stars (far celestial sphere, delicate natural scale)
   const farStarField = useMemo(() => {
-    const count = 2400;
+    const count = 3200;
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     const palette = [
       new THREE.Color('#ffffff'),
+      new THREE.Color('#f8fafc'),
       new THREE.Color('#dbeafe'),
-      new THREE.Color('#bae6fd'),
-      new THREE.Color('#fef3c7'),
-      new THREE.Color('#e9d5ff'),
-      new THREE.Color('#93c5fd'),
+      new THREE.Color('#fef9c3'),
+      new THREE.Color('#e0f2fe'),
+      new THREE.Color('#fde68a'),
     ];
     let seed = 192837;
     const rand = () => {
@@ -266,15 +266,15 @@ export const CosmicBackdrop: React.FC = () => {
 
     for (let i = 0; i < count; i++) {
       const theta = rand() * Math.PI * 2;
-      const u = rand() * 2 - 1; // full sphere coverage
+      const u = rand() * 2 - 1;
       const phi = Math.acos(u);
-      const radius = 56 + rand() * 88;
+      const radius = 175 + rand() * 85;
       positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-      positions[i * 3 + 1] = radius * Math.cos(phi) + 8;
-      positions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta) - 2;
+      positions[i * 3 + 1] = radius * Math.cos(phi) + 12;
+      positions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta) - 5;
 
       const c = palette[i % palette.length];
-      const brightness = 0.72 + rand() * 0.28;
+      const brightness = 0.52 + rand() * 0.48;
       colors[i * 3] = c.r * brightness;
       colors[i * 3 + 1] = c.g * brightness;
       colors[i * 3 + 2] = c.b * brightness;
@@ -282,17 +282,17 @@ export const CosmicBackdrop: React.FC = () => {
     return { positions, colors };
   }, []);
 
-  // 420 Brighter Shimmering Hero Stars closer around the observatory glass
+  // 480 Delicate Twinkling First-Magnitude Countryside Stars (small, crisp, distant — never giant blobs)
   const brightStarField = useMemo(() => {
-    const count = 420;
+    const count = 480;
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     const palette = [
       new THREE.Color('#ffffff'),
-      new THREE.Color('#7dd3fc'),
-      new THREE.Color('#fde68a'),
-      new THREE.Color('#c4b5fd'),
-      new THREE.Color('#38bdf8'),
+      new THREE.Color('#e0f2fe'),
+      new THREE.Color('#fef3c7'),
+      new THREE.Color('#bae6fd'),
+      new THREE.Color('#f8fafc'),
     ];
     let seed = 66109;
     const rand = () => {
@@ -302,14 +302,13 @@ export const CosmicBackdrop: React.FC = () => {
 
     for (let i = 0; i < count; i++) {
       const theta = rand() * Math.PI * 2;
-      // Bias slightly toward upper hemisphere & side horizon so observatory windows frame rich stars
-      const yNorm = -0.35 + rand() * 1.35;
-      const clampedY = Math.max(-0.95, Math.min(0.98, yNorm));
+      const yNorm = -0.25 + rand() * 1.25;
+      const clampedY = Math.max(-0.92, Math.min(0.99, yNorm));
       const horiz = Math.sqrt(Math.max(0.01, 1 - clampedY * clampedY));
-      const radius = 44 + rand() * 54;
+      const radius = 160 + rand() * 75;
       positions[i * 3] = radius * horiz * Math.cos(theta);
-      positions[i * 3 + 1] = radius * clampedY + 6;
-      positions[i * 3 + 2] = radius * horiz * Math.sin(theta) - 2;
+      positions[i * 3 + 1] = radius * clampedY + 12;
+      positions[i * 3 + 2] = radius * horiz * Math.sin(theta) - 5;
 
       const c = palette[i % palette.length];
       colors[i * 3] = c.r;
@@ -346,19 +345,19 @@ export const CosmicBackdrop: React.FC = () => {
       moonRef.current.rotation.y += delta * 0.008;
     }
 
-    // Periodic graceful shooting star streaking across the glass sky dome every ~9s
+    // Periodic subtle distant shooting star gliding high across the night sky every ~11s
     if (shootingStarRef.current) {
-      const cycle = t % 9.5;
-      if (cycle < 1.15) {
-        const p = cycle / 1.15;
+      const cycle = t % 11.0;
+      if (cycle < 1.1) {
+        const p = cycle / 1.1;
         shootingStarRef.current.visible = true;
         shootingStarRef.current.position.set(
-          -42 + p * 84,
-          42 - p * 12,
-          -62 + p * 10
+          -70 + p * 140,
+          92 - p * 22,
+          -145 + p * 18
         );
         const mat = shootingStarRef.current.material as THREE.MeshBasicMaterial;
-        mat.opacity = Math.sin(p * Math.PI) * 0.85;
+        mat.opacity = Math.sin(p * Math.PI) * 0.72;
       } else {
         shootingStarRef.current.visible = false;
       }
@@ -367,13 +366,13 @@ export const CosmicBackdrop: React.FC = () => {
 
   return (
     <group>
-      {/* 1. Deep-Space Panoramic Cosmic Sky Dome */}
+      {/* 1. Vast Distant Countryside Night Sky Dome */}
       <mesh position={[0, 4, 0]}>
-        <sphereGeometry args={[175, 48, 32]} />
+        <sphereGeometry args={[310, 48, 32]} />
         <meshBasicMaterial map={domeTex} side={THREE.BackSide} depthWrite={false} fog={false} />
       </mesh>
 
-      {/* 2. Distant Dense 360° Starfield */}
+      {/* 2. Fine Pinpoint Distant Countryside Starfield */}
       <points ref={farStarsRef}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[farStarField.positions, 3]} />
@@ -383,8 +382,8 @@ export const CosmicBackdrop: React.FC = () => {
           map={starTex}
           vertexColors
           transparent
-          opacity={0.92}
-          size={1.05}
+          opacity={0.86}
+          size={0.82}
           sizeAttenuation
           depthWrite={false}
           blending={THREE.AdditiveBlending}
@@ -393,7 +392,7 @@ export const CosmicBackdrop: React.FC = () => {
         />
       </points>
 
-      {/* 3. Brighter Twinkling Hero Stars around the Observatory */}
+      {/* 3. Delicate Twinkling Natural First-Magnitude Stars */}
       <points ref={brightStarsRef}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[brightStarField.positions, 3]} />
@@ -404,8 +403,8 @@ export const CosmicBackdrop: React.FC = () => {
           map={starTex}
           vertexColors
           transparent
-          opacity={0.88}
-          size={2.05}
+          opacity={0.84}
+          size={1.45}
           sizeAttenuation
           depthWrite={false}
           blending={THREE.AdditiveBlending}
@@ -414,14 +413,14 @@ export const CosmicBackdrop: React.FC = () => {
         />
       </points>
 
-      {/* 4. Hero Glowing 3D Moon visible through the Glass Skylight Roof & Observatory Walls */}
-      <group position={[15, 20.5, -54]}>
-        {/* Atmospheric Lunar Silver-Blue Corona Halo */}
-        <sprite scale={[34, 34, 1]}>
+      {/* 4. Distant, Natural Countryside Full Moon (serene realistic scale high in the night sky) */}
+      <group position={[42, 48, -155]}>
+        {/* Gentle Silvery-Warm Countryside Moonlight Corona Halo */}
+        <sprite scale={[22, 22, 1]}>
           <spriteMaterial
             map={moonHaloTex}
             transparent
-            opacity={0.76}
+            opacity={0.58}
             depthWrite={false}
             blending={THREE.AdditiveBlending}
             fog={false}
@@ -429,54 +428,26 @@ export const CosmicBackdrop: React.FC = () => {
           />
         </sprite>
 
-        {/* Sculpted Cratered Lunar Sphere */}
+        {/* Sculpted Distant Cratered Full Moon */}
         <mesh ref={moonRef} rotation={[0.15, -0.75, 0.08]}>
-          <sphereGeometry args={[8.1, 64, 48]} />
+          <sphereGeometry args={[4.6, 48, 36]} />
           <meshStandardMaterial
             map={moonMaps.map}
             bumpMap={moonMaps.bumpMap}
-            bumpScale={0.22}
-            emissive="#dce9ff"
+            bumpScale={0.14}
+            emissive="#edf3ff"
             emissiveMap={moonMaps.map}
-            emissiveIntensity={0.82}
+            emissiveIntensity={0.92}
             roughness={0.88}
             metalness={0.02}
             fog={false}
           />
         </mesh>
-
-        {/* Dedicated subtle directional moonlight rim across the lunar sphere */}
-        <pointLight position={[-14, 10, 18]} intensity={42} distance={50} decay={1.2} color="#e0f2fe" />
       </group>
 
-      {/* 5. Distant Serene Ringed Planet Silhouette far across the opposite horizon */}
-      <group position={[-54, 23, -44]} rotation={[0.28, 0.4, -0.22]}>
-        <mesh>
-          <sphereGeometry args={[3.2, 36, 28]} />
-          <meshStandardMaterial
-            color="#3b5998"
-            emissive="#1e3a8a"
-            emissiveIntensity={0.45}
-            roughness={0.7}
-            fog={false}
-          />
-        </mesh>
-        <mesh rotation={[Math.PI / 2.2, 0.1, 0]}>
-          <ringGeometry args={[4.4, 6.8, 64]} />
-          <meshBasicMaterial
-            color="#7dd3fc"
-            transparent
-            opacity={0.24}
-            side={THREE.DoubleSide}
-            depthWrite={false}
-            fog={false}
-          />
-        </mesh>
-      </group>
-
-      {/* 6. Periodic Shooting Star gliding across the skylight */}
-      <mesh ref={shootingStarRef} visible={false} rotation={[0, 0, -0.14]}>
-        <boxGeometry args={[5.5, 0.07, 0.07]} />
+      {/* 5. Periodic Distant Shooting Star gliding high across the night sky */}
+      <mesh ref={shootingStarRef} visible={false} rotation={[0, 0, -0.15]}>
+        <boxGeometry args={[7.5, 0.09, 0.09]} />
         <meshBasicMaterial
           color="#e0f7ff"
           transparent

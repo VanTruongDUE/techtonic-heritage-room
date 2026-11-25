@@ -18,7 +18,7 @@ export const Scene: React.FC = () => {
   return (
     <Suspense fallback={null}>
       <color attach="background" args={['#02040b']} />
-      <fog attach="fog" args={['#02040b', 150, 320]} />
+      <fog attach="fog" args={['#02040b', 180, 440]} />
 
       {/* 360° Deep-Space Starfield, Nebula & Glowing 3D Moon outside the Observatory */}
       <CosmicBackdrop />
