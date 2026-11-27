@@ -674,7 +674,6 @@ export const CenterWall: React.FC = () => {
             args={[0.16, 5.1, 0.1]}
             radius={0.02}
             smoothness={4}
-            castShadow
           >
             <meshStandardMaterial color="#1c273d" roughness={0.5} metalness={0.3} />
           </RoundedBox>

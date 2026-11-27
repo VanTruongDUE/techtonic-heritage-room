@@ -124,8 +124,10 @@ function createBadgeSpriteTexture(item: TechBadgeDef): THREE.CanvasTexture {
 export const CodeCosmosOrbit: React.FC = () => {
   const reducedMotion = useReducedMotionPreference();
   const isCenterWallCinemaActive = useHeritageStore((s) => s.isCenterWallCinemaActive);
+  const graphicsQuality = useHeritageStore((s) => s.graphicsQuality);
   const spriteRefs = useRef<Array<THREE.Sprite | null>>([]);
   const starPointsRef = useRef<THREE.Points>(null);
+  const initializedRef = useRef(false);
 
   const flattenedItems = useMemo(() => {
     const result: Array<{
@@ -220,6 +222,15 @@ export const CodeCosmosOrbit: React.FC = () => {
   }, [ringEulers]);
 
   useFrame((state, delta) => {
+    const isModalOpen = useHeritageStore.getState().activeModal !== null;
+    if (
+      initializedRef.current &&
+      (isCenterWallCinemaActive || isModalOpen || state.camera.position.z > 11.5)
+    ) {
+      return;
+    }
+    initializedRef.current = true;
+
     const t = reducedMotion ? 0 : state.clock.elapsedTime;
 
     flattenedItems.forEach((entry) => {
@@ -258,23 +269,25 @@ export const CodeCosmosOrbit: React.FC = () => {
         </group>
       ))}
 
-      {/* Subtle Stardust Field */}
-      <points ref={starPointsRef}>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[starData.pos, 3]} />
-          <bufferAttribute attach="attributes-color" args={[starData.col, 3]} />
-        </bufferGeometry>
-        <pointsMaterial
-          map={starSpriteTex}
-          vertexColors
-          transparent
-          opacity={0.55}
-          size={0.07}
-          sizeAttenuation
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
-      </points>
+      {/* Subtle Stardust Field (only in 'high' quality mode for clean fill-rate) */}
+      {graphicsQuality === 'high' && (
+        <points ref={starPointsRef}>
+          <bufferGeometry>
+            <bufferAttribute attach="attributes-position" args={[starData.pos, 3]} />
+            <bufferAttribute attach="attributes-color" args={[starData.col, 3]} />
+          </bufferGeometry>
+          <pointsMaterial
+            map={starSpriteTex}
+            vertexColors
+            transparent
+            opacity={0.55}
+            size={0.07}
+            sizeAttenuation
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </points>
+      )}
 
       {/* Evenly Spaced Language, Query & Tool Badges */}
       {flattenedItems.map((entry) => (

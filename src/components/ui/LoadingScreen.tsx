@@ -195,8 +195,8 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_26%,rgba(0,245,255,0.14),transparent_46%),radial-gradient(circle_at_82%_74%,rgba(168,85,247,0.14),transparent_48%),radial-gradient(circle_at_50%_0%,rgba(56,189,248,0.09),transparent_42%)]" />
 
         {/* Subtle slow-orbiting architectural blueprint rings */}
-        <div className="portal-orbit-cw absolute left-1/2 top-1/2 w-[780px] h-[780px] rounded-full border border-dashed border-tech-cyan/[0.08]" />
-        <div className="portal-orbit-ccw absolute left-1/2 top-1/2 w-[1080px] h-[1080px] rounded-full border border-fuchsia-400/[0.06]" />
+        <div className="portal-orbit-cw will-change-transform absolute left-1/2 top-1/2 w-[780px] h-[780px] rounded-full border border-dashed border-tech-cyan/[0.08]" />
+        <div className="portal-orbit-ccw will-change-transform absolute left-1/2 top-1/2 w-[1080px] h-[1080px] rounded-full border border-fuchsia-400/[0.06]" />
       </div>
 
       {/* 2. Top Subtle Exhibition Masthead Strip */}
@@ -215,7 +215,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
 
       {/* 3. Main 2-Column Cyber-Museum Entrance Pavilion */}
       <div className="relative z-10 w-full max-w-6xl mx-auto px-6 lg:px-10 my-auto py-4">
-        <div className="relative rounded-3xl border border-tech-cyan/25 bg-gradient-to-br from-[#070f20]/90 via-[#040915]/94 to-[#080d1e]/92 backdrop-blur-xl shadow-[0_28px_80px_rgba(0,0,0,0.82),0_0_40px_rgba(0,245,255,0.08)] overflow-hidden animate-panel-in">
+        <div className="relative rounded-3xl border border-tech-cyan/25 bg-gradient-to-br from-[#070f20]/90 via-[#040915]/94 to-[#080d1e]/92 backdrop-blur-md shadow-[0_28px_80px_rgba(0,0,0,0.82),0_0_40px_rgba(0,245,255,0.08)] overflow-hidden animate-panel-in">
           {/* Top prismatic neon hairline edge */}
           <div
             aria-hidden="true"

@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import { CylinderCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
+import { useHeritageStore } from '../../../store/useHeritageStore';
 import {
   createBrushedMetalMaps,
   createFabricMaps,
@@ -508,7 +509,8 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
     sleeveDiffuseTex,
   ]);
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
+    if (useHeritageStore.getState().activeModal !== null || state.camera.position.z > 12) return;
     const dt = Math.min(delta, 0.05);
     if (mannequinTurnRef.current) {
       // Smooth 360° boutique turntable rotation (slows gracefully on hover for close inspection)
@@ -522,7 +524,7 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
       mannequinTurnRef.current.scale.setScalar(nextScale);
     }
     if (ringRef.current) {
-      ringRef.current.rotation.z += hovered ? 0.022 : 0.007;
+      ringRef.current.rotation.z += dt * (hovered ? 1.3 : 0.42);
     }
   });
 
@@ -530,7 +532,7 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
     <group position={[-0.7, 0, -6.4]}>
       {/* ================= FLAGSHIP BOUTIQUE ALCOVE BACKDROP AT RIGHT WALL ================= */}
       <group position={[17.22, 2.32, -4]} rotation={[0, -Math.PI / 2, 0]}>
-        <RoundedBox args={[3.5, 4.18, 0.14]} radius={0.04} smoothness={4} castShadow>
+        <RoundedBox args={[3.5, 4.18, 0.14]} radius={0.04} smoothness={4}>
           <meshPhysicalMaterial
             color="#070d1b"
             roughnessMap={metalMaps.roughnessMap}

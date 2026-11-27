@@ -26,10 +26,11 @@ export function useReducedMotionPreference(): boolean {
  */
 export const HallParticleField: React.FC = () => {
   const reducedMotion = useReducedMotionPreference();
+  const graphicsQuality = useHeritageStore((s) => s.graphicsQuality);
   const pointsRef = useRef<THREE.Points>(null);
   const sparksRef = useRef<THREE.Points>(null);
-  const count = reducedMotion ? 50 : 165;
-  const sparkCount = reducedMotion ? 16 : 55;
+  const count = reducedMotion ? 50 : graphicsQuality === 'balanced' ? 75 : 165;
+  const sparkCount = reducedMotion || graphicsQuality === 'balanced' ? 0 : 55;
 
   const { positions, colors } = useMemo(() => {
     const arr = new Float32Array(count * 3);
@@ -109,7 +110,7 @@ export const HallParticleField: React.FC = () => {
   }, [spriteTexture]);
 
   useFrame((state, delta) => {
-    if (reducedMotion) return;
+    if (reducedMotion || useHeritageStore.getState().activeModal !== null) return;
     const t = state.clock.elapsedTime;
     if (pointsRef.current) {
       pointsRef.current.rotation.y += delta * 0.018;
@@ -141,24 +142,26 @@ export const HallParticleField: React.FC = () => {
           toneMapped={false}
         />
       </points>
-      <points ref={sparksRef}>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[sparkData.positions, 3]} />
-          <bufferAttribute attach="attributes-color" args={[sparkData.colors, 3]} />
-        </bufferGeometry>
-        <pointsMaterial
-          map={spriteTexture}
-          vertexColors
-          alphaTest={0.01}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-          opacity={0.82}
-          size={0.135}
-          sizeAttenuation
-          transparent
-          toneMapped={false}
-        />
-      </points>
+      {sparkCount > 0 && (
+        <points ref={sparksRef}>
+          <bufferGeometry>
+            <bufferAttribute attach="attributes-position" args={[sparkData.positions, 3]} />
+            <bufferAttribute attach="attributes-color" args={[sparkData.colors, 3]} />
+          </bufferGeometry>
+          <pointsMaterial
+            map={spriteTexture}
+            vertexColors
+            alphaTest={0.01}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            opacity={0.82}
+            size={0.135}
+            sizeAttenuation
+            transparent
+            toneMapped={false}
+          />
+        </points>
+      )}
     </group>
   );
 };
@@ -244,7 +247,9 @@ export const OrgConstellationOrbit: React.FC = () => {
   }, [connections]);
 
   useFrame((state, delta) => {
-    if (reducedMotion) return;
+    if (reducedMotion || useHeritageStore.getState().activeModal !== null || state.camera.position.z > 12) {
+      return;
+    }
     const t = state.clock.elapsedTime;
     if (groupRef.current) {
       groupRef.current.rotation.y += delta * (hovered ? 0.28 : 0.12);

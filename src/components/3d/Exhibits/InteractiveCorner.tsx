@@ -11,6 +11,83 @@ import {
   createMarbleMaps,
   createOpenBookPageTexture,
 } from '../utils/proceduralMaterials';
+import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
+
+const LED_SLIDES = [
+  {
+    title: 'CHUỖI SỰ KIỆN • TECHXPLORE • TECHWARE',
+    tag: 'TECHTONIC • TRỰC TIẾP',
+    subtitle: 'Đón tân sinh viên DUE  •  Trải nghiệm công nghệ  •  Tuyển thành viên không thu phí',
+  },
+  {
+    title: 'MENTOR - MENTEE • TÌNH NGUYỆN ĐÔNG - XUÂN',
+    tag: 'GẮN KẾT & SẺ CHIA',
+    subtitle: 'From Us To You  •  Tech Threads  •  Happy Hour & Du lịch gắn kết nội bộ',
+  },
+  {
+    title: 'CHUYÊN MÔN HẰNG TUẦN • PRODUCT TEAM',
+    tag: 'HỌC THUẬT & THI ĐẤU',
+    subtitle: 'Đào tạo CSLT/CSDL  •  Front-End  •  Back-End  •  AI & Data  •  Thi đấu ICPC-OLP',
+  },
+];
+
+function createStaticLedSlideTexture(slideIdx: number, paused = false): THREE.CanvasTexture {
+  const w = 1024;
+  const h = 576;
+  const { canvas, ctx } = createHiResCanvas(w, h, 0.75);
+  if (ctx) {
+    const slide = LED_SLIDES[slideIdx % LED_SLIDES.length];
+    ctx.fillStyle = '#040812';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.fillStyle = 'rgba(0, 245, 255, 0.04)';
+    for (let y = 0; y < h; y += 12) {
+      ctx.fillRect(0, y, w, 1);
+    }
+
+    // Baked luminous dual-pass neon wave art (rendered once at init — 0 per-frame redraws)
+    const phase = slideIdx * 1.35;
+    for (let wave = 0; wave < 3; wave++) {
+      const strokeCol = wave === 0 ? '#00F5FF' : wave === 1 ? '#b84dff' : '#38bdf8';
+      ctx.beginPath();
+      for (let x = 0; x <= w; x += 14) {
+        const freq = 0.014 + wave * 0.005;
+        const y = h / 2 + Math.sin(x * freq + phase + wave) * (36 + wave * 20);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.globalAlpha = 0.24;
+      ctx.lineWidth = 9;
+      ctx.strokeStyle = strokeCol;
+      ctx.stroke();
+
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = strokeCol;
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 34px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(slide.title, w / 2, 82);
+
+    ctx.fillStyle = paused ? '#fbbf24' : '#38bdf8';
+    ctx.font = '600 20px "JetBrains Mono", monospace';
+    ctx.fillText(
+      paused
+        ? 'TRẠNG THÁI: TẠM DỪNG • NHẤP ĐỂ TIẾP TỤC'
+        : `SLIDE 0${slideIdx + 1}/03  •  ${slide.tag}`,
+      w / 2,
+      122
+    );
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '500 21px Inter, sans-serif';
+    ctx.fillText(slide.subtitle, w / 2, h - 56);
+  }
+  return finalizeCrispTexture(canvas, { anisotropy: 4, srgb: true });
+}
 
 export const InteractiveCorner: React.FC = () => {
   const { setHoveringInteractive, openModal, guestbookEntries } = useHeritageStore(
@@ -22,9 +99,9 @@ export const InteractiveCorner: React.FC = () => {
   );
   const bookGroupRef = useRef<THREE.Group>(null);
   const penGroupRef = useRef<THREE.Group>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const textureRef = useRef<THREE.CanvasTexture | null>(null);
-  const lastDrawTimeRef = useRef(0);
+  const screenMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const lastSlideIdxRef = useRef(0);
+  const lastPausedRef = useRef(false);
   const [isBookHovered, setIsBookHovered] = useState(false);
   const [isScreenPaused, setIsScreenPaused] = useState(false);
 
@@ -72,26 +149,14 @@ export const InteractiveCorner: React.FC = () => {
     };
   }, []);
 
-  const videoTexture = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 768;
-    canvas.height = 432;
-    const initCtx = canvas.getContext('2d');
-    if (initCtx) {
-      initCtx.scale(0.75, 0.75);
-      initCtx.imageSmoothingEnabled = true;
-      initCtx.imageSmoothingQuality = 'medium';
-    }
-    canvasRef.current = canvas;
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.minFilter = THREE.LinearFilter;
-    tex.magFilter = THREE.LinearFilter;
-    tex.anisotropy = 2;
-    tex.generateMipmaps = false;
-    textureRef.current = tex;
-    return tex;
-  }, []);
+  const slideTextures = useMemo(
+    () => [0, 1, 2].map((idx) => createStaticLedSlideTexture(idx, false)),
+    []
+  );
+  const pausedTextures = useMemo(
+    () => [0, 1, 2].map((idx) => createStaticLedSlideTexture(idx, true)),
+    []
+  );
 
   useEffect(() => {
     return () => {
@@ -107,7 +172,8 @@ export const InteractiveCorner: React.FC = () => {
       leftPageGeom.dispose();
       rightPageGeom.dispose();
       penBodyGeom.dispose();
-      videoTexture.dispose();
+      slideTextures.forEach((t) => t.dispose());
+      pausedTextures.forEach((t) => t.dispose());
     };
   }, [
     marbleMaps,
@@ -118,102 +184,40 @@ export const InteractiveCorner: React.FC = () => {
     leftPageGeom,
     rightPageGeom,
     penBodyGeom,
-    videoTexture,
+    slideTextures,
+    pausedTextures,
   ]);
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
+    const storeState = useHeritageStore.getState();
+    if (storeState.activeModal !== null || state.camera.position.z > 12) return;
+
+    const dt = Math.min(delta, 0.05);
+    const elapsed = state.clock.elapsedTime;
+
     if (penGroupRef.current) {
-      const lift = isBookHovered ? 0.08 : 0;
-      penGroupRef.current.position.y =
-        0.11 + lift + Math.sin(state.clock.elapsedTime * 2.2) * 0.012;
-      penGroupRef.current.rotation.z =
-        -Math.PI / 3.2 + Math.sin(state.clock.elapsedTime * 1.4) * 0.04;
+      const targetY = 0.11 + (isBookHovered ? 0.08 : 0) + Math.sin(elapsed * 2.1) * 0.012;
+      penGroupRef.current.position.y = THREE.MathUtils.lerp(
+        penGroupRef.current.position.y,
+        targetY,
+        1 - Math.exp(-10 * dt)
+      );
+      penGroupRef.current.rotation.z = -Math.PI / 3.2 + Math.sin(elapsed * 1.4) * 0.04;
     }
 
-    const elapsed = state.clock.elapsedTime;
-    const playerZ = state.camera.position.z;
-    const isCinemaActive = useHeritageStore.getState().isCenterWallCinemaActive;
-    // Skip dynamic LED texture upload while player is in Entrance Tunnel or watching Cinema TV (~8fps otherwise)
-    if (
-      canvasRef.current &&
-      textureRef.current &&
-      !isCinemaActive &&
-      (lastDrawTimeRef.current === 0 || (playerZ < 10 && !isScreenPaused && elapsed - lastDrawTimeRef.current >= 0.125))
-    ) {
-      lastDrawTimeRef.current = elapsed;
-      const ctx = canvasRef.current.getContext('2d');
-      if (ctx) {
-        const w = 1024;
-        const h = 576;
-
-        ctx.fillStyle = '#040812';
-        ctx.fillRect(0, 0, w, h);
-
-        ctx.fillStyle = 'rgba(0, 245, 255, 0.04)';
-        for (let y = 0; y < h; y += 12) {
-          ctx.fillRect(0, y, w, 1);
-        }
-
-        // Fast GPU-friendly dual-pass neon glow (avoids expensive CPU ctx.shadowBlur per frame)
-        for (let wave = 0; wave < 3; wave++) {
-          const strokeCol = wave === 0 ? '#00F5FF' : wave === 1 ? '#b84dff' : '#38bdf8';
-          ctx.beginPath();
-          for (let x = 0; x < w; x += 16) {
-            const freq = 0.014 + wave * 0.005;
-            const y = h / 2 + Math.sin(x * freq + elapsed * 2.4 + wave) * (36 + wave * 20);
-            if (x === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          }
-          ctx.globalAlpha = 0.25;
-          ctx.lineWidth = 9;
-          ctx.strokeStyle = strokeCol;
-          ctx.stroke();
-
-          ctx.globalAlpha = 1;
-          ctx.lineWidth = 3;
-          ctx.strokeStyle = strokeCol;
-          ctx.stroke();
-        }
-
-        const slideIndex = Math.floor(elapsed / 5.5) % 3;
-        const slideTitles = [
-          'CHUỖI SỰ KIỆN • TECHXPLORE • TECHWARE',
-          'MENTOR - MENTEE • TÌNH NGUYỆN ĐÔNG - XUÂN',
-          'CHUYÊN MÔN HẰNG TUẦN • PRODUCT TEAM',
-        ];
-        const slideSubtitles = [
-          'Đón tân sinh viên DUE  •  Trải nghiệm công nghệ  •  Tuyển thành viên không thu phí',
-          'From Us To You  •  Tech Threads  •  Happy Hour & Du lịch gắn kết nội bộ',
-          'Đào tạo CSLT/CSDL  •  Front-End  •  Back-End  •  AI & Data  •  Thi đấu ICPC-OLP',
-        ];
-
-        ctx.fillStyle = '#f8fafc';
-        ctx.font = 'bold 34px Inter, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(slideTitles[slideIndex], w / 2, 82);
-
-        ctx.fillStyle = isScreenPaused ? '#fbbf24' : '#38bdf8';
-        ctx.font = '600 20px "JetBrains Mono", monospace';
-        ctx.fillText(
-          isScreenPaused
-            ? 'TRẠNG THÁI: TẠM DỪNG • NHẤP ĐỂ TIẾP TỤC'
-            : `SLIDE 0${slideIndex + 1}/03  •  RUNTIME ${elapsed.toFixed(1)}s`,
-          w / 2,
-          122
-        );
-
-        ctx.fillStyle = '#cbd5e1';
-        ctx.font = '500 21px Inter, sans-serif';
-        ctx.fillText(slideSubtitles[slideIndex], w / 2, h - 56);
-
-        textureRef.current.needsUpdate = true;
+    if (screenMatRef.current && !storeState.isCenterWallCinemaActive) {
+      const nextIdx = isScreenPaused ? lastSlideIdxRef.current : Math.floor(elapsed / 5.5) % 3;
+      if (nextIdx !== lastSlideIdxRef.current || isScreenPaused !== lastPausedRef.current) {
+        lastSlideIdxRef.current = nextIdx;
+        lastPausedRef.current = isScreenPaused;
+        screenMatRef.current.map = (isScreenPaused ? pausedTextures : slideTextures)[nextIdx];
+        screenMatRef.current.needsUpdate = true;
       }
     }
   });
 
   const openGuestbook = () => openModal('guestbook');
   const toggleScreen = () => {
-    lastDrawTimeRef.current = 0;
     setIsScreenPaused((prev) => !prev);
   };
 
@@ -277,7 +281,7 @@ export const InteractiveCorner: React.FC = () => {
         onPointerOut={() => setHoveringInteractive(false)}
       >
         <planeGeometry args={[6.52, 3.68]} />
-        <meshBasicMaterial map={videoTexture} />
+        <meshBasicMaterial ref={screenMatRef} map={slideTextures[0]} />
       </mesh>
 
       {[-2.0, 2.0].map((mx) => (

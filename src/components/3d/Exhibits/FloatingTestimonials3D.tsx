@@ -289,8 +289,9 @@ const FloatingTestimonialCard: React.FC<FloatingCardProps> = ({
 
   const handleInteract = () => onSelect(item.id);
 
-  // Zero-allocation smooth 3D levitation & subtle parallax sway
+  // Zero-allocation smooth 3D levitation & frame-rate-independent parallax sway
   useFrame((state, delta) => {
+    if (useHeritageStore.getState().activeModal !== null || state.camera.position.z > 12) return;
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
     const g = rootRef.current;
@@ -298,21 +299,24 @@ const FloatingTestimonialCard: React.FC<FloatingCardProps> = ({
       const targetY = slot.position[1] + Math.sin(t * 1.15 + slot.phase) * slot.floatAmp;
       const targetX = slot.position[0] + Math.cos(t * 0.65 + slot.phase) * 0.04;
       const targetZ = slot.position[2] + (hovered ? -0.18 : 0);
+      const posEase = 1 - Math.exp(-6 * dt);
+      const hoverEase = 1 - Math.exp(-8 * dt);
+      const rotEase = 1 - Math.exp(-5 * dt);
 
-      g.position.x = THREE.MathUtils.lerp(g.position.x, targetX, dt * 6);
-      g.position.y = THREE.MathUtils.lerp(g.position.y, targetY, dt * 6);
-      g.position.z = THREE.MathUtils.lerp(g.position.z, targetZ, dt * 7);
+      g.position.x = THREE.MathUtils.lerp(g.position.x, targetX, posEase);
+      g.position.y = THREE.MathUtils.lerp(g.position.y, targetY, posEase);
+      g.position.z = THREE.MathUtils.lerp(g.position.z, targetZ, hoverEase);
 
       const targetRotY = slot.baseRotY + Math.sin(t * 0.7 + slot.phase) * 0.055;
       const targetRotX = Math.cos(t * 0.85 + slot.phase) * 0.03;
       const targetRotZ = Math.sin(t * 0.55 + slot.phase) * 0.018;
 
-      g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, targetRotX, dt * 5);
-      g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, targetRotY, dt * 5);
-      g.rotation.z = THREE.MathUtils.lerp(g.rotation.z, targetRotZ, dt * 5);
+      g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, targetRotX, rotEase);
+      g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, targetRotY, rotEase);
+      g.rotation.z = THREE.MathUtils.lerp(g.rotation.z, targetRotZ, rotEase);
 
       const targetScale = hovered ? 1.075 : 1.0;
-      const nextScale = THREE.MathUtils.lerp(g.scale.x, targetScale, dt * 8);
+      const nextScale = THREE.MathUtils.lerp(g.scale.x, targetScale, hoverEase);
       g.scale.setScalar(nextScale);
     }
 

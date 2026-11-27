@@ -166,28 +166,22 @@ const CelestialEmbers: React.FC<{
   baseY?: number;
   hovered: boolean;
 }> = ({ color, count = 34, radius = 0.62, height = 1.35, baseY = 1.02, hovered }) => {
+  const graphicsQuality = useHeritageStore((s) => s.graphicsQuality);
   const pointsRef = useRef<THREE.Points>(null);
 
-  const { geom, seeds } = useMemo(() => {
+  const geom = useMemo(() => {
     const positions = new Float32Array(count * 3);
-    const seedArr = new Float32Array(count * 4);
     for (let i = 0; i < count; i += 1) {
       const a = (i / count) * Math.PI * 2 + (i % 5) * 0.42;
       const r = radius * (0.48 + ((i * 37) % 100) / 145);
       const y = ((i * 53) % 100) / 100;
-      const speed = 0.16 + ((i * 29) % 100) / 360;
-      seedArr[i * 4] = a;
-      seedArr[i * 4 + 1] = r;
-      seedArr[i * 4 + 2] = y;
-      seedArr[i * 4 + 3] = speed;
-
       positions[i * 3] = Math.cos(a) * r;
       positions[i * 3 + 1] = baseY + y * height;
       positions[i * 3 + 2] = Math.sin(a) * r;
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    return { geom: g, seeds: seedArr };
+    return g;
   }, [baseY, count, height, radius]);
 
   useEffect(() => {
@@ -196,26 +190,18 @@ const CelestialEmbers: React.FC<{
     };
   }, [geom]);
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     if (!pointsRef.current) return;
+    if (useHeritageStore.getState().activeModal !== null || state.camera.position.z > 12) return;
+    const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
-    const pos = geom.attributes.position as THREE.BufferAttribute;
-    const boost = hovered ? 1.45 : 1.0;
-
-    for (let i = 0; i < count; i += 1) {
-      const a0 = seeds[i * 4];
-      const r0 = seeds[i * 4 + 1];
-      const y0 = seeds[i * 4 + 2];
-      const spd = seeds[i * 4 + 3];
-
-      const cycle = (y0 + t * spd * boost) % 1;
-      const swirl = a0 + t * (0.45 + spd * 0.9) * boost + cycle * 1.4;
-      const r = r0 * (1 - cycle * 0.32) + Math.sin(t * 2.2 + i) * 0.035;
-
-      pos.setXYZ(i, Math.cos(swirl) * r, baseY + cycle * height, Math.sin(swirl) * r);
-    }
-    pos.needsUpdate = true;
+    pointsRef.current.rotation.y += dt * (hovered ? 0.52 : 0.22);
+    pointsRef.current.position.y = Math.sin(t * 0.95) * 0.065;
   });
+
+  if (graphicsQuality === 'balanced') {
+    return null;
+  }
 
   return (
     <points ref={pointsRef} geometry={geom}>
@@ -223,7 +209,7 @@ const CelestialEmbers: React.FC<{
         color={color}
         size={hovered ? 0.048 : 0.036}
         transparent
-        opacity={hovered ? 0.95 : 0.72}
+        opacity={hovered ? 0.92 : 0.68}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
         toneMapped={false}
@@ -280,6 +266,7 @@ const MythicalRiggedBeast: React.FC<RiggedBeastProps> = ({
   const stepIdxRef = useRef<number>(Math.floor(phaseOffset) % Math.max(1, behaviors.length));
   const switchTimerRef = useRef<number>(3.2 + (phaseOffset % 2.4));
   const prevHoveredRef = useRef<boolean>(false);
+  const tmpWorldPos = useMemo(() => new THREE.Vector3(), []);
 
   // Clone the rigged skeleton safely, weld coincident normals for silky organic muscle smoothness,
   // and bind custom mythical PBR + Fresnel rim shaders per material zone.
@@ -404,6 +391,17 @@ const MythicalRiggedBeast: React.FC<RiggedBeastProps> = ({
   };
 
   useFrame((state, delta) => {
+    const storeState = useHeritageStore.getState();
+    if (storeState.activeModal !== null || state.camera.position.z > 11.5) return;
+
+    if (rootRef.current) {
+      rootRef.current.getWorldPosition(tmpWorldPos);
+      const dx = state.camera.position.x - tmpWorldPos.x;
+      const dz = state.camera.position.z - tmpWorldPos.z;
+      const maxDist = storeState.graphicsQuality === 'balanced' ? 14 : 22;
+      if (dx * dx + dz * dz > maxDist * maxDist) return;
+    }
+
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
 
@@ -457,7 +455,11 @@ const MythicalRiggedBeast: React.FC<RiggedBeastProps> = ({
 
     if (mixerRef.current) {
       const targetSpeed = hovered ? Math.max(targetClipSpeedRef.current, 0.56) : targetClipSpeedRef.current;
-      mixerRef.current.timeScale = THREE.MathUtils.lerp(mixerRef.current.timeScale, targetSpeed, dt * 2.2);
+      mixerRef.current.timeScale = THREE.MathUtils.lerp(
+        mixerRef.current.timeScale,
+        targetSpeed,
+        1 - Math.exp(-3.2 * dt)
+      );
       mixerRef.current.update(dt);
     }
 
@@ -480,9 +482,15 @@ const MythicalRiggedBeast: React.FC<RiggedBeastProps> = ({
         baseRotationY +
         Math.sin(t * 0.22 + phaseOffset) * 0.14 +
         Math.sin(t * 0.095 + phaseOffset * 1.6) * 0.08;
-      rootRef.current.rotation.y = THREE.MathUtils.lerp(rootRef.current.rotation.y, organicTurn, dt * 1.8);
+      rootRef.current.rotation.y = THREE.MathUtils.lerp(
+        rootRef.current.rotation.y,
+        organicTurn,
+        1 - Math.exp(-3.2 * dt)
+      );
       const targetScale = scale * (hovered ? 1.055 : 1.0);
-      rootRef.current.scale.setScalar(THREE.MathUtils.lerp(rootRef.current.scale.x, targetScale, dt * 3.8));
+      rootRef.current.scale.setScalar(
+        THREE.MathUtils.lerp(rootRef.current.scale.x, targetScale, 1 - Math.exp(-6.5 * dt))
+      );
     }
   });
 
@@ -576,6 +584,8 @@ const CelestialWolfMascot: React.FC<{ hovered: boolean; furBump: THREE.CanvasTex
   );
 
   useFrame((state, delta) => {
+    if (useHeritageStore.getState().activeModal !== null || state.camera.position.z > 12) return;
+
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
     if (haloOuterRef.current) {
@@ -1094,6 +1104,8 @@ const StagCrownPrism: React.FC<{ bones: Record<string, THREE.Object3D>; hovered:
   const tmpPos = useMemo(() => new THREE.Vector3(), []);
 
   useFrame((state, delta) => {
+    if (useHeritageStore.getState().activeModal !== null || state.camera.position.z > 12) return;
+
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
     const hornNode = bones['Stag_Horns'] ?? bones['Head'];
@@ -1266,6 +1278,8 @@ const LeadershipCrownArtifact: React.FC<{ hovered: boolean }> = ({ hovered }) =>
   const innerRingRef = useRef<THREE.Mesh>(null);
 
   useFrame((state, delta) => {
+    if (useHeritageStore.getState().activeModal !== null || state.camera.position.z > 12) return;
+
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
 
@@ -1273,7 +1287,9 @@ const LeadershipCrownArtifact: React.FC<{ hovered: boolean }> = ({ hovered }) =>
       crownRef.current.rotation.y += dt * (hovered ? 1.2 : 0.65);
       crownRef.current.position.y = 1.44 + Math.sin(t * 1.7) * 0.055;
       const targetScale = hovered ? 1.1 : 1.0;
-      crownRef.current.scale.setScalar(THREE.MathUtils.lerp(crownRef.current.scale.x, targetScale, dt * 7));
+      crownRef.current.scale.setScalar(
+        THREE.MathUtils.lerp(crownRef.current.scale.x, targetScale, 1 - Math.exp(-7 * dt))
+      );
     }
     if (outerRingRef.current) {
       outerRingRef.current.rotation.x += dt * 0.75;

@@ -248,13 +248,18 @@ const SculptedVitrineArtifact: React.FC<{
   const puzzleRefs = useRef<Array<THREE.Mesh | null>>([]);
 
   useFrame((state, delta) => {
+    if (useHeritageStore.getState().activeModal !== null || state.camera.position.z > 12) return;
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
     if (rootRef.current) {
       rootRef.current.position.y = 1.62 + Math.sin(t * 1.6 + phase) * 0.055;
       rootRef.current.rotation.y += dt * (hovered ? 0.85 : 0.42);
       const targetScale = hovered ? 1.09 : 1.0;
-      const nextScale = THREE.MathUtils.lerp(rootRef.current.scale.x, targetScale, dt * 7);
+      const nextScale = THREE.MathUtils.lerp(
+        rootRef.current.scale.x,
+        targetScale,
+        1 - Math.exp(-7 * dt)
+      );
       rootRef.current.scale.setScalar(nextScale);
     }
     if (ringRef.current) {

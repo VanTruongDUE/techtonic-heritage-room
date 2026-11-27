@@ -606,6 +606,7 @@ export const CentralIsland: React.FC = () => {
   }, [exhibits]);
 
   useFrame((state, delta) => {
+    if (useHeritageStore.getState().activeModal !== null || state.camera.position.z > 12) return;
     const t = state.clock.elapsedTime;
 
     PEDESTAL_SLOTS.forEach((slot, idx) => {

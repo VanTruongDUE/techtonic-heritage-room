@@ -371,7 +371,7 @@ const PortraitCard: React.FC<{
         setHoveringInteractive(false);
       }}
     >
-      <RoundedBox position={[0, 0, -0.025]} args={[width, height, 0.05]} radius={0.02} smoothness={4} castShadow>
+      <RoundedBox position={[0, 0, -0.025]} args={[width, height, 0.05]} radius={0.02} smoothness={4}>
         <meshStandardMaterial
           color={isTopTier ? '#2b3954' : '#223048'}
           roughnessMap={metalMaps.roughnessMap}
