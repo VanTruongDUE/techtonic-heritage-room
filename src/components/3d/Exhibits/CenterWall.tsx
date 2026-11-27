@@ -7,9 +7,8 @@ import { useHeritageStore } from '../../../store/useHeritageStore';
 import { CLUB_PROFILE } from '../../../data/heritageSeed';
 import { useReducedMotionPreference } from '../Effects/AmbientMotion';
 import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
+import { getCinemaMedia, preloadCinemaVideo } from '../../../utils/cinemaVideoPool';
 import type { ExhibitItem, HoverPreview } from '../../../types/heritage';
-
-const JOURNEY_VIDEO_URL = '/assets/videos/techtonic-journey.mp4';
 
 const MISSION_EXHIBIT: ExhibitItem = {
   id: 'mission-statement',
@@ -188,12 +187,80 @@ function buildPlayConsoleTexture(isPlaying: boolean, isHovered: boolean): THREE.
   return finalizeCrispTexture(canvas, { anisotropy: 16, srgb: true });
 }
 
+function buildCinemaCurtainTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createHiResCanvas(1024, 576, 1);
+  if (ctx) {
+    const bg = ctx.createLinearGradient(0, 0, 0, 576);
+    bg.addColorStop(0, '#040814');
+    bg.addColorStop(0.5, '#071225');
+    bg.addColorStop(1, '#040712');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, 1024, 576);
+
+    const glow = ctx.createRadialGradient(512, 272, 24, 512, 272, 420);
+    glow.addColorStop(0, 'rgba(0, 240, 255, 0.16)');
+    glow.addColorStop(0.55, 'rgba(59, 130, 246, 0.08)');
+    glow.addColorStop(1, 'rgba(4, 8, 20, 0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, 1024, 576);
+
+    // Subtle corner cinema framing brackets
+    ctx.strokeStyle = 'rgba(0, 245, 255, 0.55)';
+    ctx.lineWidth = 3;
+    const pad = 34;
+    const arm = 36;
+    const corners: Array<[number, number, number, number]> = [
+      [pad, pad, 1, 1],
+      [1024 - pad, pad, -1, 1],
+      [pad, 576 - pad, 1, -1],
+      [1024 - pad, 576 - pad, -1, -1],
+    ];
+    corners.forEach(([x, y, sx, sy]) => {
+      ctx.beginPath();
+      ctx.moveTo(x + arm * sx, y);
+      ctx.lineTo(x, y);
+      ctx.lineTo(x, y + arm * sy);
+      ctx.stroke();
+    });
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#7dd3fc';
+    ctx.font = '700 20px "JetBrains Mono", monospace';
+    ctx.fillText('TECHTONIC CINEMA • KHỞI CHIẾU PHIM HÀNH TRÌNH', 512, 210);
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = '800 54px Inter, sans-serif';
+    ctx.fillText('DREAM IT - CODE IT', 512, 278);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '500 22px Inter, sans-serif';
+    ctx.fillText('Đang ổn định khung hình & đồng bộ âm thanh HD...', 512, 336);
+  }
+  return finalizeCrispTexture(canvas, { anisotropy: 8, srgb: true });
+}
+
+function buildFloorBounceTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createHiResCanvas(512, 256, 1);
+  if (ctx) {
+    ctx.clearRect(0, 0, 512, 256);
+    const grad = ctx.createRadialGradient(256, 68, 18, 256, 118, 236);
+    grad.addColorStop(0, 'rgba(125, 211, 252, 0.85)');
+    grad.addColorStop(0.42, 'rgba(56, 189, 248, 0.36)');
+    grad.addColorStop(0.75, 'rgba(99, 102, 241, 0.12)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 512, 256);
+  }
+  return finalizeCrispTexture(canvas, { anisotropy: 4, srgb: true });
+}
+
 export const CenterWall: React.FC = () => {
   const {
     setHoveringInteractive,
     openModal,
     activityHighlights,
     isCenterWallCinemaActive,
+    cinemaPhase,
     isCinemaPaused,
     isCinemaMuted,
     cinemaSeekRequest,
@@ -201,6 +268,7 @@ export const CenterWall: React.FC = () => {
     isMuted,
     startCenterWallCinema,
     stopCenterWallCinema,
+    setCinemaPhase,
     setCinemaProgress,
     clearCinemaSeek,
     pushToast,
@@ -210,6 +278,7 @@ export const CenterWall: React.FC = () => {
       openModal: s.openModal,
       activityHighlights: s.activityHighlights,
       isCenterWallCinemaActive: s.isCenterWallCinemaActive,
+      cinemaPhase: s.cinemaPhase,
       isCinemaPaused: s.isCinemaPaused,
       isCinemaMuted: s.isCinemaMuted,
       cinemaSeekRequest: s.cinemaSeekRequest,
@@ -217,6 +286,7 @@ export const CenterWall: React.FC = () => {
       isMuted: s.isMuted,
       startCenterWallCinema: s.startCenterWallCinema,
       stopCenterWallCinema: s.stopCenterWallCinema,
+      setCinemaPhase: s.setCinemaPhase,
       setCinemaProgress: s.setCinemaProgress,
       clearCinemaSeek: s.clearCinemaSeek,
       pushToast: s.pushToast,
@@ -254,45 +324,57 @@ export const CenterWall: React.FC = () => {
     return geom;
   }, []);
 
-  // Giant 3D Cinema TV HTMLVideoElement + THREE.VideoTexture state
+  // Giant 3D Cinema TV HTMLVideoElement + THREE.VideoTexture shared pool state
   const videoElRef = useRef<HTMLVideoElement | null>(null);
+  const videoMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const curtainMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const curtainMeshRef = useRef<THREE.Mesh>(null);
+  const scanBarRef = useRef<THREE.Mesh>(null);
+  const floorBounceMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const videoReadyRef = useRef(false);
   const [videoTex, setVideoTex] = useState<THREE.VideoTexture | null>(null);
   const [videoAspect, setVideoAspect] = useState<number>(16 / 9);
   const lastProgressReportRef = useRef<number>(0);
 
-  // Create & manage HTML5 video stream only when Cinema TV mode is active
+  const cinemaCurtainTex = useMemo(() => buildCinemaCurtainTexture(), []);
+  const floorBounceTex = useMemo(() => buildFloorBounceTexture(), []);
+
+  // Attach listeners to shared singleton video element when Cinema TV mode activates
   useEffect(() => {
     if (!isCenterWallCinemaActive) {
       if (videoElRef.current) {
         videoElRef.current.pause();
-        videoElRef.current.removeAttribute('src');
-        videoElRef.current.load();
         videoElRef.current = null;
       }
-      setVideoTex((prev) => {
-        prev?.dispose();
-        return null;
-      });
+      videoReadyRef.current = false;
       return;
     }
 
-    const video = document.createElement('video');
-    video.src = JOURNEY_VIDEO_URL;
-    video.crossOrigin = 'anonymous';
-    video.playsInline = true;
-    video.preload = 'auto';
-    video.loop = false;
-    video.muted = useHeritageStore.getState().isCinemaMuted;
-    video.volume = useHeritageStore.getState().isMuted
-      ? 0
-      : Math.max(0.25, useHeritageStore.getState().audioVolume);
+    const { video, texture } = getCinemaMedia();
     videoElRef.current = video;
+    setVideoTex(texture);
 
-    const handleLoadedMetadata = () => {
+    const storeNow = useHeritageStore.getState();
+    video.muted = storeNow.isCinemaMuted || storeNow.isMuted;
+    video.volume = storeNow.isMuted ? 0 : Math.min(1, Math.max(0.2, storeNow.audioVolume));
+
+    try {
+      video.pause();
+      if (video.currentTime > 0.1) {
+        video.currentTime = 0;
+      }
+    } catch {
+      // Ignore seek errors before metadata loads
+    }
+
+    const syncMetadataAndReady = () => {
       if (video.videoWidth > 0 && video.videoHeight > 0) {
         setVideoAspect(video.videoWidth / video.videoHeight);
       }
       setCinemaProgress(0, Number.isFinite(video.duration) ? video.duration : 0);
+      if (video.readyState >= 3) {
+        videoReadyRef.current = true;
+      }
     };
 
     const handleEnded = () => {
@@ -304,44 +386,76 @@ export const CenterWall: React.FC = () => {
       stopCenterWallCinema();
     };
 
-    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('loadedmetadata', syncMetadataAndReady);
+    video.addEventListener('canplay', syncMetadataAndReady);
+    video.addEventListener('canplaythrough', syncMetadataAndReady);
     video.addEventListener('ended', handleEnded);
-
-    const tex = new THREE.VideoTexture(video);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.minFilter = THREE.LinearFilter;
-    tex.magFilter = THREE.LinearFilter;
-    tex.generateMipmaps = false;
-    setVideoTex(tex);
-
-    // Start playback; if browser autoplay blocks with sound, retry muted cleanly
-    video.play().catch(() => {
-      video.muted = true;
-      video.play().catch(() => {});
-    });
+    syncMetadataAndReady();
 
     return () => {
-      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('loadedmetadata', syncMetadataAndReady);
+      video.removeEventListener('canplay', syncMetadataAndReady);
+      video.removeEventListener('canplaythrough', syncMetadataAndReady);
       video.removeEventListener('ended', handleEnded);
       video.pause();
-      video.removeAttribute('src');
-      video.load();
-      tex.dispose();
       videoElRef.current = null;
-      setVideoTex(null);
     };
   }, [isCenterWallCinemaActive, setCinemaProgress, stopCenterWallCinema, pushToast]);
 
-  // Sync Play/Pause state from HUD Cinema Controls
+  // Phase-driven playback start: waits for camera glide & video buffer before crossfading in
   useEffect(() => {
     const video = videoElRef.current;
     if (!video || !isCenterWallCinemaActive) return;
-    if (isCinemaPaused) {
+
+    if (cinemaPhase === 'gliding') {
       video.pause();
-    } else {
-      video.play().catch(() => {});
+      return;
     }
-  }, [isCinemaPaused, isCenterWallCinemaActive]);
+
+    if (cinemaPhase === 'buffering') {
+      let started = false;
+      const startPlaying = () => {
+        if (started) return;
+        started = true;
+        setCinemaPhase('playing');
+        if (!useHeritageStore.getState().isCinemaPaused) {
+          video.play().catch(() => {
+            video.muted = true;
+            video.play().catch(() => {});
+          });
+        }
+      };
+
+      if (videoReadyRef.current || video.readyState >= 3) {
+        startPlaying();
+        return;
+      }
+
+      const onReady = () => {
+        videoReadyRef.current = true;
+        startPlaying();
+      };
+      video.addEventListener('canplay', onReady, { once: true });
+      video.addEventListener('loadeddata', onReady, { once: true });
+      const fallbackTimer = window.setTimeout(startPlaying, 2200);
+      return () => {
+        video.removeEventListener('canplay', onReady);
+        video.removeEventListener('loadeddata', onReady);
+        window.clearTimeout(fallbackTimer);
+      };
+    }
+
+    if (cinemaPhase === 'playing') {
+      if (isCinemaPaused) {
+        video.pause();
+      } else {
+        video.play().catch(() => {
+          video.muted = true;
+          video.play().catch(() => {});
+        });
+      }
+    }
+  }, [cinemaPhase, isCinemaPaused, isCenterWallCinemaActive, setCinemaPhase]);
 
   // Sync Mute & Volume state
   useEffect(() => {
@@ -551,8 +665,18 @@ export const CenterWall: React.FC = () => {
       playPillGeom.dispose();
       textTexture.dispose();
       eventsWingTexture.dispose();
+      cinemaCurtainTex.dispose();
+      floorBounceTex.dispose();
     };
-  }, [outerHexGeom, innerHexGeom, playPillGeom, textTexture, eventsWingTexture]);
+  }, [
+    outerHexGeom,
+    innerHexGeom,
+    playPillGeom,
+    textTexture,
+    eventsWingTexture,
+    cinemaCurtainTex,
+    floorBounceTex,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -562,6 +686,7 @@ export const CenterWall: React.FC = () => {
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.05);
+    const t = state.clock.elapsedTime;
     // Silky smooth spring scale on the slim 3D Play Pill Button (zero per-frame allocations)
     if (playBtnGroupRef.current) {
       const targetS = isPlayBtnHovered ? 1.045 : 1.0;
@@ -573,10 +698,24 @@ export const CenterWall: React.FC = () => {
       playBtnGroupRef.current.scale.setScalar(nextS);
     }
 
+    // Zero-cost additive Cinema floor reflection glow fade
+    if (floorBounceMatRef.current) {
+      const targetFloorOpacity = isCenterWallCinemaActive ? 0.36 : 0;
+      floorBounceMatRef.current.opacity = THREE.MathUtils.lerp(
+        floorBounceMatRef.current.opacity,
+        targetFloorOpacity,
+        1 - Math.exp(-3.4 * dt)
+      );
+    }
+
     if (!isCenterWallCinemaActive) {
+      if (videoMatRef.current) videoMatRef.current.opacity = 0;
+      if (curtainMatRef.current) curtainMatRef.current.opacity = 1;
+      if (curtainMeshRef.current) curtainMeshRef.current.visible = true;
+
       if (!reducedMotion && emblemRef.current) {
-        emblemRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.08;
-        emblemRef.current.position.y = 5.05 + Math.sin(state.clock.elapsedTime * 1.1) * 0.03;
+        emblemRef.current.rotation.y = Math.sin(t * 0.5) * 0.08;
+        emblemRef.current.position.y = 5.05 + Math.sin(t * 1.1) * 0.03;
         const targetScale = isEmblemHovered ? 1.08 : 1;
         const nextScale = THREE.MathUtils.lerp(
           emblemRef.current.scale.x,
@@ -586,15 +725,43 @@ export const CenterWall: React.FC = () => {
         emblemRef.current.scale.setScalar(nextScale);
       }
       if (!reducedMotion && haloRef.current) {
-        haloRef.current.rotation.x += delta * 0.18;
-        haloRef.current.rotation.y += delta * 0.24;
+        haloRef.current.rotation.x += dt * 0.18;
+        haloRef.current.rotation.y += dt * 0.24;
       }
-    } else if (videoElRef.current) {
-      const now = state.clock.elapsedTime;
-      if (now - lastProgressReportRef.current > 0.25) {
+      return;
+    }
+
+    const isPlayingPhase = cinemaPhase === 'playing';
+    const fadeFactor = 1 - Math.exp(-6.5 * dt);
+
+    if (videoMatRef.current) {
+      videoMatRef.current.opacity = THREE.MathUtils.lerp(
+        videoMatRef.current.opacity,
+        isPlayingPhase ? 1 : 0,
+        fadeFactor
+      );
+    }
+    if (curtainMatRef.current && curtainMeshRef.current) {
+      const nextCurtainOp = THREE.MathUtils.lerp(
+        curtainMatRef.current.opacity,
+        isPlayingPhase ? 0 : 1,
+        fadeFactor
+      );
+      curtainMatRef.current.opacity = nextCurtainOp;
+      curtainMeshRef.current.visible = nextCurtainOp > 0.01;
+    }
+    if (scanBarRef.current) {
+      scanBarRef.current.visible = !isPlayingPhase;
+      if (!isPlayingPhase) {
+        scanBarRef.current.position.x = Math.sin(t * 2.4) * 2.8;
+      }
+    }
+
+    if (isPlayingPhase && !isCinemaPaused && videoElRef.current) {
+      if (t - lastProgressReportRef.current > 0.5) {
         const v = videoElRef.current;
         setCinemaProgress(v.currentTime || 0, Number.isFinite(v.duration) ? v.duration : 0);
-        lastProgressReportRef.current = now;
+        lastProgressReportRef.current = t;
       }
     }
   });
@@ -699,137 +866,168 @@ export const CenterWall: React.FC = () => {
         />
       </mesh>
 
-      {/* ================= GIANT 3D CINEMA TV MODE ================= */}
-      {isCenterWallCinemaActive ? (
-        <group position={[0, 3.35, 0.05]}>
-          {/* Ultra-Slim Brushed Titanium OLED TV Bezel Backing */}
-          <RoundedBox position={[0, 0, -0.02]} args={[14.1, 5.34, 0.06]} radius={0.05} smoothness={4}>
-            <meshStandardMaterial color="#070b14" metalness={0.85} roughness={0.22} />
-          </RoundedBox>
+      {/* Permanently Mounted Giant 3D Cinema TV Assembly (zero shader-recompile hitch on toggle) */}
+      <group position={[0, 3.35, 0.05]} visible={isCenterWallCinemaActive}>
+        {/* Ultra-Slim Brushed Titanium OLED TV Bezel Backing */}
+        <RoundedBox position={[0, 0, -0.02]} args={[14.1, 5.34, 0.06]} radius={0.05} smoothness={4}>
+          <meshStandardMaterial color="#070b14" metalness={0.85} roughness={0.22} />
+        </RoundedBox>
 
-          {/* True Aspect-Locked Live Video Screen Surface */}
-          {videoTex && (
-            <mesh position={[0, 0, 0.03]}>
-              <planeGeometry args={[screenW, screenH]} />
-              <meshBasicMaterial map={videoTex} toneMapped={false} />
-            </mesh>
-          )}
-
-          {/* Subtle Red/Emerald Live ON-AIR Power LED on TV bottom-right corner */}
-          <mesh position={[6.72, -2.56, 0.03]}>
-            <circleGeometry args={[0.045, 24]} />
-            <meshBasicMaterial color={isCinemaPaused ? '#fbbf24' : '#22c55e'} toneMapped={false} />
-          </mesh>
-
-          {/* Subtle Cinema Screen Bounce Light onto the Reflective Museum Floor */}
-          <pointLight
-            position={[0, -0.4, 3.2]}
-            intensity={12}
-            distance={14}
-            decay={2}
-            color="#bae6fd"
+        {/* True Aspect-Locked Live Video Screen Surface (fades in smoothly when ready) */}
+        <mesh position={[0, 0, 0.03]}>
+          <planeGeometry args={[screenW, screenH]} />
+          <meshBasicMaterial
+            ref={videoMatRef}
+            map={videoTex}
+            transparent
+            opacity={0}
+            toneMapped={false}
           />
-        </group>
-      ) : (
-        <>
-          {/* Wireframe Geometric Halo around Emblem */}
-          <mesh ref={haloRef} position={[0, 5.05, 0.12]}>
-            <icosahedronGeometry args={[0.88, 0]} />
-            <meshBasicMaterial
-              color="#38bdf8"
-              wireframe
-              transparent
-              opacity={isEmblemHovered ? 0.26 : 0.11}
-            />
-          </mesh>
+        </mesh>
 
-          {/* Sculpted Beveled 3D Hexagonal TechTonic Emblem */}
-          <group
-            ref={emblemRef}
-            position={[0, 5.05, 0.2]}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenMission();
-            }}
-            onPointerOver={(e) => {
-              e.stopPropagation();
-              setIsEmblemHovered(true);
-              setHoveringInteractive(
-                true,
-                'Xem Tầm nhìn & Sứ mệnh',
-                handleOpenMission,
-                MISSION_PREVIEW
-              );
-            }}
-            onPointerOut={() => {
-              setIsEmblemHovered(false);
-              setHoveringInteractive(false);
-            }}
-          >
-            <mesh geometry={outerHexGeom} castShadow>
-              <meshStandardMaterial
-                color="#38bdf8"
-                emissive="#0284c7"
-                emissiveIntensity={isEmblemHovered ? 0.95 : 0.45}
-                metalness={0.85}
-                roughness={0.18}
-              />
-            </mesh>
+        {/* 3D Cinema Curtain Intro Overlay (visible during glide + buffer, crossfades out) */}
+        <mesh ref={curtainMeshRef} position={[0, 0, 0.035]}>
+          <planeGeometry args={[maxTvW, maxTvH]} />
+          <meshBasicMaterial
+            ref={curtainMatRef}
+            map={cinemaCurtainTex}
+            transparent
+            opacity={1}
+            toneMapped={false}
+          />
+        </mesh>
 
-            <mesh geometry={innerHexGeom} position={[0, 0, 0.03]}>
-              <meshStandardMaterial
-                color="#cbd5e1"
-                emissive="#3b82f6"
-                emissiveIntensity={isEmblemHovered ? 0.9 : 0.4}
-                metalness={0.9}
-                roughness={0.16}
-              />
-            </mesh>
+        {/* Animated 3D Scan / Pre-buffer Bar on Curtain */}
+        <mesh ref={scanBarRef} position={[0, -0.82, 0.042]}>
+          <boxGeometry args={[3.2, 0.042, 0.01]} />
+          <meshBasicMaterial color="#00F5FF" toneMapped={false} />
+        </mesh>
 
-            <mesh position={[0, 0, 0.06]}>
-              <sphereGeometry args={[0.19, 48, 32]} />
-              <meshPhysicalMaterial
-                color="#e0f2fe"
-                emissive="#38bdf8"
-                emissiveIntensity={isEmblemHovered ? 0.85 : 0.45}
-                metalness={0.2}
-                roughness={0.08}
-                clearcoat={1}
-              />
-            </mesh>
-          </group>
+        {/* Subtle Red/Emerald Live ON-AIR Power LED on TV bottom-right corner */}
+        <mesh position={[6.72, -2.56, 0.04]}>
+          <circleGeometry args={[0.045, 24]} />
+          <meshBasicMaterial
+            color={
+              cinemaPhase !== 'playing' ? '#38bdf8' : isCinemaPaused ? '#fbbf24' : '#22c55e'
+            }
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
 
-          {/* Vision & Mission Graphic Plane centered cleanly inside Dream It - Code It */}
-          <mesh
-            position={[0, 2.55, 0.06]}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenMission();
-            }}
-            onPointerOver={(e) => {
-              e.stopPropagation();
-              setHoveringInteractive(
-                true,
-                'Xem Tầm nhìn & Sứ mệnh',
-                handleOpenMission,
-                MISSION_PREVIEW
-              );
-            }}
-            onPointerOut={() => setHoveringInteractive(false)}
-          >
-            <planeGeometry args={[13.6, 6.6]} />
+      {/* Permanently Mounted Zero-Cost Additive Cinema Floor Glow (replaces dynamic pointLight!) */}
+      <mesh position={[0, 0.03, 2.8]} rotation={[-Math.PI / 2, 0, 0]} visible={isCenterWallCinemaActive}>
+        <planeGeometry args={[14.8, 7.6]} />
+        <meshBasicMaterial
+          ref={floorBounceMatRef}
+          map={floorBounceTex}
+          transparent
+          opacity={0}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          toneMapped={false}
+        />
+      </mesh>
+
+      {/* Permanently Mounted Dream It - Code It Wall Graphics */}
+      <group visible={!isCenterWallCinemaActive}>
+        {/* Wireframe Geometric Halo around Emblem */}
+        <mesh ref={haloRef} position={[0, 5.05, 0.12]}>
+          <icosahedronGeometry args={[0.88, 0]} />
+          <meshBasicMaterial
+            color="#38bdf8"
+            wireframe
+            transparent
+            opacity={isEmblemHovered ? 0.26 : 0.11}
+          />
+        </mesh>
+
+        {/* Sculpted Beveled 3D Hexagonal TechTonic Emblem */}
+        <group
+          ref={emblemRef}
+          position={[0, 5.05, 0.2]}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleOpenMission();
+          }}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            setIsEmblemHovered(true);
+            setHoveringInteractive(
+              true,
+              'Xem Tầm nhìn & Sứ mệnh',
+              handleOpenMission,
+              MISSION_PREVIEW
+            );
+          }}
+          onPointerOut={() => {
+            setIsEmblemHovered(false);
+            setHoveringInteractive(false);
+          }}
+        >
+          <mesh geometry={outerHexGeom} castShadow>
             <meshStandardMaterial
-              map={textTexture}
-              transparent
-              emissive="#ffffff"
-              emissiveMap={textTexture}
-              emissiveIntensity={0.58}
-              roughness={0.42}
-              metalness={0.05}
+              color="#38bdf8"
+              emissive="#0284c7"
+              emissiveIntensity={isEmblemHovered ? 0.95 : 0.45}
+              metalness={0.85}
+              roughness={0.18}
             />
           </mesh>
-        </>
-      )}
+
+          <mesh geometry={innerHexGeom} position={[0, 0, 0.03]}>
+            <meshStandardMaterial
+              color="#cbd5e1"
+              emissive="#3b82f6"
+              emissiveIntensity={isEmblemHovered ? 0.9 : 0.4}
+              metalness={0.9}
+              roughness={0.16}
+            />
+          </mesh>
+
+          <mesh position={[0, 0, 0.06]}>
+            <sphereGeometry args={[0.19, 48, 32]} />
+            <meshPhysicalMaterial
+              color="#e0f2fe"
+              emissive="#38bdf8"
+              emissiveIntensity={isEmblemHovered ? 0.85 : 0.45}
+              metalness={0.2}
+              roughness={0.08}
+              clearcoat={1}
+            />
+          </mesh>
+        </group>
+
+        {/* Vision & Mission Graphic Plane centered cleanly inside Dream It - Code It */}
+        <mesh
+          position={[0, 2.55, 0.06]}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleOpenMission();
+          }}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            setHoveringInteractive(
+              true,
+              'Xem Tầm nhìn & Sứ mệnh',
+              handleOpenMission,
+              MISSION_PREVIEW
+            );
+          }}
+          onPointerOut={() => setHoveringInteractive(false)}
+        >
+          <planeGeometry args={[13.6, 6.6]} />
+          <meshStandardMaterial
+            map={textTexture}
+            transparent
+            emissive="#ffffff"
+            emissiveMap={textTexture}
+            emissiveIntensity={0.58}
+            roughness={0.42}
+            metalness={0.05}
+          />
+        </mesh>
+      </group>
 
       {/* ================= SLEEK SLIM SCULPTED 3D PLAY PILL RIGHT BELOW DREAM IT - CODE IT ================= */}
       <group ref={playBtnGroupRef} position={[0, 0.34, 0.14]}>
@@ -841,6 +1039,7 @@ export const CenterWall: React.FC = () => {
           }}
           onPointerOver={(e) => {
             e.stopPropagation();
+            preloadCinemaVideo();
             setIsPlayBtnHovered(true);
             setHoveringInteractive(
               true,
@@ -874,6 +1073,7 @@ export const CenterWall: React.FC = () => {
           }}
           onPointerOver={(e) => {
             e.stopPropagation();
+            preloadCinemaVideo();
             setIsPlayBtnHovered(true);
             setHoveringInteractive(
               true,

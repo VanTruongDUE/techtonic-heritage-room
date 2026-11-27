@@ -190,7 +190,13 @@ export const InteractiveCorner: React.FC = () => {
 
   useFrame((state, delta) => {
     const storeState = useHeritageStore.getState();
-    if (storeState.activeModal !== null || state.camera.position.z > 12) return;
+    if (
+      storeState.isCenterWallCinemaActive ||
+      storeState.activeModal !== null ||
+      state.camera.position.z > 12
+    ) {
+      return;
+    }
 
     const dt = Math.min(delta, 0.05);
     const elapsed = state.clock.elapsedTime;

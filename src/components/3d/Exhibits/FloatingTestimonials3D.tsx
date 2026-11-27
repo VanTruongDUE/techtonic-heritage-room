@@ -291,7 +291,14 @@ const FloatingTestimonialCard: React.FC<FloatingCardProps> = ({
 
   // Zero-allocation smooth 3D levitation & frame-rate-independent parallax sway
   useFrame((state, delta) => {
-    if (useHeritageStore.getState().activeModal !== null || state.camera.position.z > 12) return;
+    const storeState = useHeritageStore.getState();
+    if (
+      storeState.isCenterWallCinemaActive ||
+      storeState.activeModal !== null ||
+      state.camera.position.z > 12
+    ) {
+      return;
+    }
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
     const g = rootRef.current;

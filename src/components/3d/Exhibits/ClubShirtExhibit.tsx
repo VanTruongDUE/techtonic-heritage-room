@@ -510,7 +510,14 @@ export const ClubShirtExhibit: React.FC<ClubShirtExhibitProps> = ({
   ]);
 
   useFrame((state, delta) => {
-    if (useHeritageStore.getState().activeModal !== null || state.camera.position.z > 12) return;
+    const storeState = useHeritageStore.getState();
+    if (
+      storeState.isCenterWallCinemaActive ||
+      storeState.activeModal !== null ||
+      state.camera.position.z > 12
+    ) {
+      return;
+    }
     const dt = Math.min(delta, 0.05);
     if (mannequinTurnRef.current) {
       // Smooth 360° boutique turntable rotation (slows gracefully on hover for close inspection)

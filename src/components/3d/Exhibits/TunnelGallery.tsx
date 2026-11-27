@@ -259,6 +259,7 @@ const TunnelFrame: React.FC<{
   const revealLevelRef = useRef(item.z >= 24 ? 0.3 : 0.04);
 
   useFrame((state, delta) => {
+    if (useHeritageStore.getState().isCenterWallCinemaActive) return;
     const dt = Math.min(delta, 0.05);
     const playerZ = state.camera.position.z;
     const triggerZ = item.z >= 24 ? 25.35 : item.z + 3.2;

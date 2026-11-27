@@ -22,6 +22,7 @@ import {
 import type {
   ActivityHighlight,
   ApiErrorResponse,
+  CinemaPhase,
   ExecutiveMember,
   ExhibitItem,
   GraphicsQuality,
@@ -34,6 +35,7 @@ import type {
   TimelineMilestone,
   ToastItem,
 } from '../types/heritage';
+import { pauseAndResetCinemaVideo, preloadCinemaVideo } from '../utils/cinemaVideoPool';
 
 const QUALITY_STORAGE_KEY = 'techtonic_heritage_quality_v2';
 const VOLUME_STORAGE_KEY = 'techtonic_heritage_volume_v2';
@@ -138,6 +140,7 @@ interface HeritageState {
 
   // Giant Center-Wall Cinema TV & Full-Journey Finale Prompt
   isCenterWallCinemaActive: boolean;
+  cinemaPhase: CinemaPhase;
   isCinemaPaused: boolean;
   isCinemaMuted: boolean;
   cinemaCurrentTime: number;
@@ -147,6 +150,7 @@ interface HeritageState {
   hasTriggeredJourneyPrompt: boolean;
   startCenterWallCinema: () => void;
   stopCenterWallCinema: () => void;
+  setCinemaPhase: (phase: CinemaPhase) => void;
   toggleCinemaPause: () => void;
   toggleCinemaMute: () => void;
   setCinemaProgress: (currentTime: number, duration: number) => void;
@@ -317,9 +321,13 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
   isGuidedTourActive: false,
   toggleGuidedTour: () => {
     const next = !get().isGuidedTourActive;
+    if (next && get().isCenterWallCinemaActive) {
+      pauseAndResetCinemaVideo();
+    }
     set({
       isGuidedTourActive: next,
       isCenterWallCinemaActive: next ? false : get().isCenterWallCinemaActive,
+      cinemaPhase: next ? 'idle' : get().cinemaPhase,
       activeModal: null,
       modalData: null,
     });
@@ -339,6 +347,7 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
 
   // Giant 3D Cinema TV state
   isCenterWallCinemaActive: false,
+  cinemaPhase: 'idle',
   isCinemaPaused: false,
   isCinemaMuted: false,
   cinemaCurrentTime: 0,
@@ -348,6 +357,7 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
   hasTriggeredJourneyPrompt: false,
 
   startCenterWallCinema: () => {
+    preloadCinemaVideo();
     if (document.pointerLockElement && document.exitPointerLock) {
       try {
         document.exitPointerLock();
@@ -362,10 +372,16 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
       description: 'Màn hình TV khổng lồ chiếu thước phim hành trình TechTonic Club.',
       position: [0, 1.55, -10.1],
       lookAt: [0, 3.35, -18.4],
+      durationSec: 2.1,
+      cinematicArc: 1.0,
+      isCinemaGlide: true,
     };
     set((state) => ({
       isCenterWallCinemaActive: true,
+      cinemaPhase: 'gliding',
       isCinemaPaused: false,
+      cinemaCurrentTime: 0,
+      cinemaSeekRequest: null,
       showJourneyPrompt: false,
       activeModal: null,
       modalData: null,
@@ -379,19 +395,23 @@ export const useHeritageStore = create<HeritageState>((set, get) => ({
     }));
     get().pushToast(
       'Chế độ Rạp Chiếu 3D TechTonic',
-      'Bảng Dream it - Code it đã chuyển thành màn hình TV khổng lồ. Nhấn ESC để quay lại.',
+      'Đang lướt tới hàng ghế VIP & chuẩn bị thước phim hành trình. Nhấn ESC để quay lại.',
       'accent'
     );
   },
 
   stopCenterWallCinema: () => {
+    pauseAndResetCinemaVideo();
     set({
       isCenterWallCinemaActive: false,
+      cinemaPhase: 'idle',
       isCinemaPaused: false,
       cinemaCurrentTime: 0,
       cinemaSeekRequest: null,
     });
   },
+
+  setCinemaPhase: (phase) => set({ cinemaPhase: phase }),
 
   toggleCinemaPause: () => set((state) => ({ isCinemaPaused: !state.isCinemaPaused })),
   toggleCinemaMute: () => set((state) => ({ isCinemaMuted: !state.isCinemaMuted })),

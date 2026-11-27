@@ -4,6 +4,7 @@ import confetti from 'canvas-confetti';
 import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { soundFx } from '../../../hooks/useAudio';
+import { preloadCinemaVideo } from '../../../utils/cinemaVideoPool';
 
 export const JourneyPromptModal: React.FC = () => {
   const { showJourneyPrompt, startCenterWallCinema, dismissJourneyPrompt } = useHeritageStore(
@@ -17,6 +18,7 @@ export const JourneyPromptModal: React.FC = () => {
 
   useEffect(() => {
     if (!showJourneyPrompt) return;
+    preloadCinemaVideo();
     soundFx.playSuccessChord();
     confetti({
       particleCount: 80,
@@ -91,7 +93,14 @@ export const JourneyPromptModal: React.FC = () => {
             <button
               ref={primaryBtnRef}
               type="button"
-              onClick={startCenterWallCinema}
+              onClick={() => {
+                try {
+                  confetti.reset();
+                } catch {
+                  // Ignore if canvas not active
+                }
+                startCenterWallCinema();
+              }}
               className="w-full sm:w-auto px-6 py-3 rounded-xl bg-tech-cyan text-slate-950 font-bold text-sm hover:bg-[#33f3ff] hover:scale-[1.02] active:scale-[0.98] transition-[transform,background-color] duration-150 inline-flex items-center justify-center gap-2 cursor-pointer shadow-[0_8px_24px_rgba(0,240,255,0.3)]"
             >
               <Play className="w-4 h-4 fill-current" aria-hidden="true" />

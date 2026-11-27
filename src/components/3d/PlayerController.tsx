@@ -43,6 +43,13 @@ interface GlideState {
   endPos: THREE.Vector3;
   startQuat: THREE.Quaternion;
   endQuat: THREE.Quaternion;
+  lookAt: THREE.Vector3;
+  cinematicArc: number;
+  arcDir: number;
+  arcLateral: number;
+  arcLift: number;
+  isCinemaGlide: boolean;
+  baseFov: number;
   elapsed: number;
   duration: number;
 }
@@ -114,6 +121,8 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
   const tempEye = useRef(new THREE.Vector3());
   const tempTarget = useRef(new THREE.Vector3());
   const tempPos = useRef(new THREE.Vector3());
+  const tempLiveQuat = useRef(new THREE.Quaternion());
+  const tempCinemaPos = useRef(new THREE.Vector3());
 
   // Drag-to-look state for Free-Cursor mode
   const isPointerDownRef = useRef(false);
@@ -309,13 +318,29 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
       const endQuat = new THREE.Quaternion().setFromRotationMatrix(tempMatrix.current);
 
       const dist = Math.hypot(tx - pos.x, tz - pos.z);
-      const duration = THREE.MathUtils.clamp(0.45 + dist * 0.022, 0.55, GLIDE_DURATION_SEC);
+      const duration =
+        teleportTarget.durationSec ??
+        THREE.MathUtils.clamp(0.45 + dist * 0.022, 0.55, GLIDE_DURATION_SEC);
+      const cinematicArc = teleportTarget.cinematicArc ?? 0;
+      const isCinemaGlide = Boolean(teleportTarget.isCinemaGlide);
+      const arcDir = pos.x >= 0 ? 1 : -1;
+      const arcLateral = cinematicArc > 0 ? (dist < 4.5 ? 1.55 : 1.05) : 0;
+      const arcLift = cinematicArc > 0 ? 0.32 : 0.09;
+      const baseFov =
+        state.camera instanceof THREE.PerspectiveCamera ? state.camera.fov : BASE_FOV;
 
       glideRef.current = {
         startPos: new THREE.Vector3(pos.x, pos.y, pos.z),
         endPos: new THREE.Vector3(tx, ty, tz),
         startQuat: state.camera.quaternion.clone(),
         endQuat,
+        lookAt: new THREE.Vector3(lx, ly, lz),
+        cinematicArc,
+        arcDir,
+        arcLateral,
+        arcLift,
+        isCinemaGlide,
+        baseFov,
         elapsed: 0,
         duration,
       };
@@ -329,7 +354,14 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
 
     const { forward, backward, left, right, shift, jump } = keysRef.current;
     const hasMoveKey = forward || backward || left || right || jump;
-    if (hasMoveKey && (glideRef.current || isGuidedTourActive)) {
+    if (
+      hasMoveKey &&
+      ((glideRef.current && !glideRef.current.isCinemaGlide) || isGuidedTourActive)
+    ) {
+      if (glideRef.current?.isCinemaGlide && state.camera instanceof THREE.PerspectiveCamera) {
+        state.camera.fov = glideRef.current.baseFov;
+        state.camera.updateProjectionMatrix();
+      }
       glideRef.current = null;
       stopGuidedTour();
     }
@@ -337,45 +369,86 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
     // Active cinematic glide interpolation
     if (glideRef.current) {
       const g = glideRef.current;
-      g.elapsed += dt;
-      const rawT = Math.min(1, g.elapsed / g.duration);
-      const eased = easeInOutQuint(rawT);
-
-      tempPos.current.lerpVectors(g.startPos, g.endPos, eased);
-      // Subtle graceful arc in eye height during longer glides
-      const arcLift = Math.sin(rawT * Math.PI) * 0.09;
-
-      rigidBodyRef.current.setTranslation(
-        { x: tempPos.current.x, y: tempPos.current.y, z: tempPos.current.z },
-        true
-      );
-      rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
-      camSmoothPos.current.copy(tempPos.current);
-
-      state.camera.position.set(
-        tempPos.current.x,
-        tempPos.current.y + 0.6 + arcLift,
-        tempPos.current.z
-      );
-      state.camera.quaternion.slerpQuaternions(g.startQuat, g.endQuat, eased);
-
-      if (rawT >= 1) {
+      if (g.isCinemaGlide && !useHeritageStore.getState().isCenterWallCinemaActive) {
+        if (state.camera instanceof THREE.PerspectiveCamera) {
+          state.camera.fov = g.baseFov;
+          state.camera.updateProjectionMatrix();
+        }
         glideRef.current = null;
-      }
+      } else {
+        g.elapsed += dt;
+        const rawT = Math.min(1, g.elapsed / g.duration);
+        const eased = easeInOutQuint(rawT);
 
-      // Only dispatch Zustand zone update when actually crossing into a new zone
-      const nextZone = detectZone(tempPos.current.x, tempPos.current.z);
-      if (nextZone !== lastZoneRef.current) {
-        lastZoneRef.current = nextZone;
-        setCurrentZone(nextZone);
+        tempPos.current.lerpVectors(g.startPos, g.endPos, eased);
+        const sinWave = Math.sin(rawT * Math.PI);
+        const arcLift = sinWave * g.arcLift;
+
+        if (g.cinematicArc > 0) {
+          tempPos.current.x = THREE.MathUtils.clamp(
+            tempPos.current.x + sinWave * g.arcLateral * g.arcDir,
+            -15.2,
+            15.2
+          );
+        }
+
+        rigidBodyRef.current.setTranslation(
+          { x: tempPos.current.x, y: tempPos.current.y, z: tempPos.current.z },
+          true
+        );
+        rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        camSmoothPos.current.copy(tempPos.current);
+
+        state.camera.position.set(
+          tempPos.current.x,
+          tempPos.current.y + 0.6 + arcLift,
+          tempPos.current.z
+        );
+
+        if (g.cinematicArc > 0) {
+          tempCinemaPos.current.set(
+            tempPos.current.x,
+            tempPos.current.y + 0.6 + arcLift,
+            tempPos.current.z
+          );
+          tempMatrix.current.lookAt(tempCinemaPos.current, g.lookAt, tempUp.current);
+          tempLiveQuat.current.setFromRotationMatrix(tempMatrix.current);
+          const rotEased = easeInOutQuint(Math.min(1, rawT * 1.15));
+          state.camera.quaternion.slerpQuaternions(g.startQuat, tempLiveQuat.current, rotEased);
+          if (state.camera instanceof THREE.PerspectiveCamera) {
+            state.camera.fov = g.baseFov + sinWave * 3.2;
+            state.camera.updateProjectionMatrix();
+          }
+        } else {
+          state.camera.quaternion.slerpQuaternions(g.startQuat, g.endQuat, eased);
+        }
+
+        if (rawT >= 1) {
+          if (g.cinematicArc > 0 && state.camera instanceof THREE.PerspectiveCamera) {
+            state.camera.fov = g.baseFov;
+            state.camera.updateProjectionMatrix();
+          }
+          const finishedCinemaGlide = g.isCinemaGlide;
+          glideRef.current = null;
+          if (finishedCinemaGlide && useHeritageStore.getState().cinemaPhase === 'gliding') {
+            useHeritageStore.getState().setCinemaPhase('buffering');
+          }
+        }
+
+        // Only dispatch Zustand zone update when actually crossing into a new zone
+        const nextZone = detectZone(tempPos.current.x, tempPos.current.z);
+        if (nextZone !== lastZoneRef.current) {
+          lastZoneRef.current = nextZone;
+          setCurrentZone(nextZone);
+        }
+        const nowMs = state.clock.elapsedTime * 1000;
+        if (nowMs - lastPoseEmitRef.current > 85) {
+          cameraEuler.current.setFromQuaternion(state.camera.quaternion, 'YXZ');
+          setPlayerPose(tempPos.current.x, tempPos.current.z, cameraEuler.current.y);
+          lastPoseEmitRef.current = nowMs;
+        }
+        return;
       }
-      const nowMs = state.clock.elapsedTime * 1000;
-      if (nowMs - lastPoseEmitRef.current > 85) {
-        cameraEuler.current.setFromQuaternion(state.camera.quaternion, 'YXZ');
-        setPlayerPose(tempPos.current.x, tempPos.current.z, cameraEuler.current.y);
-        lastPoseEmitRef.current = nowMs;
-      }
-      return;
     }
 
     // Apply smooth damped drag-to-look inertia in cursor mode

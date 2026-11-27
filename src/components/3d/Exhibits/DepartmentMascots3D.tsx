@@ -192,7 +192,14 @@ const CelestialEmbers: React.FC<{
 
   useFrame((state, delta) => {
     if (!pointsRef.current) return;
-    if (useHeritageStore.getState().activeModal !== null || state.camera.position.z > 12) return;
+    const storeState = useHeritageStore.getState();
+    if (
+      storeState.isCenterWallCinemaActive ||
+      storeState.activeModal !== null ||
+      state.camera.position.z > 12
+    ) {
+      return;
+    }
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
     pointsRef.current.rotation.y += dt * (hovered ? 0.52 : 0.22);
@@ -392,7 +399,13 @@ const MythicalRiggedBeast: React.FC<RiggedBeastProps> = ({
 
   useFrame((state, delta) => {
     const storeState = useHeritageStore.getState();
-    if (storeState.activeModal !== null || state.camera.position.z > 11.5) return;
+    if (
+      storeState.isCenterWallCinemaActive ||
+      storeState.activeModal !== null ||
+      state.camera.position.z > 11.5
+    ) {
+      return;
+    }
 
     if (rootRef.current) {
       rootRef.current.getWorldPosition(tmpWorldPos);
@@ -584,7 +597,14 @@ const CelestialWolfMascot: React.FC<{ hovered: boolean; furBump: THREE.CanvasTex
   );
 
   useFrame((state, delta) => {
-    if (useHeritageStore.getState().activeModal !== null || state.camera.position.z > 12) return;
+    const storeState = useHeritageStore.getState();
+    if (
+      storeState.isCenterWallCinemaActive ||
+      storeState.activeModal !== null ||
+      state.camera.position.z > 12
+    ) {
+      return;
+    }
 
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
@@ -684,6 +704,7 @@ const PegasusWingsAndHorn: React.FC<{
   );
 
   useFrame((state) => {
+    if (useHeritageStore.getState().isCenterWallCinemaActive) return;
     const t = state.clock.elapsedTime;
     const parent = wingsHostRef.current?.parent;
 
@@ -1042,6 +1063,7 @@ const CelestialFoxMascot: React.FC<{ hovered: boolean; furBump: THREE.CanvasText
   );
 
   useFrame((state) => {
+    if (useHeritageStore.getState().isCenterWallCinemaActive) return;
     const t = state.clock.elapsedTime;
     if (pearlRef.current) {
       const orbitSpeed = hovered ? 1.25 : 0.68;
@@ -1104,7 +1126,14 @@ const StagCrownPrism: React.FC<{ bones: Record<string, THREE.Object3D>; hovered:
   const tmpPos = useMemo(() => new THREE.Vector3(), []);
 
   useFrame((state, delta) => {
-    if (useHeritageStore.getState().activeModal !== null || state.camera.position.z > 12) return;
+    const storeState = useHeritageStore.getState();
+    if (
+      storeState.isCenterWallCinemaActive ||
+      storeState.activeModal !== null ||
+      state.camera.position.z > 12
+    ) {
+      return;
+    }
 
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
@@ -1278,7 +1307,14 @@ const LeadershipCrownArtifact: React.FC<{ hovered: boolean }> = ({ hovered }) =>
   const innerRingRef = useRef<THREE.Mesh>(null);
 
   useFrame((state, delta) => {
-    if (useHeritageStore.getState().activeModal !== null || state.camera.position.z > 12) return;
+    const storeState = useHeritageStore.getState();
+    if (
+      storeState.isCenterWallCinemaActive ||
+      storeState.activeModal !== null ||
+      state.camera.position.z > 12
+    ) {
+      return;
+    }
 
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;

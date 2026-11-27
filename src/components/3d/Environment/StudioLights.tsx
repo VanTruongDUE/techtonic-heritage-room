@@ -119,7 +119,11 @@ export const StudioLights: React.FC = () => {
     const hr = hallRevealRef.current;
 
     if (centerWallSpotRef.current) {
-      centerWallSpotRef.current.intensity = isCinemaActive ? 5 : 86 * hr;
+      centerWallSpotRef.current.intensity = THREE.MathUtils.lerp(
+        centerWallSpotRef.current.intensity,
+        isCinemaActive ? 6 : 86 * hr,
+        1 - Math.exp(-3.2 * dt)
+      );
     }
     if (islandGoldSpotRef.current) {
       islandGoldSpotRef.current.intensity = (112 + Math.sin(t * 0.9) * 6) * hr;

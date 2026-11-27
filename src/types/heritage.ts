@@ -145,6 +145,8 @@ export interface MemberTestimonial {
 
 export type ModalType = 'shirt' | 'guestbook' | 'exhibit' | 'instructions' | 'testimonials' | null;
 
+export type CinemaPhase = 'idle' | 'gliding' | 'buffering' | 'playing';
+
 export type GraphicsQuality = 'high' | 'balanced';
 
 export interface ToastItem {
@@ -161,4 +163,7 @@ export interface TeleportZone {
   description: string;
   position: [number, number, number];
   lookAt: [number, number, number];
+  durationSec?: number;
+  cinematicArc?: number;
+  isCinemaGlide?: boolean;
 }

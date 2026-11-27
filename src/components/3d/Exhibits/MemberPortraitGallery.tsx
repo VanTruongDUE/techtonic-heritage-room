@@ -437,6 +437,8 @@ const DepartmentPortraitTree: React.FC<{
   }, [bannerTex, stageGlowTex, beamAlphaTex]);
 
   useFrame((state) => {
+    const storeState = useHeritageStore.getState();
+    if (storeState.isCenterWallCinemaActive || state.camera.position.z > 12) return;
     const pulse = Math.sin(state.clock.elapsedTime * 1.45 + phaseOffset) * 0.5 + 0.5;
     if (outerBeamMatRef.current) {
       outerBeamMatRef.current.opacity = 0.045 + pulse * 0.018;

@@ -110,7 +110,10 @@ export const HallParticleField: React.FC = () => {
   }, [spriteTexture]);
 
   useFrame((state, delta) => {
-    if (reducedMotion || useHeritageStore.getState().activeModal !== null) return;
+    const storeState = useHeritageStore.getState();
+    if (reducedMotion || storeState.isCenterWallCinemaActive || storeState.activeModal !== null) {
+      return;
+    }
     const t = state.clock.elapsedTime;
     if (pointsRef.current) {
       pointsRef.current.rotation.y += delta * 0.018;
@@ -247,7 +250,13 @@ export const OrgConstellationOrbit: React.FC = () => {
   }, [connections]);
 
   useFrame((state, delta) => {
-    if (reducedMotion || useHeritageStore.getState().activeModal !== null || state.camera.position.z > 12) {
+    const storeState = useHeritageStore.getState();
+    if (
+      reducedMotion ||
+      storeState.isCenterWallCinemaActive ||
+      storeState.activeModal !== null ||
+      state.camera.position.z > 12
+    ) {
       return;
     }
     const t = state.clock.elapsedTime;

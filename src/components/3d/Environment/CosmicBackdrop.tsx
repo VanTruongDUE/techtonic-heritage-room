@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
 import { useReducedMotionPreference } from '../Effects/AmbientMotion';
+import { useHeritageStore } from '../../../store/useHeritageStore';
 
 /** Procedural photorealistic Lunar Surface (maria plains + highlands + impact craters) */
 function createMoonMaps(): { map: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture } {
@@ -349,7 +350,7 @@ export const CosmicBackdrop: React.FC = () => {
   }, [domeTex, moonMaps, starTex, moonHaloTex]);
 
   useFrame((state, delta) => {
-    if (reducedMotion) return;
+    if (reducedMotion || useHeritageStore.getState().isCenterWallCinemaActive) return;
     const t = state.clock.elapsedTime;
 
     if (farStarsRef.current) {

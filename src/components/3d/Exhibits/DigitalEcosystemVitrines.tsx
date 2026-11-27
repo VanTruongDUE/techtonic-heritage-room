@@ -248,7 +248,14 @@ const SculptedVitrineArtifact: React.FC<{
   const puzzleRefs = useRef<Array<THREE.Mesh | null>>([]);
 
   useFrame((state, delta) => {
-    if (useHeritageStore.getState().activeModal !== null || state.camera.position.z > 12) return;
+    const storeState = useHeritageStore.getState();
+    if (
+      storeState.isCenterWallCinemaActive ||
+      storeState.activeModal !== null ||
+      state.camera.position.z > 12
+    ) {
+      return;
+    }
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
     if (rootRef.current) {
