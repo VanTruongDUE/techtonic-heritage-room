@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useProgress } from '@react-three/drei';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../store/useHeritageStore';
 import { preloadMuseumAssets } from '../../utils/assetPreloader';
 import {
@@ -36,7 +37,7 @@ const EXHIBITION_HIGHLIGHTS = [
   {
     icon: Users,
     title: '5 Ban Chuyên Trách',
-    desc: 'Sơ đồ chân dung & lời chia sẻ 3D lơ lửng',
+    desc: 'Tứ Linh Thần Thú 3D, chân dung & lời chia sẻ',
     color: 'text-fuchsia-300',
     border: 'border-fuchsia-400/25',
     bg: 'bg-fuchsia-400/10',
@@ -71,10 +72,19 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
     hasEntered: storeHasEntered,
     isLocked,
     totalVisits,
-    exhibitItems,
-    executiveMembers,
+    exhibitItemsCount,
+    executiveMembersCount,
     sceneWarmupProgress,
-  } = useHeritageStore();
+  } = useHeritageStore(
+    useShallow((s) => ({
+      hasEntered: s.hasEntered,
+      isLocked: s.isLocked,
+      totalVisits: s.totalVisits,
+      exhibitItemsCount: s.exhibitItems.length,
+      executiveMembersCount: s.executiveMembers.length,
+      sceneWarmupProgress: s.sceneWarmupProgress,
+    }))
+  );
 
   useEffect(() => {
     const checkMobile = () => {
@@ -86,13 +96,13 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Phase 1: Concurrently preload & decode all 35+ local gallery/team images into RAM
+  // Phase 1: Concurrently preload & decode all gallery images + 4 GLB beasts into RAM
   useEffect(() => {
     if (isMobileDevice) return;
     let activeRun = true;
     void preloadMuseumAssets((ratio) => {
       if (activeRun) setAssetRatio(ratio);
-    }, 3600);
+    }, 5200);
     return () => {
       activeRun = false;
     };
@@ -171,11 +181,11 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
   }
 
   const roundedProgress = Math.round(displayProgress);
-  const total3DExhibitsCount = Math.max(41, exhibitItems.length + 37);
+  const total3DExhibitsCount = Math.max(41, exhibitItemsCount + 37);
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col justify-between bg-[#02040a] transition-all duration-350 select-none overflow-hidden ${
+      className={`fixed inset-0 z-50 flex flex-col justify-between bg-[#02040a] transition-[transform,opacity] duration-300 ease-out select-none overflow-hidden ${
         isExiting ? 'opacity-0 scale-[1.03] pointer-events-none' : 'opacity-100 scale-100'
       }`}
     >
@@ -239,14 +249,14 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
               </div>
 
               {/* Hero Display Headline */}
-              <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight text-white leading-[1.1] mb-3">
+              <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight text-white leading-[1.1] mb-3 text-balance">
                 Phòng Truyền Thống
                 <span className="block text-tech-cyan mt-0.5">
                   TechTonic Club
                 </span>
               </h1>
 
-              <p className="text-sm lg:text-[15px] text-slate-300/95 leading-relaxed max-w-xl mb-6">
+              <p className="text-sm lg:text-[15px] text-slate-300/95 leading-relaxed max-w-xl mb-6 text-pretty">
                 Trường Đại học Kinh tế - Đại học Đà Nẵng •{' '}
                 <span className="text-tech-cyan font-semibold">Dream it – Code it.</span> Khám phá
                 không gian bảo tàng 3D sống động lưu giữ hành trình, con người, dự án và dấu ấn của
@@ -284,7 +294,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
                     <span>Nhân sự</span>
                   </div>
                   <div className="text-xl font-extrabold text-white tabular-nums mt-1">
-                    {executiveMembers.length}+
+                    {executiveMembersCount}+
                   </div>
                 </div>
               </div>
@@ -301,11 +311,11 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
                       }`}
                     />
                     {isReady
-                      ? 'Sẵn sàng! Không gian 3D, shader & 37+ tư liệu đã tối ưu'
+                      ? 'Sẵn sàng! Không gian 3D, Tứ Linh Thần Thú & 37+ tư liệu đã tối ưu'
                       : roundedProgress < 40
                       ? 'Đang tải & giải mã 37 ảnh tư liệu và kết cấu PBR...'
                       : roundedProgress < 75
-                      ? 'Đang khởi tạo 5 Linh thú 3D & 4 Tủ kính hệ sinh thái...'
+                      ? 'Đang khởi tạo Tứ Linh Thần Thú 3D & 4 Tủ kính hệ sinh thái...'
                       : 'Đang biên dịch Shader WebGL & tối ưu mượt 60 FPS...'}
                   </span>
                   <span className="text-tech-cyan font-bold">{roundedProgress}%</span>
@@ -319,7 +329,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
                   className="w-full bg-[#040914] rounded-full h-2.5 p-[2px] border border-tech-cyan/25 overflow-hidden shadow-inner"
                 >
                   <div
-                    className="relative h-full rounded-full bg-gradient-to-r from-[#00F5FF] via-[#38bdf8] to-[#c026d3] transition-all duration-200 ease-out overflow-hidden progress-shimmer shadow-[0_0_16px_rgba(0,245,255,0.65)]"
+                    className="relative h-full rounded-full bg-gradient-to-r from-[#00F5FF] via-[#38bdf8] to-[#c026d3] transition-[width] duration-200 ease-out overflow-hidden progress-shimmer shadow-[0_0_16px_rgba(0,245,255,0.65)]"
                     style={{ width: `${roundedProgress}%` }}
                   />
                 </div>
@@ -331,14 +341,14 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
                   type="button"
                   onClick={handleEnterClick}
                   disabled={!isReady}
-                  className={`group relative overflow-hidden px-7 py-3.5 rounded-2xl font-bold tracking-wide transition-all duration-200 inline-flex items-center justify-center gap-2.5 text-sm lg:text-[15px] whitespace-nowrap ${
+                  className={`group relative overflow-hidden px-7 py-3.5 rounded-2xl font-bold tracking-wide transition-[transform,filter,background-color,box-shadow] duration-200 inline-flex items-center justify-center gap-2.5 text-sm lg:text-[15px] whitespace-nowrap ${
                     isReady
-                      ? 'bg-gradient-to-r from-[#00F5FF] via-[#38bdf8] to-[#60a5fa] text-slate-950 hover:brightness-110 hover:scale-[1.015] active:scale-[0.99] cursor-pointer shadow-[0_10px_34px_rgba(0,245,255,0.34),inset_0_1px_0_rgba(255,255,255,0.65)]'
+                      ? 'bg-gradient-to-r from-[#00F5FF] via-[#38bdf8] to-[#60a5fa] text-slate-950 hover:brightness-110 hover:scale-[1.015] active:scale-[0.98] cursor-pointer shadow-[0_10px_34px_rgba(0,245,255,0.34),inset_0_1px_0_rgba(255,255,255,0.65)]'
                       : 'bg-[#0b1528] border border-tech-cyan/25 text-slate-300 cursor-not-allowed'
                   }`}
                 >
                   <Sparkles
-                    className={`w-4.5 h-4.5 shrink-0 ${isReady ? 'text-slate-950' : 'text-tech-cyan animate-pulse'}`}
+                    className={`w-[18px] h-[18px] shrink-0 ${isReady ? 'text-slate-950' : 'text-tech-cyan animate-pulse'}`}
                     aria-hidden="true"
                   />
                   <span>
@@ -445,7 +455,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onEnter }) => {
               <div className="rounded-xl bg-gradient-to-r from-tech-cyan/[0.08] via-[#081326]/90 to-fuchsia-500/[0.06] border border-tech-cyan/25 px-3.5 py-3">
                 <div className="flex items-start gap-2.5">
                   <Monitor className="w-4 h-4 text-tech-cyan shrink-0 mt-0.5" aria-hidden="true" />
-                  <p className="text-[11.5px] text-slate-200/95 leading-relaxed">
+                  <p className="text-[11.5px] text-slate-200/95 leading-relaxed text-pretty">
                     Để có trải nghiệm tốt nhất, vui lòng giảm độ tương phản màn hình và sử dụng máy
                     tính. Website chỉ tương thích với máy tính.
                   </p>

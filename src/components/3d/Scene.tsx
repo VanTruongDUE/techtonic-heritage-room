@@ -74,8 +74,8 @@ export const Scene: React.FC = () => {
 
   return (
     <Suspense fallback={null}>
-      <color attach="background" args={['#000105']} />
-      <fog attach="fog" args={['#010208', 195, 455]} />
+      <color attach="background" args={['#020308']} />
+      <fog attach="fog" args={['#02040b', 34, 150]} />
       <ShaderPrewarmer />
 
       {/* 360° Deep-Space Starfield, Nebula & Glowing 3D Moon outside the Observatory */}

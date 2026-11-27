@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { createBrushedMetalMaps } from '../utils/proceduralMaterials';
 import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
@@ -244,7 +245,12 @@ const TunnelFrame: React.FC<{
   item: TunnelFrameConfig;
   metalMaps: { roughnessMap: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture };
 }> = ({ item, metalMaps }) => {
-  const { openModal, setHoveringInteractive } = useHeritageStore();
+  const { openModal, setHoveringInteractive } = useHeritageStore(
+    useShallow((s) => ({
+      openModal: s.openModal,
+      setHoveringInteractive: s.setHoveringInteractive,
+    }))
+  );
   const [photoTex, setPhotoTex] = useState<THREE.CanvasTexture | null>(null);
   const neonTrimRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const picLightRef = useRef<THREE.MeshBasicMaterial>(null);

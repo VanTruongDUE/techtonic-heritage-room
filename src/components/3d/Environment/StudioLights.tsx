@@ -119,32 +119,32 @@ export const StudioLights: React.FC = () => {
     const hr = hallRevealRef.current;
 
     if (centerWallSpotRef.current) {
-      centerWallSpotRef.current.intensity = isCinemaActive ? 6 : 78 * hr;
+      centerWallSpotRef.current.intensity = isCinemaActive ? 5 : 86 * hr;
     }
     if (islandGoldSpotRef.current) {
-      islandGoldSpotRef.current.intensity = (104 + Math.sin(t * 0.9) * 6) * hr;
+      islandGoldSpotRef.current.intensity = (112 + Math.sin(t * 0.9) * 6) * hr;
     }
     if (islandCrownGlowRef.current) {
-      islandCrownGlowRef.current.intensity = (30 + Math.sin(t * 1.35) * 4.5) * hr;
+      islandCrownGlowRef.current.intensity = (28 + Math.sin(t * 1.35) * 4.5) * hr;
     }
     if (hallCyanFillRef.current) {
-      hallCyanFillRef.current.intensity = (36 + Math.sin(t * 1.1) * 5.0) * hr;
+      hallCyanFillRef.current.intensity = (38 + Math.sin(t * 1.1) * 5.0) * hr;
     }
     if (hallVioletFillRef.current) {
-      hallVioletFillRef.current.intensity = (35 + Math.cos(t * 1.0 + 0.6) * 5.0) * hr;
+      hallVioletFillRef.current.intensity = (37 + Math.cos(t * 1.0 + 0.6) * 5.0) * hr;
     }
     if (shirtKeySpotRef.current) {
-      shirtKeySpotRef.current.intensity = 70 * hr;
+      shirtKeySpotRef.current.intensity = 78 * hr;
     }
     if (frontHallFillRef.current) {
-      frontHallFillRef.current.intensity = (28 + Math.sin(t * 1.25 + 1.0) * 4.0) * hr;
+      frontHallFillRef.current.intensity = (30 + Math.sin(t * 1.25 + 1.0) * 4.0) * hr;
     }
   });
 
   return (
     <group>
-      {/* Crisp 256px Multi-Spectral Neon IBL Environment Cubemap (tuned for deep dark-tech contrast so neon & departments pop) */}
-      <Environment resolution={256} frames={1} environmentIntensity={0.72}>
+      {/* Crisp 256px Multi-Spectral Neon IBL Environment Cubemap (calibrated for rich moody contrast & sharp speculars) */}
+      <Environment resolution={256} frames={1} environmentIntensity={0.58}>
         {/* Overhead Cosmic Skylight Subtle Cool Wash */}
         <Lightformer
           form="circle"
@@ -244,17 +244,23 @@ export const StudioLights: React.FC = () => {
       <primitive object={centralIslandTarget.current} position={[0, 1.5, -5]} />
       <primitive object={shirtTarget.current} position={[13.8, 2.0, -10.4]} />
 
-      {/* 1–3. Deep Dark-Tech Interior Fill (dark backdrop makes neon trims & department stages pop dramatically!) */}
-      <hemisphereLight color="#56d8ff" groundColor="#030712" intensity={0.42} />
-      <ambientLight color="#081226" intensity={0.14} />
+      {/* 1–3. Deep Moody Dark-Tech Interior Fill (deep obsidian shadows + dramatic neon & sculptural contrast) */}
+      <hemisphereLight color="#4cc9f0" groundColor="#02040a" intensity={0.28} />
+      <ambientLight color="#060e1f" intensity={0.08} />
       <directionalLight
-        position={[4, 14, 8]}
-        intensity={0.42}
-        color="#eaf6ff"
+        position={[5, 16, 8]}
+        intensity={0.38}
+        color="#dff2ff"
         castShadow={graphicsQuality === 'high'}
-        shadow-mapSize={[512, 512]}
-        shadow-bias={-0.0005}
-        shadow-normalBias={0.02}
+        shadow-mapSize={[1024, 1024]}
+        shadow-camera-left={-18}
+        shadow-camera-right={18}
+        shadow-camera-top={18}
+        shadow-camera-bottom={-18}
+        shadow-camera-near={1}
+        shadow-camera-far={40}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.035}
       />
 
       {/* 4. Dynamic Traveling Superstar Tunnel Walkout Light */}
@@ -263,7 +269,7 @@ export const StudioLights: React.FC = () => {
         position={[0, 4.4, 24.5]}
         intensity={12}
         distance={14}
-        decay={1.6}
+        decay={1.7}
         color="#00F5FF"
       />
 
@@ -272,11 +278,11 @@ export const StudioLights: React.FC = () => {
         ref={centerWallSpotRef}
         position={[0, 5.9, -10.8]}
         target={centerWallTarget.current}
-        intensity={68}
+        intensity={78}
         distance={24}
-        decay={1.55}
-        angle={0.86}
-        penumbra={0.88}
+        decay={1.85}
+        angle={0.76}
+        penumbra={0.76}
         color="#e8f6ff"
       />
 
@@ -285,37 +291,37 @@ export const StudioLights: React.FC = () => {
         ref={islandGoldSpotRef}
         position={[0, 6.25, -4.4]}
         target={centralIslandTarget.current}
-        intensity={92}
+        intensity={102}
         distance={19}
-        decay={1.45}
-        angle={0.82}
-        penumbra={0.86}
+        decay={1.85}
+        angle={0.72}
+        penumbra={0.76}
         color="#ffe8b0"
       />
       <pointLight
         ref={islandCrownGlowRef}
         position={[0, 2.35, -5]}
         intensity={24}
-        distance={13}
-        decay={1.7}
+        distance={12}
+        decay={1.8}
         color="#ffd466"
       />
 
-      {/* 8–9. Wide Living Electric-Cyan & Cyber-Violet Hall Neon Bounce Lights */}
+      {/* 8–9. Focused Moody Electric-Cyan & Cyber-Violet Hall Wing Bounce Lights */}
       <pointLight
         ref={hallCyanFillRef}
-        position={[-8.5, 5.2, -5.5]}
-        intensity={28}
-        distance={26}
-        decay={1.45}
+        position={[-8.8, 5.2, -5.5]}
+        intensity={30}
+        distance={24}
+        decay={1.75}
         color="#00F5FF"
       />
       <pointLight
         ref={hallVioletFillRef}
-        position={[8.5, 5.2, -5.5]}
-        intensity={27}
-        distance={26}
-        decay={1.45}
+        position={[8.8, 5.2, -5.5]}
+        intensity={29}
+        distance={24}
+        decay={1.75}
         color="#b84dff"
       />
 
@@ -324,11 +330,11 @@ export const StudioLights: React.FC = () => {
         ref={shirtKeySpotRef}
         position={[9.2, 6.0, -9.2]}
         target={shirtTarget.current}
-        intensity={62}
+        intensity={72}
         distance={18}
-        decay={1.55}
-        angle={0.74}
-        penumbra={0.84}
+        decay={1.9}
+        angle={0.72}
+        penumbra={0.76}
         color="#f2faff"
       />
 
@@ -336,9 +342,9 @@ export const StudioLights: React.FC = () => {
       <pointLight
         ref={frontHallFillRef}
         position={[0, 4.9, 4.2]}
-        intensity={22}
-        distance={22}
-        decay={1.5}
+        intensity={24}
+        distance={21}
+        decay={1.75}
         color="#38bdf8"
       />
     </group>

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { createBrushedMetalMaps } from '../utils/proceduralMaterials';
 import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
@@ -276,7 +277,12 @@ const PortraitCard: React.FC<{
   isTopTier: boolean;
   metalMaps: { roughnessMap: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture };
 }> = ({ member, x, y, width, accent, isTopTier, metalMaps }) => {
-  const { setHoveringInteractive, openExecutiveBoard } = useHeritageStore();
+  const { setHoveringInteractive, openExecutiveBoard } = useHeritageStore(
+    useShallow((s) => ({
+      setHoveringInteractive: s.setHoveringInteractive,
+      openExecutiveBoard: s.openExecutiveBoard,
+    }))
+  );
   const [hovered, setHovered] = useState(false);
   const [photoTex, setPhotoTex] = useState<THREE.CanvasTexture | null>(null);
 
@@ -695,7 +701,7 @@ const DepartmentPortraitTree: React.FC<{
 };
 
 export const MemberPortraitGallery: React.FC = () => {
-  const { executiveMembers } = useHeritageStore();
+  const executiveMembers = useHeritageStore((s) => s.executiveMembers);
   const metalMaps = useMemo(() => createBrushedMetalMaps(), []);
 
   useEffect(() => {

@@ -92,7 +92,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ show }) => {
       ref={widgetRef}
       aria-hidden={!show}
       style={{ pointerEvents: show ? 'auto' : 'none' }}
-      className={`fixed bottom-[5.5rem] right-5 z-30 select-none transition-all duration-300 ${
+      className={`fixed bottom-[5.5rem] right-5 z-30 select-none transition-[transform,opacity] duration-300 ease-out ${
         show ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
       }`}
     >
@@ -110,11 +110,11 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ show }) => {
             : 'Mở trình phát nhạc TechTonic'
         }
         onClick={() => setIsOpen((prev) => !prev)}
-        className="relative flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-tr from-[#00F5FF] via-[#38bdf8] to-[#b84dff] text-slate-950 shadow-[0_0_22px_rgba(0,245,255,0.45)] hover:scale-110 hover:shadow-[0_0_32px_rgba(0,245,255,0.72)] active:scale-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00F5FF]"
+        className="relative flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-tr from-[#00F5FF] via-[#38bdf8] to-[#b84dff] text-slate-950 shadow-[0_0_20px_rgba(0,245,255,0.42)] hover:scale-105 hover:shadow-[0_0_28px_rgba(0,245,255,0.68)] active:scale-95 transition-[transform,box-shadow] duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00F5FF]"
       >
         {isPlaying && (
           <span
-            className="absolute inset-0 -z-10 rounded-full bg-[#00F5FF]/40 animate-ping opacity-60 pointer-events-none"
+            className="absolute -inset-1 -z-10 rounded-full border border-tech-cyan/45 opacity-75 pointer-events-none"
             aria-hidden="true"
           />
         )}
@@ -150,7 +150,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ show }) => {
             type="button"
             aria-label="Thu gọn trình phát nhạc"
             onClick={closePanel}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-slate-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-slate-300 hover:bg-white/10 hover:text-white active:scale-95 transition-[transform,background-color,color] duration-150 cursor-pointer"
           >
             <X className="h-4 w-4" aria-hidden="true" />
           </button>

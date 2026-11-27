@@ -1,11 +1,19 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, MessageSquareQuote, Quote, Sparkles, X } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import { CLUB_PROFILE } from '../../../data/heritageSeed';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 
 export const TestimonialsModal: React.FC = () => {
   const { activeModal, closeModal, selectedTestimonialId, setSelectedTestimonialId } =
-    useHeritageStore();
+    useHeritageStore(
+      useShallow((s) => ({
+        activeModal: s.activeModal,
+        closeModal: s.closeModal,
+        selectedTestimonialId: s.selectedTestimonialId,
+        setSelectedTestimonialId: s.setSelectedTestimonialId,
+      }))
+    );
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
   const items = CLUB_PROFILE.testimonials;
@@ -50,7 +58,7 @@ export const TestimonialsModal: React.FC = () => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="testimonials-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md animate-fade-in select-none cursor-default"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-[#02050c]/82 backdrop-blur-sm animate-fade-in select-none cursor-default"
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();
@@ -65,7 +73,7 @@ export const TestimonialsModal: React.FC = () => {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative px-6 py-4 border-b border-tech-cyan/20 flex items-center justify-between bg-[#070d1b]/95">
+        <div className="relative px-6 py-4 border-b border-tech-cyan/20 flex items-center justify-between bg-[#070c18]/95">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-tech-cyan/15 border border-tech-cyan/35">
               <MessageSquareQuote className="w-5 h-5 text-tech-cyan" aria-hidden="true" />
@@ -73,11 +81,11 @@ export const TestimonialsModal: React.FC = () => {
             <div>
               <h2
                 id="testimonials-modal-title"
-                className="text-lg md:text-xl font-bold text-white tracking-tight"
+                className="text-lg md:text-xl font-bold text-white tracking-tight text-balance"
               >
                 THÀNH VIÊN NÓI GÌ VỀ TECHTONIC
               </h2>
-              <p className="text-xs text-slate-300 mt-0.5">
+              <p className="text-xs text-slate-300 mt-0.5 text-pretty">
                 Tiếng nói chân thật từ Co-Founders, Ban Chủ Nhiệm & Mentor TechTonic Club
                 <span className="font-mono text-tech-cyan ml-2 tabular-nums">
                   ({activeIdx + 1}/{items.length})
@@ -90,11 +98,11 @@ export const TestimonialsModal: React.FC = () => {
             ref={closeBtnRef}
             type="button"
             onClick={closeModal}
-            className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-[transform,background-color,color] duration-150 cursor-pointer shrink-0"
             aria-label="Đóng lời chia sẻ thành viên"
             title="Đóng (ESC)"
           >
-            <X className="w-6 h-6" aria-hidden="true" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -119,7 +127,7 @@ export const TestimonialsModal: React.FC = () => {
                 <img
                   src={current.avatar}
                   alt={current.name}
-                  className="relative h-24 w-24 md:h-28 md:w-28 rounded-2xl object-cover border-2 bg-[#070d1b]"
+                  className="relative h-24 w-24 md:h-28 md:w-28 rounded-2xl object-cover img-crisp-outline border-2 bg-[#070d1b]"
                   style={{ borderColor: current.accent }}
                 />
               </div>
@@ -172,7 +180,7 @@ export const TestimonialsModal: React.FC = () => {
                     key={item.id}
                     type="button"
                     onClick={() => setSelectedTestimonialId(item.id)}
-                    className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    className={`flex items-center gap-3 p-3 rounded-xl border text-left active:scale-[0.98] transition-[transform,background-color,border-color,box-shadow] duration-150 cursor-pointer ${
                       isSelected
                         ? 'bg-[#0e1b33] text-white'
                         : 'bg-[#081020]/85 border-white/10 text-slate-300 hover:bg-[#0d182e] hover:border-white/25'

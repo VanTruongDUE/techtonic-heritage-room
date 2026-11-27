@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { soundFx } from '../../../hooks/useAudio';
 import {
@@ -34,7 +35,22 @@ export const GuestbookModal: React.FC = () => {
     submitGuestbookEntry,
     likeGuestbook,
     clearGuestbookErrors,
-  } = useHeritageStore();
+  } = useHeritageStore(
+    useShallow((s) => ({
+      activeModal: s.activeModal,
+      closeModal: s.closeModal,
+      guestbookEntries: s.guestbookEntries,
+      guestbookStatus: s.guestbookStatus,
+      guestbookError: s.guestbookError,
+      guestbookFieldErrors: s.guestbookFieldErrors,
+      storageMode: s.storageMode,
+      likedGuestbookIds: s.likedGuestbookIds,
+      loadGuestbook: s.loadGuestbook,
+      submitGuestbookEntry: s.submitGuestbookEntry,
+      likeGuestbook: s.likeGuestbook,
+      clearGuestbookErrors: s.clearGuestbookErrors,
+    }))
+  );
 
   const [author, setAuthor] = useState('');
   const [roleOrAffiliation, setRoleOrAffiliation] = useState('');
@@ -126,7 +142,7 @@ export const GuestbookModal: React.FC = () => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="guestbook-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md animate-fade-in select-none cursor-default"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-[#02050c]/82 backdrop-blur-sm animate-fade-in select-none cursor-default"
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();
@@ -141,13 +157,13 @@ export const GuestbookModal: React.FC = () => {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative px-6 py-4.5 border-b border-tech-cyan/20 flex items-center justify-between bg-[#0c101c]/95">
+        <div className="relative px-6 py-4 border-b border-tech-cyan/20 flex items-center justify-between bg-[#070c18]/95">
           <div className="flex items-center space-x-3">
             <BookOpen className="w-6 h-6 text-tech-cyan shrink-0" aria-hidden="true" />
             <div>
               <h2
                 id="guestbook-modal-title"
-                className="text-xl md:text-2xl font-bold text-white tracking-tight"
+                className="text-xl md:text-2xl font-bold text-white tracking-tight text-balance"
               >
                 LỜI CHÚC & DẤU ẤN KỶ NIỆM TECHTONIC
               </h2>
@@ -165,11 +181,11 @@ export const GuestbookModal: React.FC = () => {
           <button
             type="button"
             onClick={closeModal}
-            className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-[transform,background-color,color] duration-150 cursor-pointer shrink-0"
             aria-label="Đóng sổ lưu bút"
             title="Đóng (ESC)"
           >
-            <X className="w-6 h-6" aria-hidden="true" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -298,7 +314,7 @@ export const GuestbookModal: React.FC = () => {
               />
               <div className="mt-1.5 h-1 w-full rounded-full bg-white/10 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-tech-cyan transition-all duration-150"
+                  className="h-full rounded-full bg-tech-cyan transition-[width] duration-150"
                   style={{ width: `${messagePct}%` }}
                 />
               </div>
@@ -310,7 +326,7 @@ export const GuestbookModal: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="mt-1 w-full py-2.5 px-4 rounded-xl bg-tech-cyan text-slate-950 font-semibold text-sm flex items-center justify-center space-x-2 hover:bg-[#33f3ff] disabled:opacity-60 disabled:cursor-not-allowed transition-all cursor-pointer"
+              className="mt-1 w-full py-2.5 px-4 rounded-xl bg-tech-cyan text-slate-950 font-semibold text-sm flex items-center justify-center space-x-2 hover:bg-[#33f3ff] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed transition-[transform,background-color,opacity] duration-150 cursor-pointer"
             >
               {isSubmitting ? (
                 <>

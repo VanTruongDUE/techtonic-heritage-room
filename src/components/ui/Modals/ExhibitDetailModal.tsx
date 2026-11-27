@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { soundFx } from '../../../hooks/useAudio';
 import {
@@ -34,7 +35,18 @@ export const ExhibitDetailModal: React.FC = () => {
     exhibitLikes,
     likedExhibitIds,
     likeExhibit,
-  } = useHeritageStore();
+  } = useHeritageStore(
+    useShallow((s) => ({
+      activeModal: s.activeModal,
+      closeModal: s.closeModal,
+      modalData: s.modalData,
+      exhibitItems: s.exhibitItems,
+      openModal: s.openModal,
+      exhibitLikes: s.exhibitLikes,
+      likedExhibitIds: s.likedExhibitIds,
+      likeExhibit: s.likeExhibit,
+    }))
+  );
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const [isZoomed, setIsZoomed] = useState(false);
 
@@ -105,7 +117,7 @@ export const ExhibitDetailModal: React.FC = () => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="exhibit-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md animate-fade-in select-none cursor-default"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-[#02050c]/82 backdrop-blur-sm animate-fade-in select-none cursor-default"
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();
@@ -120,7 +132,7 @@ export const ExhibitDetailModal: React.FC = () => {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative px-6 py-4.5 border-b border-tech-cyan/20 flex items-center justify-between bg-[#0c101c]/95">
+        <div className="relative px-6 py-4 border-b border-tech-cyan/20 flex items-center justify-between bg-[#070c18]/95">
           <div className="flex items-center space-x-3">
             {item.category === 'trophy' ? (
               <Trophy className="w-6 h-6 text-amber-400 shrink-0" aria-hidden="true" />
@@ -132,7 +144,7 @@ export const ExhibitDetailModal: React.FC = () => {
             <div>
               <h2
                 id="exhibit-modal-title"
-                className="text-lg md:text-xl font-bold text-white tracking-tight"
+                className="text-lg md:text-xl font-bold text-white tracking-tight text-balance"
               >
                 CHI TIẾT TRƯNG BÀY TECHTONIC
               </h2>
@@ -151,21 +163,21 @@ export const ExhibitDetailModal: React.FC = () => {
             ref={closeBtnRef}
             type="button"
             onClick={closeModal}
-            className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-[transform,background-color,color] duration-150 cursor-pointer shrink-0"
             aria-label="Đóng chi tiết trưng bày"
             title="Đóng (ESC)"
           >
-            <X className="w-6 h-6" aria-hidden="true" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#0a0d14]/85">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#060a14]/90">
           {item.image && (
             <button
               type="button"
               onClick={() => setIsZoomed(true)}
-              className="group relative block w-full overflow-hidden rounded-xl border border-white/15 bg-[#0e1422] cursor-zoom-in text-left"
+              className="group relative block w-full overflow-hidden rounded-xl img-crisp-outline bg-[#0e1422] cursor-zoom-in text-left"
               title="Nhấn để phóng to hình ảnh"
             >
               <img
@@ -173,7 +185,7 @@ export const ExhibitDetailModal: React.FC = () => {
                 alt={item.title}
                 className="w-full h-52 object-cover transition-transform duration-300 group-hover:scale-[1.03]"
               />
-              <span className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-black/70 border border-white/15 text-[11px] text-white inline-flex items-center gap-1.5 backdrop-blur-sm">
+              <span className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-black/80 border border-white/15 text-[11px] text-white inline-flex items-center gap-1.5">
                 <Maximize2 className="w-3.5 h-3.5 text-tech-cyan" aria-hidden="true" />
                 Phóng to ảnh
               </span>
@@ -192,7 +204,7 @@ export const ExhibitDetailModal: React.FC = () => {
             <button
               type="button"
               onClick={() => void handleLikeClick()}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-150 cursor-pointer ${
                 isLiked
                   ? 'bg-rose-500/20 border-rose-400/60 text-rose-200'
                   : 'bg-white/5 border-white/15 text-slate-200 hover:border-rose-400/50 hover:text-rose-200'
@@ -209,7 +221,7 @@ export const ExhibitDetailModal: React.FC = () => {
             </button>
           </div>
 
-          <h3 className="text-xl font-bold text-white tracking-tight leading-snug">
+          <h3 className="text-xl font-bold text-white tracking-tight leading-snug text-balance">
             {item.title}
           </h3>
 
@@ -222,7 +234,7 @@ export const ExhibitDetailModal: React.FC = () => {
             <span>Phân loại: {CATEGORY_LABELS[item.category]}</span>
           </div>
 
-          <p className="text-sm text-slate-200 leading-relaxed bg-[#121824]/75 p-4 rounded-xl border border-white/10">
+          <p className="text-sm text-slate-200 leading-relaxed bg-[#0c1220]/85 p-4 rounded-xl border border-white/10 text-pretty">
             {item.description}
           </p>
 

@@ -4,6 +4,7 @@ import { PointerLockControls } from '@react-three/drei';
 import type { PointerLockControls as PointerLockControlsImpl } from 'three-stdlib';
 import { CapsuleCollider, RapierRigidBody, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
+import { useShallow } from 'zustand/react/shallow';
 import { TELEPORT_ZONES } from '../../data/heritageSeed';
 import { useKeyboardControls } from '../../hooks/useKeyboardControls';
 import { soundFx } from '../../hooks/useAudio';
@@ -56,25 +57,36 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const controlsRef = useRef<PointerLockControlsImpl | null>(null);
   const { camera, gl } = useThree();
-  const { forward, backward, left, right, shift, jump } = useKeyboardControls();
+  const keysRef = useKeyboardControls();
   const {
     hasEntered,
     controlMode,
     isLocked,
-    setLocked,
-    setDraggingCamera,
     activeModal,
     mouseSensitivity,
-    setCurrentZone,
-    setPlayerPose,
     teleportTarget,
-    clearTeleportTarget,
-    requestTeleport,
     isGuidedTourActive,
-    stopGuidedTour,
     isHoveringInteractive,
-    triggerHoveredInteraction,
-  } = useHeritageStore();
+  } = useHeritageStore(
+    useShallow((s) => ({
+      hasEntered: s.hasEntered,
+      controlMode: s.controlMode,
+      isLocked: s.isLocked,
+      activeModal: s.activeModal,
+      mouseSensitivity: s.mouseSensitivity,
+      teleportTarget: s.teleportTarget,
+      isGuidedTourActive: s.isGuidedTourActive,
+      isHoveringInteractive: s.isHoveringInteractive,
+    }))
+  );
+  const setLocked = useHeritageStore((s) => s.setLocked);
+  const setDraggingCamera = useHeritageStore((s) => s.setDraggingCamera);
+  const setCurrentZone = useHeritageStore((s) => s.setCurrentZone);
+  const setPlayerPose = useHeritageStore((s) => s.setPlayerPose);
+  const clearTeleportTarget = useHeritageStore((s) => s.clearTeleportTarget);
+  const requestTeleport = useHeritageStore((s) => s.requestTeleport);
+  const stopGuidedTour = useHeritageStore((s) => s.stopGuidedTour);
+  const triggerHoveredInteraction = useHeritageStore((s) => s.triggerHoveredInteraction);
 
   const frontVector = useRef(new THREE.Vector3());
   const sideVector = useRef(new THREE.Vector3());
@@ -315,6 +327,7 @@ export const PlayerController: React.FC<PlayerControllerProps> = ({
       clearTeleportTarget();
     }
 
+    const { forward, backward, left, right, shift, jump } = keysRef.current;
     const hasMoveKey = forward || backward || left || right || jump;
     if (hasMoveKey && (glideRef.current || isGuidedTourActive)) {
       glideRef.current = null;

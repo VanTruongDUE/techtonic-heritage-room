@@ -56,6 +56,9 @@ export default defineConfig({
     port: 3000,
   },
   build: {
+    target: 'es2020',
+    sourcemap: false,
+    cssCodeSplit: true,
     chunkSizeWarningLimit: 2200,
     rollupOptions: {
       output: {

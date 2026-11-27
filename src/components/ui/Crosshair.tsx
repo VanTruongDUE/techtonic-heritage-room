@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../store/useHeritageStore';
 
 export const Crosshair: React.FC = () => {
@@ -10,20 +11,33 @@ export const Crosshair: React.FC = () => {
     isHoveringInteractive,
     hoverTooltip,
     activeModal,
-  } = useHeritageStore();
+  } = useHeritageStore(
+    useShallow((s) => ({
+      hasEntered: s.hasEntered,
+      controlMode: s.controlMode,
+      isLocked: s.isLocked,
+      isDraggingCamera: s.isDraggingCamera,
+      isHoveringInteractive: s.isHoveringInteractive,
+      hoverTooltip: s.hoverTooltip,
+      activeModal: s.activeModal,
+    }))
+  );
 
   const cursorFollowRef = useRef<HTMLDivElement>(null);
+  const cursorVisibleRef = useRef(false);
   const [cursorVisible, setCursorVisible] = useState(false);
 
-  // Track real mouse coordinates directly via DOM transform for smooth 60fps cursor reticle
+  // Track real mouse coordinates directly via DOM transform for smooth 60–144fps cursor reticle
   useEffect(() => {
     if (!hasEntered || controlMode !== 'cursor' || activeModal) {
+      cursorVisibleRef.current = false;
       setCursorVisible(false);
       return;
     }
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!cursorVisible) {
+      if (!cursorVisibleRef.current) {
+        cursorVisibleRef.current = true;
         setCursorVisible(true);
       }
       if (cursorFollowRef.current) {
@@ -31,7 +45,10 @@ export const Crosshair: React.FC = () => {
       }
     };
 
-    const handleMouseLeave = () => setCursorVisible(false);
+    const handleMouseLeave = () => {
+      cursorVisibleRef.current = false;
+      setCursorVisible(false);
+    };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     document.addEventListener('mouseleave', handleMouseLeave);
@@ -40,7 +57,7 @@ export const Crosshair: React.FC = () => {
       window.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [hasEntered, controlMode, activeModal, cursorVisible]);
+  }, [hasEntered, controlMode, activeModal]);
 
   if (activeModal) {
     return null;
@@ -56,19 +73,19 @@ export const Crosshair: React.FC = () => {
       >
         <div className="relative flex items-center justify-center">
           <div
-            className={`w-1.5 h-1.5 rounded-full transition-all duration-150 ${
+            className={`w-1.5 h-1.5 rounded-full transition-[transform,background-color,box-shadow] duration-150 ${
               isHoveringInteractive
                 ? 'bg-tech-cyan scale-150 shadow-[0_0_10px_#00F0FF]'
                 : 'bg-white/85 scale-100'
             }`}
           />
           <div
-            className={`absolute rounded-full border border-tech-cyan/75 transition-all duration-200 pointer-events-none ${
+            className={`absolute rounded-full border border-tech-cyan/75 transition-[transform,opacity,width,height] duration-150 pointer-events-none ${
               isHoveringInteractive ? 'w-10 h-10 scale-100 opacity-100' : 'w-6 h-6 scale-50 opacity-0'
             }`}
           />
           <div
-            className={`absolute w-8 h-8 transition-all duration-150 ${
+            className={`absolute w-8 h-8 transition-[transform,opacity] duration-150 ${
               isHoveringInteractive ? 'scale-110 opacity-90' : 'scale-90 opacity-45'
             }`}
           >
@@ -78,7 +95,7 @@ export const Crosshair: React.FC = () => {
             <div className="absolute right-0 top-1/2 -translate-y-1/2 h-0.5 w-1.5 bg-tech-cyan" />
           </div>
           {isHoveringInteractive && hoverTooltip && (
-            <div className="absolute top-8 px-3.5 py-1.5 rounded-lg bg-[#090d16]/90 border border-tech-cyan/50 backdrop-blur-md text-xs font-medium text-tech-cyan whitespace-nowrap shadow-[0_8px_20px_rgba(0,0,0,0.65)] animate-fade-in">
+            <div className="absolute top-8 px-3.5 py-1.5 rounded-lg bg-[#050a15]/95 border border-tech-cyan/50 text-xs font-medium text-tech-cyan whitespace-nowrap shadow-[0_8px_24px_rgba(0,0,0,0.75)] animate-fade-in">
               <span className="font-mono text-white mr-1.5">[Chuột trái / E]</span>
               {hoverTooltip}
             </div>
@@ -101,7 +118,7 @@ export const Crosshair: React.FC = () => {
     >
       {/* Crisp halo ring around real pointer tip */}
       <div
-        className={`-translate-x-1/2 -translate-y-1/2 rounded-full border transition-all duration-150 ${
+        className={`-translate-x-1/2 -translate-y-1/2 rounded-full border transition-[transform,border-color,background-color,box-shadow,width,height] duration-150 ${
           isDraggingCamera
             ? 'w-8 h-8 border-tech-cyan/80 bg-tech-cyan/10 scale-95'
             : isHoveringInteractive
@@ -110,9 +127,9 @@ export const Crosshair: React.FC = () => {
         }`}
       />
 
-      {/* Contextual click action tag beside cursor when hovering 3D exhibit */}
+      {/* Solid obsidian tooltip without expensive per-frame backdrop-blur over WebGL */}
       {isHoveringInteractive && hoverTooltip && !isDraggingCamera && (
-        <div className="ml-5 mt-3 px-3 py-1.5 rounded-lg bg-[#090d16]/92 border border-tech-cyan/55 backdrop-blur-md text-xs font-medium text-tech-cyan whitespace-nowrap shadow-[0_8px_20px_rgba(0,0,0,0.65)]">
+        <div className="ml-5 mt-3 px-3 py-1.5 rounded-lg bg-[#050a15]/95 border border-tech-cyan/50 text-xs font-medium text-tech-cyan whitespace-nowrap shadow-[0_8px_24px_rgba(0,0,0,0.75)]">
           <span className="font-mono text-white mr-1.5">[Click / E]</span>
           {hoverTooltip}
         </div>

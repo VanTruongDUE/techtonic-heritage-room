@@ -1,9 +1,15 @@
 import React from 'react';
 import { CheckCircle2, Compass, Info, X } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../store/useHeritageStore';
 
 export const ToastStack: React.FC = () => {
-  const { toasts, dismissToast } = useHeritageStore();
+  const { toasts, dismissToast } = useHeritageStore(
+    useShallow((s) => ({
+      toasts: s.toasts,
+      dismissToast: s.dismissToast,
+    }))
+  );
 
   if (toasts.length === 0) return null;
 

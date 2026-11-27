@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
+import { useShallow } from 'zustand/react/shallow';
 import { CLUB_PROFILE } from '../../../data/heritageSeed';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
@@ -483,7 +484,12 @@ const FloatingTestimonialCard: React.FC<FloatingCardProps> = ({
 };
 
 export const FloatingTestimonials3D: React.FC = () => {
-  const { setHoveringInteractive, openTestimonialsModal } = useHeritageStore();
+  const { setHoveringInteractive, openTestimonialsModal } = useHeritageStore(
+    useShallow((s) => ({
+      setHoveringInteractive: s.setHoveringInteractive,
+      openTestimonialsModal: s.openTestimonialsModal,
+    }))
+  );
 
   return (
     <group name="floating-testimonials-3d">

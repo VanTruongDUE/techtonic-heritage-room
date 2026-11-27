@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { RoundedBox } from '@react-three/drei';
 import { CuboidCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { createBrushedMetalMaps, createMarbleMaps } from '../utils/proceduralMaterials';
 import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
@@ -475,7 +476,12 @@ const PhotoPedestalStand: React.FC<{
   marbleMaps: { map: THREE.CanvasTexture; roughnessMap: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture };
   metalMaps: { roughnessMap: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture };
 }> = ({ item, marbleMaps, metalMaps }) => {
-  const { openModal, setHoveringInteractive } = useHeritageStore();
+  const { openModal, setHoveringInteractive } = useHeritageStore(
+    useShallow((s) => ({
+      openModal: s.openModal,
+      setHoveringInteractive: s.setHoveringInteractive,
+    }))
+  );
   const [hovered, setHovered] = useState(false);
   const [photoTex, setPhotoTex] = useState<THREE.CanvasTexture | null>(null);
 

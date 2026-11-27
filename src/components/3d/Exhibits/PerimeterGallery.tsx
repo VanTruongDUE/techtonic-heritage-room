@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { CLUB_PROFILE } from '../../../data/heritageSeed';
 import { createBrushedMetalMaps } from '../utils/proceduralMaterials';
@@ -154,7 +155,15 @@ export const PerimeterGallery: React.FC = () => {
     openTestimonialsModal,
     timelineMilestones,
     activityHighlights,
-  } = useHeritageStore();
+  } = useHeritageStore(
+    useShallow((s) => ({
+      setHoveringInteractive: s.setHoveringInteractive,
+      openModal: s.openModal,
+      openTestimonialsModal: s.openTestimonialsModal,
+      timelineMilestones: s.timelineMilestones,
+      activityHighlights: s.activityHighlights,
+    }))
+  );
 
   // Left Wall Bay 1: 5 Milestones alternating above/below timeline axis so zero labels overlap
   const timelineTexture = useMemo(() => {

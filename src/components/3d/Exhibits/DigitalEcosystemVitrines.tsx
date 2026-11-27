@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import { CuboidCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { createBrushedMetalMaps, createMarbleMaps } from '../utils/proceduralMaterials';
 import { createHiResCanvas, finalizeCrispTexture } from '../utils/textureUtils';
@@ -398,7 +399,12 @@ const DigitalVitrineStand: React.FC<{
   marbleMaps: { map: THREE.CanvasTexture; roughnessMap: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture };
   metalMaps: { roughnessMap: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture };
 }> = ({ cfg, index, marbleMaps, metalMaps }) => {
-  const { openModal, setHoveringInteractive } = useHeritageStore();
+  const { openModal, setHoveringInteractive } = useHeritageStore(
+    useShallow((s) => ({
+      openModal: s.openModal,
+      setHoveringInteractive: s.setHoveringInteractive,
+    }))
+  );
   const [hovered, setHovered] = useState(false);
 
   const plaqueTex = useMemo(() => createVitrinePlaqueTexture(cfg), [cfg]);

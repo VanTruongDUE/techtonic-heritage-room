@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { countOfficialVisitedZones, useHeritageStore } from '../../store/useHeritageStore';
 import { TELEPORT_ZONES } from '../../data/heritageSeed';
 import { MiniMap } from './MiniMap';
@@ -47,7 +48,32 @@ export const HUD: React.FC = () => {
     startCenterWallCinema,
     stopCenterWallCinema,
     showJourneyPrompt,
-  } = useHeritageStore();
+  } = useHeritageStore(
+    useShallow((s) => ({
+      hasEntered: s.hasEntered,
+      controlMode: s.controlMode,
+      setControlMode: s.setControlMode,
+      isLocked: s.isLocked,
+      isMuted: s.isMuted,
+      toggleMute: s.toggleMute,
+      openModal: s.openModal,
+      activeModal: s.activeModal,
+      currentZone: s.currentZone,
+      visitedZones: s.visitedZones,
+      totalVisits: s.totalVisits,
+      requestTeleport: s.requestTeleport,
+      isHoveringInteractive: s.isHoveringInteractive,
+      hoverPreview: s.hoverPreview,
+      isGuidedTourActive: s.isGuidedTourActive,
+      toggleGuidedTour: s.toggleGuidedTour,
+      showMiniMap: s.showMiniMap,
+      toggleMiniMap: s.toggleMiniMap,
+      isCenterWallCinemaActive: s.isCenterWallCinemaActive,
+      startCenterWallCinema: s.startCenterWallCinema,
+      stopCenterWallCinema: s.stopCenterWallCinema,
+      showJourneyPrompt: s.showJourneyPrompt,
+    }))
+  );
   const [showControlsHint, setShowControlsHint] = useState(false);
   const [showTeleportBar, setShowTeleportBar] = useState(true);
 
@@ -76,29 +102,29 @@ export const HUD: React.FC = () => {
 
   return (
     <div className="fixed inset-0 pointer-events-none z-20 flex flex-col justify-between p-5 select-none">
-      {/* Top Bar */}
+      {/* Top Bar — uniform h-10 (40px) baseline across every pill & icon button */}
       <div className="flex items-center justify-between w-full pointer-events-auto gap-3">
         {/* Top Left: Exit to Main Website Button (Mandatory Requirement) + Live Visit Counter */}
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           <a
             href="https://www.techtonic-club.id.vn/"
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex items-center space-x-2.5 px-4 py-2.5 rounded-xl glass-panel text-slate-100 hover:text-tech-cyan hover:border-tech-cyan/60 transition-all duration-200 shrink-0"
+            className="group h-10 inline-flex items-center gap-2 px-3.5 rounded-xl glass-panel text-slate-100 hover:text-tech-cyan hover:border-tech-cyan/60 active:scale-[0.98] transition-[transform,color,border-color] duration-150 shrink-0"
             title="Trở về website chính thức của TechTonic Club"
           >
             <ExternalLink
-              className="w-4 h-4 text-tech-cyan group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
+              className="w-4 h-4 text-tech-cyan group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-150 shrink-0"
               aria-hidden="true"
             />
-            <span className="text-xs md:text-sm font-semibold tracking-wide">
-              VỀ WEBSITE CHÍNH (TECHTONIC-CLUB.ID.VN)
+            <span className="text-xs md:text-[13px] font-semibold tracking-wide whitespace-nowrap">
+              WEBSITE CHÍNH • TECHTONIC-CLUB.ID.VN
             </span>
           </a>
 
           {hasEntered && (
             <div
-              className="hidden xl:flex items-center gap-2 px-3 py-2.5 rounded-xl glass-panel text-xs text-slate-200"
+              className="hidden xl:inline-flex h-10 items-center gap-2 px-3 rounded-xl glass-panel text-xs text-slate-200 shrink-0"
               title="Tổng lượt tham quan phòng truyền thống"
             >
               <Eye className="w-3.5 h-3.5 text-tech-cyan shrink-0" aria-hidden="true" />
@@ -109,12 +135,12 @@ export const HUD: React.FC = () => {
         </div>
 
         {/* Top Right: Utility Controls */}
-        <div className="flex items-center space-x-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           {hasEntered && (
             <button
               type="button"
               onClick={isCenterWallCinemaActive ? stopCenterWallCinema : startCenterWallCinema}
-              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all text-xs cursor-pointer ${
+              className={`h-10 inline-flex items-center gap-2 px-3.5 rounded-xl active:scale-[0.97] transition-[transform,background-color,border-color,color,box-shadow] duration-150 text-xs cursor-pointer ${
                 isCenterWallCinemaActive
                   ? 'bg-amber-400 border border-amber-300 text-slate-950 font-bold hover:bg-amber-300 shadow-[0_6px_20px_rgba(251,191,36,0.35)]'
                   : completedAllZones
@@ -123,8 +149,8 @@ export const HUD: React.FC = () => {
               }`}
               title="Biến bảng Dream it - Code it thành TV 3D chiếu phim hành trình TechTonic"
             >
-              <Film className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              <span className="hidden lg:inline">
+              <Film className="w-4 h-4 shrink-0" aria-hidden="true" />
+              <span className="hidden lg:inline whitespace-nowrap">
                 {isCenterWallCinemaActive ? 'Tắt TV 3D' : 'Phim hành trình'}
               </span>
             </button>
@@ -134,7 +160,7 @@ export const HUD: React.FC = () => {
             <button
               type="button"
               onClick={toggleGuidedTour}
-              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all text-xs cursor-pointer ${
+              className={`h-10 inline-flex items-center gap-2 px-3.5 rounded-xl active:scale-[0.97] transition-[transform,background-color,border-color,color,box-shadow] duration-150 text-xs cursor-pointer ${
                 isGuidedTourActive
                   ? 'bg-tech-cyan border border-tech-cyan text-slate-950 font-bold hover:bg-[#33f3ff] shadow-[0_6px_20px_rgba(0,240,255,0.35)]'
                   : 'glass-panel text-slate-200 hover:text-tech-cyan hover:border-tech-cyan/50 font-medium'
@@ -143,13 +169,13 @@ export const HUD: React.FC = () => {
             >
               {isGuidedTourActive ? (
                 <>
-                  <Square className="w-3.5 h-3.5 fill-current" aria-hidden="true" />
-                  <span className="hidden lg:inline">Dừng Tour</span>
+                  <Square className="w-3.5 h-3.5 fill-current shrink-0" aria-hidden="true" />
+                  <span className="hidden lg:inline whitespace-nowrap">Dừng Tour</span>
                 </>
               ) : (
                 <>
-                  <Play className="w-3.5 h-3.5 text-tech-cyan" aria-hidden="true" />
-                  <span className="hidden lg:inline">Tour tự động</span>
+                  <Play className="w-3.5 h-3.5 text-tech-cyan shrink-0" aria-hidden="true" />
+                  <span className="hidden lg:inline whitespace-nowrap">Tour tự động</span>
                 </>
               )}
             </button>
@@ -159,9 +185,9 @@ export const HUD: React.FC = () => {
             <button
               type="button"
               onClick={toggleMiniMap}
-              className={`p-2.5 rounded-xl glass-panel transition-all cursor-pointer ${
+              className={`h-10 w-10 inline-flex items-center justify-center rounded-xl glass-panel active:scale-[0.96] transition-[transform,border-color,color] duration-150 cursor-pointer ${
                 showMiniMap
-                  ? 'text-tech-cyan border-tech-cyan/45'
+                  ? 'text-tech-cyan border-tech-cyan/50'
                   : 'text-slate-200 hover:text-white hover:border-tech-cyan/50'
               }`}
               aria-label={showMiniMap ? 'Ẩn bản đồ 2D' : 'Hiện bản đồ 2D'}
@@ -174,7 +200,7 @@ export const HUD: React.FC = () => {
           <button
             type="button"
             onClick={handleToggleControlMode}
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl glass-panel transition-all text-xs font-medium cursor-pointer ${
+            className={`h-10 inline-flex items-center gap-2 px-3 rounded-xl glass-panel active:scale-[0.97] transition-[transform,border-color,color] duration-150 text-xs font-medium cursor-pointer ${
               controlMode === 'cursor'
                 ? 'text-tech-cyan border-tech-cyan/50'
                 : 'text-amber-300 border-amber-400/50'
@@ -187,13 +213,13 @@ export const HUD: React.FC = () => {
           >
             {controlMode === 'cursor' ? (
               <>
-                <MousePointer2 className="w-4 h-4 text-tech-cyan" aria-hidden="true" />
-                <span className="hidden xl:inline">Con trỏ tự do</span>
+                <MousePointer2 className="w-4 h-4 text-tech-cyan shrink-0" aria-hidden="true" />
+                <span className="hidden xl:inline whitespace-nowrap">Con trỏ tự do</span>
               </>
             ) : (
               <>
-                <CrosshairIcon className="w-4 h-4 text-amber-300" aria-hidden="true" />
-                <span className="hidden xl:inline">Chế độ FPS</span>
+                <CrosshairIcon className="w-4 h-4 text-amber-300 shrink-0" aria-hidden="true" />
+                <span className="hidden xl:inline whitespace-nowrap">Chế độ FPS</span>
               </>
             )}
           </button>
@@ -201,13 +227,13 @@ export const HUD: React.FC = () => {
           <button
             type="button"
             onClick={() => openModal('instructions')}
-            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl glass-panel text-slate-200 hover:text-tech-cyan hover:border-tech-cyan/50 transition-all text-xs font-medium cursor-pointer"
+            className="h-10 inline-flex items-center gap-2 px-3.5 rounded-xl glass-panel text-slate-200 hover:text-tech-cyan hover:border-tech-cyan/50 active:scale-[0.97] transition-[transform,border-color,color] duration-150 text-xs font-medium cursor-pointer"
             aria-label="Mở bản đồ di chuyển nhanh và cài đặt"
             title="Bản đồ & Cài đặt (H)"
           >
-            <SlidersHorizontal className="w-4 h-4 text-tech-cyan" aria-hidden="true" />
-            <span className="hidden md:inline">Cài đặt</span>
-            <kbd className="px-1.5 py-0.5 rounded bg-black/50 border border-white/15 font-mono text-[10px] text-slate-300">
+            <SlidersHorizontal className="w-4 h-4 text-tech-cyan shrink-0" aria-hidden="true" />
+            <span className="hidden md:inline whitespace-nowrap">Cài đặt</span>
+            <kbd className="px-1.5 py-0.5 rounded bg-black/55 border border-white/15 font-mono text-[10px] text-slate-300">
               H
             </kbd>
           </button>
@@ -215,7 +241,7 @@ export const HUD: React.FC = () => {
           <button
             type="button"
             onClick={toggleMute}
-            className="p-2.5 rounded-xl glass-panel text-slate-200 hover:text-white hover:border-tech-cyan/50 transition-all cursor-pointer"
+            className="h-10 w-10 inline-flex items-center justify-center rounded-xl glass-panel text-slate-200 hover:text-white hover:border-tech-cyan/50 active:scale-[0.96] transition-[transform,border-color,color] duration-150 cursor-pointer"
             aria-label={isMuted ? 'Bật âm thanh nền' : 'Tắt âm thanh nền'}
             title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
           >
@@ -229,9 +255,9 @@ export const HUD: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowControlsHint((prev) => !prev)}
-            className={`p-2.5 rounded-xl glass-panel transition-all cursor-pointer ${
+            className={`h-10 w-10 inline-flex items-center justify-center rounded-xl glass-panel active:scale-[0.96] transition-[transform,border-color,color] duration-150 cursor-pointer ${
               showControlsHint
-                ? 'text-tech-cyan border-tech-cyan/45'
+                ? 'text-tech-cyan border-tech-cyan/50'
                 : 'text-slate-200 hover:text-white hover:border-tech-cyan/50'
             }`}
             aria-label={showControlsHint ? 'Ẩn bảng phím điều khiển' : 'Hiện bảng phím điều khiển'}
@@ -310,10 +336,10 @@ export const HUD: React.FC = () => {
               {hoverPreview.badge}
             </div>
           )}
-          <h3 className="text-sm font-bold text-white leading-snug mb-2">
+          <h3 className="text-sm font-bold text-white leading-snug mb-2 text-balance">
             {hoverPreview.title}
           </h3>
-          <p className="text-xs text-slate-200 leading-relaxed mb-2.5">
+          <p className="text-xs text-slate-200 leading-relaxed mb-2.5 text-pretty">
             {hoverPreview.summary}
           </p>
 
@@ -322,7 +348,7 @@ export const HUD: React.FC = () => {
               {hoverPreview.metrics.slice(0, 4).map((m) => (
                 <div
                   key={m.label}
-                  className="px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 flex items-center justify-between text-xs"
+                  className="px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/10 flex items-center justify-between text-xs"
                 >
                   <span className="text-slate-300">{m.label}</span>
                   <span className="font-bold text-tech-cyan tabular-nums">{m.value}</span>
@@ -334,7 +360,7 @@ export const HUD: React.FC = () => {
           {hoverPreview.bullets && hoverPreview.bullets.length > 0 && (
             <ul className="space-y-1.5 mb-3 pt-2 border-t border-white/10">
               {hoverPreview.bullets.slice(0, 4).map((b, i) => (
-                <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-200 leading-snug">
+                <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-200 leading-snug text-pretty">
                   <CheckCircle2 className="w-3.5 h-3.5 text-tech-cyan shrink-0 mt-0.5" aria-hidden="true" />
                   <span>{b}</span>
                 </li>
@@ -342,8 +368,9 @@ export const HUD: React.FC = () => {
             </ul>
           )}
 
-          <div className="pt-2 border-t border-white/10 text-[11px] font-mono text-tech-cyan">
-            [Click chuột / E] {hoverPreview.actionLabel ?? 'Xem toàn bộ chi tiết'}
+          <div className="pt-2 border-t border-white/10 text-[11px] font-mono text-tech-cyan flex items-center gap-1.5">
+            <kbd className="keycap-chip px-1.5 py-0.5 rounded text-[10px] text-white">Click / E</kbd>
+            <span className="truncate">{hoverPreview.actionLabel ?? 'Xem toàn bộ chi tiết'}</span>
           </div>
         </aside>
       )}
@@ -399,7 +426,7 @@ export const HUD: React.FC = () => {
           </div>
 
           {showTeleportBar && (
-            <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-white/10">
+            <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-white/10">
               {TELEPORT_ZONES.map((zone, idx) => {
                 const isActive = currentZone === zone.label;
                 const isVisited = visitedZones.includes(zone.label);
@@ -408,9 +435,9 @@ export const HUD: React.FC = () => {
                     key={zone.id}
                     type="button"
                     onClick={() => requestTeleport(zone.id)}
-                    className={`px-2 py-1 rounded-lg text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer ${
+                    className={`h-7 px-2.5 rounded-lg text-[11px] font-medium active:scale-[0.97] transition-[transform,background-color,border-color,color] duration-150 inline-flex items-center gap-1.5 cursor-pointer ${
                       isActive
-                        ? 'bg-tech-cyan/20 text-tech-cyan border border-tech-cyan/60'
+                        ? 'bg-tech-cyan/20 text-tech-cyan border border-tech-cyan/60 shadow-[0_0_12px_rgba(0,245,255,0.18)]'
                         : 'bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 hover:border-tech-cyan/40'
                     }`}
                     title={`${zone.label} (Phím ${idx + 1})`}
@@ -419,13 +446,13 @@ export const HUD: React.FC = () => {
                       {idx + 1}
                     </span>
                     <MapPin
-                      className={`w-3 h-3 ${isActive || isVisited ? 'text-tech-cyan' : 'text-slate-400'}`}
+                      className={`w-3 h-3 shrink-0 ${isActive || isVisited ? 'text-tech-cyan' : 'text-slate-400'}`}
                       aria-hidden="true"
                     />
-                    <span>{zone.shortLabel}</span>
+                    <span className="whitespace-nowrap">{zone.shortLabel}</span>
                     {isVisited && !isActive && (
                       <span
-                        className="w-1.5 h-1.5 rounded-full bg-emerald-400"
+                        className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"
                         aria-label="Đã khám phá"
                       />
                     )}
@@ -442,7 +469,7 @@ export const HUD: React.FC = () => {
         {/* Bottom Left: Dynamic Location + Exploration Progress Indicator */}
         <div
           aria-live="polite"
-          className="glass-panel px-4 py-2.5 rounded-xl flex items-center space-x-3 min-w-[230px]"
+          className="glass-panel h-[62px] px-4 rounded-2xl border-tech-cyan/25 flex items-center space-x-3 min-w-[244px]"
         >
           <span
             className="w-2.5 h-2.5 rounded-full bg-tech-cyan shrink-0 shadow-[0_0_10px_rgba(0,245,255,0.85)]"
@@ -458,7 +485,7 @@ export const HUD: React.FC = () => {
             <div className="text-xs md:text-sm font-bold text-white truncate">{currentZone}</div>
             <div className="mt-1 h-1 w-full rounded-full bg-white/10 overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[#00F5FF] to-[#b84dff] shadow-[0_0_8px_rgba(0,245,255,0.6)] transition-all duration-300"
+                className="h-full rounded-full bg-gradient-to-r from-[#00F5FF] to-[#b84dff] shadow-[0_0_8px_rgba(0,245,255,0.6)] transition-[width] duration-300"
                 style={{ width: `${visitedPct}%` }}
               />
             </div>
@@ -471,14 +498,14 @@ export const HUD: React.FC = () => {
             href="https://www.techtonic-club.id.vn/"
             target="_blank"
             rel="noopener noreferrer"
-            className="block transition-transform duration-200 hover:scale-[1.03]"
+            className="block transition-transform duration-150 hover:scale-[1.03] active:scale-[0.98]"
             title="TechTonic Club Official"
           >
-            <div className="glass-panel px-4 py-2 rounded-2xl border border-tech-cyan/30 flex items-center space-x-3 hover:border-tech-cyan/65 transition-colors">
+            <div className="glass-panel h-[62px] px-4 rounded-2xl border border-tech-cyan/25 flex items-center hover:border-tech-cyan/60 transition-colors duration-150">
               <img
                 src="/assets/techtonic-logo.svg"
                 alt="TechTonic Logo"
-                className="h-10 w-auto object-contain"
+                className="h-9 w-auto object-contain"
               />
             </div>
           </a>

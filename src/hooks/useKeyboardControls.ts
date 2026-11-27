@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../store/useHeritageStore';
 
 export interface MovementKeys {
@@ -9,15 +10,6 @@ export interface MovementKeys {
   shift: boolean;
   jump: boolean;
 }
-
-const INITIAL_MOVEMENT: MovementKeys = {
-  forward: false,
-  backward: false,
-  left: false,
-  right: false,
-  shift: false,
-  jump: false,
-};
 
 function isEditableElement(el: Element | null): boolean {
   if (!el) return false;
@@ -30,16 +22,42 @@ function isEditableElement(el: Element | null): boolean {
   );
 }
 
+/**
+ * Zero-rerender keyboard ref tracker for smooth 60–144 FPS WASD / Sprint / Jump movement.
+ * Returning a MutableRefObject avoids triggering React tree re-renders on every keydown/keyup.
+ */
 export const useKeyboardControls = () => {
-  const [movement, setMovement] = useState<MovementKeys>(INITIAL_MOVEMENT);
-  const { hasEntered, controlMode, isLocked, activeModal, showJourneyPrompt } = useHeritageStore();
+  const keysRef = useRef<MovementKeys>({
+    forward: false,
+    backward: false,
+    left: false,
+    right: false,
+    shift: false,
+    jump: false,
+  });
+
+  const { hasEntered, controlMode, isLocked, activeModal, showJourneyPrompt } = useHeritageStore(
+    useShallow((s) => ({
+      hasEntered: s.hasEntered,
+      controlMode: s.controlMode,
+      isLocked: s.isLocked,
+      activeModal: s.activeModal,
+      showJourneyPrompt: s.showJourneyPrompt,
+    }))
+  );
+
   const canMove =
     hasEntered && !activeModal && !showJourneyPrompt && (controlMode === 'cursor' || isLocked);
 
   // Reset held keys whenever movement is disallowed so keys never stick
   useEffect(() => {
     if (!canMove) {
-      setMovement(INITIAL_MOVEMENT);
+      keysRef.current.forward = false;
+      keysRef.current.backward = false;
+      keysRef.current.left = false;
+      keysRef.current.right = false;
+      keysRef.current.shift = false;
+      keysRef.current.jump = false;
     }
   }, [canMove]);
 
@@ -63,30 +81,30 @@ export const useKeyboardControls = () => {
         ) {
           document.activeElement.blur();
         }
-        setMovement((m) => (m.jump ? m : { ...m, jump: true }));
+        keysRef.current.jump = true;
         return;
       }
 
       switch (e.code) {
         case 'KeyW':
         case 'ArrowUp':
-          setMovement((m) => (m.forward ? m : { ...m, forward: true }));
+          keysRef.current.forward = true;
           break;
         case 'KeyS':
         case 'ArrowDown':
-          setMovement((m) => (m.backward ? m : { ...m, backward: true }));
+          keysRef.current.backward = true;
           break;
         case 'KeyA':
         case 'ArrowLeft':
-          setMovement((m) => (m.left ? m : { ...m, left: true }));
+          keysRef.current.left = true;
           break;
         case 'KeyD':
         case 'ArrowRight':
-          setMovement((m) => (m.right ? m : { ...m, right: true }));
+          keysRef.current.right = true;
           break;
         case 'ShiftLeft':
         case 'ShiftRight':
-          setMovement((m) => (m.shift ? m : { ...m, shift: true }));
+          keysRef.current.shift = true;
           break;
         default:
           break;
@@ -114,26 +132,26 @@ export const useKeyboardControls = () => {
       switch (e.code) {
         case 'KeyW':
         case 'ArrowUp':
-          setMovement((m) => (m.forward ? { ...m, forward: false } : m));
+          keysRef.current.forward = false;
           break;
         case 'KeyS':
         case 'ArrowDown':
-          setMovement((m) => (m.backward ? { ...m, backward: false } : m));
+          keysRef.current.backward = false;
           break;
         case 'KeyA':
         case 'ArrowLeft':
-          setMovement((m) => (m.left ? { ...m, left: false } : m));
+          keysRef.current.left = false;
           break;
         case 'KeyD':
         case 'ArrowRight':
-          setMovement((m) => (m.right ? { ...m, right: false } : m));
+          keysRef.current.right = false;
           break;
         case 'ShiftLeft':
         case 'ShiftRight':
-          setMovement((m) => (m.shift ? { ...m, shift: false } : m));
+          keysRef.current.shift = false;
           break;
         case 'Space':
-          setMovement((m) => (m.jump ? { ...m, jump: false } : m));
+          keysRef.current.jump = false;
           break;
         default:
           break;
@@ -141,7 +159,12 @@ export const useKeyboardControls = () => {
     };
 
     const handleBlur = () => {
-      setMovement(INITIAL_MOVEMENT);
+      keysRef.current.forward = false;
+      keysRef.current.backward = false;
+      keysRef.current.left = false;
+      keysRef.current.right = false;
+      keysRef.current.shift = false;
+      keysRef.current.jump = false;
     };
 
     window.addEventListener('keydown', handleKeyDown, { capture: true });
@@ -155,5 +178,5 @@ export const useKeyboardControls = () => {
     };
   }, []);
 
-  return movement;
+  return keysRef;
 };

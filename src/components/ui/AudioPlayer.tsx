@@ -536,7 +536,7 @@ function PlaylistPlayer({
                   audio.pause();
                 }
               }}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-tr from-[#00F5FF] via-[#38bdf8] to-[#b84dff] text-slate-950 shadow-[0_0_18px_rgba(0,245,255,0.45)] hover:shadow-[0_0_28px_rgba(0,245,255,0.7)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-tr from-[#00F5FF] via-[#38bdf8] to-[#b84dff] text-slate-950 shadow-[0_0_18px_rgba(0,245,255,0.45)] hover:shadow-[0_0_28px_rgba(0,245,255,0.7)] hover:scale-105 active:scale-95 transition-[transform,box-shadow] duration-150 cursor-pointer"
             >
               {isPlaying ? (
                 <Pause className="h-5 w-5 fill-current" aria-hidden="true" />
@@ -583,7 +583,7 @@ function PlaylistPlayer({
             onMouseLeave={() => setIsVolumeOpen(false)}
           >
             <div
-              className={`overflow-hidden flex items-center transition-all duration-200 ${
+              className={`overflow-hidden flex items-center transition-[width,opacity] duration-200 ${
                 isVolumeOpen ? 'w-[68px] opacity-100' : 'w-0 opacity-0'
               }`}
             >

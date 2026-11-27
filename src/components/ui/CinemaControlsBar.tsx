@@ -1,5 +1,6 @@
 import React from 'react';
 import { Film, Pause, Play, Volume2, VolumeX, X } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../store/useHeritageStore';
 
 function formatTime(sec: number): string {
@@ -20,7 +21,19 @@ export const CinemaControlsBar: React.FC = () => {
     toggleCinemaMute,
     requestCinemaSeek,
     stopCenterWallCinema,
-  } = useHeritageStore();
+  } = useHeritageStore(
+    useShallow((s) => ({
+      isCenterWallCinemaActive: s.isCenterWallCinemaActive,
+      isCinemaPaused: s.isCinemaPaused,
+      isCinemaMuted: s.isCinemaMuted,
+      cinemaCurrentTime: s.cinemaCurrentTime,
+      cinemaDuration: s.cinemaDuration,
+      toggleCinemaPause: s.toggleCinemaPause,
+      toggleCinemaMute: s.toggleCinemaMute,
+      requestCinemaSeek: s.requestCinemaSeek,
+      stopCenterWallCinema: s.stopCenterWallCinema,
+    }))
+  );
 
   if (!isCenterWallCinemaActive) return null;
 
@@ -77,7 +90,7 @@ export const CinemaControlsBar: React.FC = () => {
             step={0.2}
             value={Math.min(cinemaCurrentTime, cinemaDuration > 0 ? cinemaDuration : 1)}
             onChange={(e) => requestCinemaSeek(parseFloat(e.target.value))}
-            className="flex-1 accent-[#00F0FF] cursor-pointer"
+            className="flex-1 tech-slider"
           />
 
           <span className="text-[11px] font-mono text-slate-400 tabular-nums shrink-0">

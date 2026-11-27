@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import { CuboidCollider, CylinderCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import {
   createBrushedMetalMaps,
@@ -473,7 +474,13 @@ const CrystalObeliskModel: React.FC<{ hovered: boolean }> = ({ hovered }) => {
 };
 
 export const CentralIsland: React.FC = () => {
-  const { setHoveringInteractive, openModal, exhibitItems } = useHeritageStore();
+  const { setHoveringInteractive, openModal, exhibitItems } = useHeritageStore(
+    useShallow((s) => ({
+      setHoveringInteractive: s.setHoveringInteractive,
+      openModal: s.openModal,
+      exhibitItems: s.exhibitItems,
+    }))
+  );
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const trophyRefs = useRef<Array<THREE.Group | null>>([]);
   const sovereignCoreRef = useRef<THREE.Group>(null);

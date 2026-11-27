@@ -4,6 +4,7 @@ import { RoundedBox, useGLTF } from '@react-three/drei';
 import { CylinderCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { clone as cloneSkinnedScene } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { createBrushedMetalMaps, createMarbleMaps } from '../utils/proceduralMaterials';
 import {
@@ -1358,7 +1359,12 @@ const DeptEmblemPedestal: React.FC<{
   metalMaps: { roughnessMap: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture };
   furBump: THREE.CanvasTexture;
 }> = ({ cfg, marbleMaps, metalMaps, furBump }) => {
-  const { setHoveringInteractive, openExecutiveBoard } = useHeritageStore();
+  const { setHoveringInteractive, openExecutiveBoard } = useHeritageStore(
+    useShallow((s) => ({
+      setHoveringInteractive: s.setHoveringInteractive,
+      openExecutiveBoard: s.openExecutiveBoard,
+    }))
+  );
   const [hovered, setHovered] = useState(false);
 
   const plaqueTex = useMemo(() => createEmblemPlaqueTexture(cfg), [cfg]);

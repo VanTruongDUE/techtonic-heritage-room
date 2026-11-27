@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { X, Users, Shield, Search, RotateCcw, Star, Navigation } from 'lucide-react';
 import type { Department } from '../../../types/heritage';
@@ -63,7 +64,18 @@ export const ExecutiveBoardModal: React.FC = () => {
     boardTermFilter,
     setBoardTermFilter,
     requestCustomGlide,
-  } = useHeritageStore();
+  } = useHeritageStore(
+    useShallow((s) => ({
+      activeModal: s.activeModal,
+      closeModal: s.closeModal,
+      executiveMembers: s.executiveMembers,
+      boardDepartmentFilter: s.boardDepartmentFilter,
+      setBoardDepartmentFilter: s.setBoardDepartmentFilter,
+      boardTermFilter: s.boardTermFilter,
+      setBoardTermFilter: s.setBoardTermFilter,
+      requestCustomGlide: s.requestCustomGlide,
+    }))
+  );
   const [selectedTerm, setSelectedTerm] = useState<string>('Nhiệm kỳ 2026 - 2027');
   const [selectedDept, setSelectedDept] = useState<'all' | Department>('all');
   const [onlyFounders, setOnlyFounders] = useState(false);
@@ -134,7 +146,7 @@ export const ExecutiveBoardModal: React.FC = () => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="bcn-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md animate-fade-in select-none cursor-default"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-[#02050c]/82 backdrop-blur-sm animate-fade-in select-none cursor-default"
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();
@@ -149,17 +161,17 @@ export const ExecutiveBoardModal: React.FC = () => {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative px-6 py-4.5 border-b border-tech-cyan/20 flex items-center justify-between bg-[#0c101c]/95">
+        <div className="relative px-6 py-4 border-b border-tech-cyan/20 flex items-center justify-between bg-[#070c18]/95">
           <div className="flex items-center space-x-3">
             <Users className="w-6 h-6 text-tech-cyan shrink-0" aria-hidden="true" />
             <div>
               <h2
                 id="bcn-modal-title"
-                className="text-xl md:text-2xl font-bold text-white tracking-tight"
+                className="text-xl md:text-2xl font-bold text-white tracking-tight text-balance"
               >
                 BAN CHỦ NHIỆM & NHÀ SÁNG LẬP TECHTONIC
               </h2>
-              <p className="text-xs text-slate-300 mt-0.5">
+              <p className="text-xs text-slate-300 mt-0.5 text-pretty">
                 Trực thuộc Hội Sinh viên Trường ĐH Kinh tế - ĐH Đà Nẵng • 3 Nhiệm kỳ (2024–2027)
               </p>
             </div>
@@ -168,11 +180,11 @@ export const ExecutiveBoardModal: React.FC = () => {
           <button
             type="button"
             onClick={handleClose}
-            className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-[transform,background-color,color] duration-150 cursor-pointer shrink-0"
             aria-label="Đóng cửa sổ Ban Chủ Nhiệm"
             title="Đóng (ESC)"
           >
-            <X className="w-6 h-6" aria-hidden="true" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -240,7 +252,7 @@ export const ExecutiveBoardModal: React.FC = () => {
                     key={dept}
                     type="button"
                     onClick={() => setSelectedDept(dept)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium active:scale-[0.97] transition-[transform,background-color,color] duration-150 cursor-pointer ${
                       selectedDept === dept
                         ? 'bg-tech-cyan text-slate-950 font-semibold'
                         : 'bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10'
@@ -300,7 +312,7 @@ export const ExecutiveBoardModal: React.FC = () => {
                 return (
                   <article
                     key={member.id}
-                    className="group p-4 rounded-xl bg-[#0e1422]/85 border border-white/10 hover:border-tech-cyan/45 hover:bg-[#121a2c] hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between"
+                    className="group p-4 rounded-xl bg-[#0b1120]/88 border border-white/10 hover:border-tech-cyan/45 hover:bg-[#10182b] hover:-translate-y-0.5 transition-[transform,background-color,border-color] duration-150 flex flex-col justify-between"
                   >
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <div className="flex items-center space-x-3 min-w-0">
@@ -310,7 +322,7 @@ export const ExecutiveBoardModal: React.FC = () => {
                             alt={member.name}
                             loading="lazy"
                             style={{ objectPosition: member.avatarPosition || '50% 20%' }}
-                            className="w-12 h-12 shrink-0 rounded-xl object-cover border border-white/20 bg-[#152036]"
+                            className="w-12 h-12 shrink-0 rounded-xl object-cover img-crisp-outline bg-[#152036]"
                           />
                         ) : (
                           <div className="w-12 h-12 shrink-0 rounded-xl bg-[#152036] flex items-center justify-center text-tech-cyan font-bold text-base">

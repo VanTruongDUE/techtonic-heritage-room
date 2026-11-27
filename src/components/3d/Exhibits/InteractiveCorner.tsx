@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import { CuboidCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import {
   createBrushedMetalMaps,
@@ -12,7 +13,13 @@ import {
 } from '../utils/proceduralMaterials';
 
 export const InteractiveCorner: React.FC = () => {
-  const { setHoveringInteractive, openModal, guestbookEntries } = useHeritageStore();
+  const { setHoveringInteractive, openModal, guestbookEntries } = useHeritageStore(
+    useShallow((s) => ({
+      setHoveringInteractive: s.setHoveringInteractive,
+      openModal: s.openModal,
+      guestbookEntries: s.guestbookEntries,
+    }))
+  );
   const bookGroupRef = useRef<THREE.Group>(null);
   const penGroupRef = useRef<THREE.Group>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);

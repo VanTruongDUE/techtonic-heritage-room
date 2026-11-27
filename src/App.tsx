@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { CanvasContainer } from './components/3d/CanvasContainer';
 import { LoadingScreen } from './components/ui/LoadingScreen';
 import { HUD } from './components/ui/HUD';
@@ -6,17 +7,42 @@ import { Crosshair } from './components/ui/Crosshair';
 import { ToastStack } from './components/ui/ToastStack';
 import { CinemaControlsBar } from './components/ui/CinemaControlsBar';
 import { MusicPlayer } from './components/ui/MusicPlayer';
-import { ExecutiveBoardModal } from './components/ui/Modals/ExecutiveBoardModal';
-import { GuestbookModal } from './components/ui/Modals/GuestbookModal';
-import { ExhibitDetailModal } from './components/ui/Modals/ExhibitDetailModal';
-import { InstructionsModal } from './components/ui/Modals/InstructionsModal';
-import { JourneyPromptModal } from './components/ui/Modals/JourneyPromptModal';
-import { TestimonialsModal } from './components/ui/Modals/TestimonialsModal';
 import { TELEPORT_ZONES } from './data/heritageSeed';
 import { useHeritageStore } from './store/useHeritageStore';
 import { useAudio } from './hooks/useAudio';
 import { emitPlayerEvent } from './utils/playerEvents';
 import { PLAYER_EVENTS } from './types/playerEvents';
+
+const ExecutiveBoardModal = lazy(() =>
+  import('./components/ui/Modals/ExecutiveBoardModal').then((m) => ({
+    default: m.ExecutiveBoardModal,
+  }))
+);
+const GuestbookModal = lazy(() =>
+  import('./components/ui/Modals/GuestbookModal').then((m) => ({
+    default: m.GuestbookModal,
+  }))
+);
+const ExhibitDetailModal = lazy(() =>
+  import('./components/ui/Modals/ExhibitDetailModal').then((m) => ({
+    default: m.ExhibitDetailModal,
+  }))
+);
+const InstructionsModal = lazy(() =>
+  import('./components/ui/Modals/InstructionsModal').then((m) => ({
+    default: m.InstructionsModal,
+  }))
+);
+const JourneyPromptModal = lazy(() =>
+  import('./components/ui/Modals/JourneyPromptModal').then((m) => ({
+    default: m.JourneyPromptModal,
+  }))
+);
+const TestimonialsModal = lazy(() =>
+  import('./components/ui/Modals/TestimonialsModal').then((m) => ({
+    default: m.TestimonialsModal,
+  }))
+);
 
 export const App: React.FC = () => {
   const {
@@ -39,7 +65,29 @@ export const App: React.FC = () => {
     dismissJourneyPrompt,
     isCenterWallCinemaActive,
     stopCenterWallCinema,
-  } = useHeritageStore();
+  } = useHeritageStore(
+    useShallow((s) => ({
+      hasEntered: s.hasEntered,
+      activeModal: s.activeModal,
+      openModal: s.openModal,
+      closeModal: s.closeModal,
+      setHasEntered: s.setHasEntered,
+      loadHeritageData: s.loadHeritageData,
+      loadGuestbook: s.loadGuestbook,
+      loadAnalytics: s.loadAnalytics,
+      loadHealthStatus: s.loadHealthStatus,
+      recordVisit: s.recordVisit,
+      requestTeleport: s.requestTeleport,
+      toggleMiniMap: s.toggleMiniMap,
+      toggleGuidedTour: s.toggleGuidedTour,
+      stopGuidedTour: s.stopGuidedTour,
+      isGuidedTourActive: s.isGuidedTourActive,
+      showJourneyPrompt: s.showJourneyPrompt,
+      dismissJourneyPrompt: s.dismissJourneyPrompt,
+      isCenterWallCinemaActive: s.isCenterWallCinemaActive,
+      stopCenterWallCinema: s.stopCenterWallCinema,
+    }))
+  );
   const { initAudio, playChime, playSuccessChord } = useAudio();
 
   // Fetch initial heritage, guestbook, analytics & API health (deduplicated + local fallback)
@@ -160,7 +208,7 @@ export const App: React.FC = () => {
   ]);
 
   return (
-    <main className="relative w-screen h-screen overflow-hidden bg-[#05070a] select-none">
+    <main className="relative w-screen h-screen overflow-hidden bg-[#03060e] select-none">
       {/* 1. 3D Canvas Layer */}
       <CanvasContainer />
 
@@ -179,13 +227,15 @@ export const App: React.FC = () => {
       {/* 5. Cursor Halo / Center Crosshair targeting reticle */}
       <Crosshair />
 
-      {/* 6. Interactive Modals outside Canvas */}
-      <ExecutiveBoardModal />
-      <GuestbookModal />
-      <ExhibitDetailModal />
-      <InstructionsModal />
-      <JourneyPromptModal />
-      <TestimonialsModal />
+      {/* 6. Lazy-loaded Interactive Modals outside Canvas (shrinks initial JS bundle cleanly) */}
+      <Suspense fallback={null}>
+        {activeModal === 'shirt' && <ExecutiveBoardModal />}
+        {activeModal === 'guestbook' && <GuestbookModal />}
+        {activeModal === 'exhibit' && <ExhibitDetailModal />}
+        {activeModal === 'instructions' && <InstructionsModal />}
+        {activeModal === 'testimonials' && <TestimonialsModal />}
+        {showJourneyPrompt && <JourneyPromptModal />}
+      </Suspense>
 
       {/* 7. Mandatory Loading Screen with Progress and Entry Button */}
       <LoadingScreen onEnter={handleEnter} />

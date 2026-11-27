@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Map, X } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import { TELEPORT_ZONES } from '../../data/heritageSeed';
 import { countOfficialVisitedZones, useHeritageStore } from '../../store/useHeritageStore';
 
@@ -126,22 +127,56 @@ export const MiniMap: React.FC = () => {
     toggleMiniMap,
     isCenterWallCinemaActive,
     showJourneyPrompt,
-    playerPose,
     currentZone,
     visitedZones,
     requestTeleport,
     requestCustomGlide,
-  } = useHeritageStore();
+  } = useHeritageStore(
+    useShallow((s) => ({
+      hasEntered: s.hasEntered,
+      activeModal: s.activeModal,
+      showMiniMap: s.showMiniMap,
+      toggleMiniMap: s.toggleMiniMap,
+      isCenterWallCinemaActive: s.isCenterWallCinemaActive,
+      showJourneyPrompt: s.showJourneyPrompt,
+      currentZone: s.currentZone,
+      visitedZones: s.visitedZones,
+      requestTeleport: s.requestTeleport,
+      requestCustomGlide: s.requestCustomGlide,
+    }))
+  );
 
-  if (!hasEntered || activeModal || showJourneyPrompt || isCenterWallCinemaActive || !showMiniMap) {
+  const playerMarkerRef = useRef<SVGGElement>(null);
+
+  const isVisible =
+    hasEntered && !activeModal && !showJourneyPrompt && !isCenterWallCinemaActive && showMiniMap;
+
+  // Imperatively sync SVG player beacon directly from store without React re-renders (0 renders/sec!)
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const applyPose = (pose: { x: number; z: number; yaw: number }) => {
+      if (!playerMarkerRef.current) return;
+      const px = toSvgX(pose.x);
+      const py = toSvgY(pose.z);
+      const headingDeg = (-pose.yaw * 180) / Math.PI;
+      playerMarkerRef.current.setAttribute('transform', `translate(${px}, ${py}) rotate(${headingDeg})`);
+    };
+
+    applyPose(useHeritageStore.getState().playerPose);
+    let lastPose = useHeritageStore.getState().playerPose;
+    const unsub = useHeritageStore.subscribe((state) => {
+      if (state.playerPose !== lastPose) {
+        lastPose = state.playerPose;
+        applyPose(lastPose);
+      }
+    });
+    return unsub;
+  }, [isVisible]);
+
+  if (!isVisible) {
     return null;
   }
-
-  const px = toSvgX(playerPose.x);
-  const py = toSvgY(playerPose.z);
-  // In Three.js camera forward with yaw=0 points toward -Z (upward on SVG).
-  // Rotating clockwise in SVG matches -yaw in radians.
-  const headingDeg = (-playerPose.yaw * 180) / Math.PI;
 
   const hallX = toSvgX(-17);
   const hallY = toSvgY(-19);
@@ -309,28 +344,32 @@ export const MiniMap: React.FC = () => {
             );
           })}
 
-          {/* Live Player FOV Cone & Beacon */}
-          <g transform={`translate(${px}, ${py}) rotate(${headingDeg})`}>
+          {/* Live Player FOV Cone & Beacon (updated imperatively at 0 React re-renders) */}
+          <g ref={playerMarkerRef} transform="translate(90, 198) rotate(0)">
             <path d="M 0 0 L -13 -24 A 27 27 0 0 1 13 -24 Z" fill="url(#fovConeGrad)" />
-            <circle cx={0} cy={0} r={5.4} fill="#00F0FF" fillOpacity={0.22} />
+            <circle cx={0} cy={0} r={5.4} fill="#00F5FF" fillOpacity={0.22} />
             <circle cx={0} cy={0} r={3.2} fill="#ffffff" stroke="#00F0FF" strokeWidth={1.6} />
           </g>
         </svg>
       </div>
 
-      <div className="mt-2 flex items-center justify-between text-[10px] text-slate-300">
+      <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400">
         <span className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-            Ban
+            5 Ban
           </span>
           <span className="inline-flex items-center gap-1">
             <span className="w-1.5 h-1.5 rotate-45 bg-fuchsia-400 inline-block" />
-            Tủ kính
+            4 Tủ kính
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+            8 Khu
           </span>
         </span>
         <span className="font-mono text-tech-cyan tabular-nums">
-          {countOfficialVisitedZones(visitedZones)}/{TELEPORT_ZONES.length} khu
+          {countOfficialVisitedZones(visitedZones)}/{TELEPORT_ZONES.length}
         </span>
       </div>
     </aside>

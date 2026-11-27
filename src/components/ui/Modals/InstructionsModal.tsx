@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { countOfficialVisitedZones, useHeritageStore } from '../../../store/useHeritageStore';
 import { TELEPORT_ZONES } from '../../../data/heritageSeed';
 import {
@@ -36,7 +37,28 @@ export const InstructionsModal: React.FC = () => {
     apiHealth,
     storageMode,
     totalVisits,
-  } = useHeritageStore();
+  } = useHeritageStore(
+    useShallow((s) => ({
+      activeModal: s.activeModal,
+      closeModal: s.closeModal,
+      currentZone: s.currentZone,
+      visitedZones: s.visitedZones,
+      requestTeleport: s.requestTeleport,
+      isMuted: s.isMuted,
+      toggleMute: s.toggleMute,
+      audioVolume: s.audioVolume,
+      setAudioVolume: s.setAudioVolume,
+      mouseSensitivity: s.mouseSensitivity,
+      setMouseSensitivity: s.setMouseSensitivity,
+      graphicsQuality: s.graphicsQuality,
+      setGraphicsQuality: s.setGraphicsQuality,
+      isGuidedTourActive: s.isGuidedTourActive,
+      toggleGuidedTour: s.toggleGuidedTour,
+      apiHealth: s.apiHealth,
+      storageMode: s.storageMode,
+      totalVisits: s.totalVisits,
+    }))
+  );
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -53,7 +75,7 @@ export const InstructionsModal: React.FC = () => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="instructions-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md animate-fade-in select-none cursor-default"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-[#02050c]/82 backdrop-blur-sm animate-fade-in select-none cursor-default"
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();
@@ -68,13 +90,13 @@ export const InstructionsModal: React.FC = () => {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative px-6 py-4.5 border-b border-tech-cyan/20 flex items-center justify-between bg-[#0c101c]/95">
+        <div className="relative px-6 py-4 border-b border-tech-cyan/20 flex items-center justify-between bg-[#070c18]/95">
           <div className="flex items-center space-x-3">
             <Compass className="w-6 h-6 text-tech-cyan shrink-0" aria-hidden="true" />
             <div>
               <h2
                 id="instructions-modal-title"
-                className="text-xl md:text-2xl font-bold text-white tracking-tight"
+                className="text-xl md:text-2xl font-bold text-white tracking-tight text-balance"
               >
                 BẢN ĐỒ DỊCH CHUYỂN & CÀI ĐẶT
               </h2>
@@ -88,11 +110,11 @@ export const InstructionsModal: React.FC = () => {
             ref={closeBtnRef}
             type="button"
             onClick={closeModal}
-            className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-[transform,background-color,color] duration-150 cursor-pointer shrink-0"
             aria-label="Đóng bản đồ và cài đặt"
             title="Đóng (ESC)"
           >
-            <X className="w-6 h-6" aria-hidden="true" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -140,7 +162,7 @@ export const InstructionsModal: React.FC = () => {
                     key={zone.id}
                     type="button"
                     onClick={() => requestTeleport(zone.id)}
-                    className={`p-3.5 rounded-xl text-left transition-all cursor-pointer border ${
+                    className={`p-3.5 rounded-xl text-left active:scale-[0.99] transition-[transform,background-color,border-color] duration-150 cursor-pointer border ${
                       isHere
                         ? 'bg-tech-cyan/15 border-tech-cyan/60'
                         : 'bg-[#0e1422]/85 border-white/10 hover:border-tech-cyan/45 hover:bg-[#121a2c]'
@@ -213,7 +235,7 @@ export const InstructionsModal: React.FC = () => {
                   step={0.05}
                   value={isMuted ? 0 : audioVolume}
                   onChange={(e) => setAudioVolume(parseFloat(e.target.value))}
-                  className="w-full accent-[#00F0FF] cursor-pointer"
+                  className="w-full tech-slider"
                 />
               </div>
 
@@ -235,7 +257,7 @@ export const InstructionsModal: React.FC = () => {
                   step={0.1}
                   value={mouseSensitivity}
                   onChange={(e) => setMouseSensitivity(parseFloat(e.target.value))}
-                  className="w-full accent-[#00F0FF] cursor-pointer"
+                  className="w-full tech-slider"
                 />
               </div>
 

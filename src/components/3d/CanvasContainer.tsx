@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useShallow } from 'zustand/react/shallow';
 import { Scene } from './Scene';
 import { useHeritageStore } from '../../store/useHeritageStore';
 
@@ -35,9 +36,9 @@ const AdaptivePerformanceGuard: React.FC<{
       sampleCountRef.current = 0;
       sampleDeltaSumRef.current = 0;
 
-      if (avgFps < 28) {
+      if (avgFps < 38) {
         lowFpsStrikesRef.current += 1;
-        if (lowFpsStrikesRef.current >= 3) {
+        if (lowFpsStrikesRef.current >= 2) {
           if (graphicsQuality === 'high') {
             setGraphicsQuality('balanced', true);
             lowFpsStrikesRef.current = 0;
@@ -62,7 +63,15 @@ export const CanvasContainer: React.FC = () => {
     isDraggingCamera,
     activeModal,
     graphicsQuality,
-  } = useHeritageStore();
+  } = useHeritageStore(
+    useShallow((s) => ({
+      controlMode: s.controlMode,
+      isHoveringInteractive: s.isHoveringInteractive,
+      isDraggingCamera: s.isDraggingCamera,
+      activeModal: s.activeModal,
+      graphicsQuality: s.graphicsQuality,
+    }))
+  );
   const [lowPowerDpr, setLowPowerDpr] = useState(false);
 
   useEffect(() => {
@@ -81,15 +90,15 @@ export const CanvasContainer: React.FC = () => {
       : 'cursor-default';
 
   const dpr: [number, number] = lowPowerDpr
-    ? [0.95, 1.15]
+    ? [0.85, 1.0]
     : graphicsQuality === 'high'
-    ? [1.2, 1.7]
-    : [1, 1.4];
+    ? [1, 1.5]
+    : [1, 1.25];
 
   return (
-    <div className={`absolute inset-0 w-full h-full bg-[#000105] ${cursorClass}`}>
+    <div className={`absolute inset-0 w-full h-full bg-[#020308] ${cursorClass}`}>
       <Canvas
-        shadows={graphicsQuality === 'high'}
+        shadows={graphicsQuality === 'high' ? 'percentage' : false}
         camera={{
           fov: 65,
           near: 0.15,
@@ -101,7 +110,7 @@ export const CanvasContainer: React.FC = () => {
           powerPreference: 'high-performance',
           stencil: false,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.14,
+          toneMappingExposure: 1.05,
         }}
         dpr={dpr}
         onCreated={({ gl }) => {

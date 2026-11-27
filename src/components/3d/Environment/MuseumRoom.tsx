@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { MeshReflectorMaterial, RoundedBox } from '@react-three/drei';
+import { RoundedBox } from '@react-three/drei';
 import { CuboidCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import {
@@ -141,11 +141,11 @@ export const MuseumRoom: React.FC = () => {
       mat.opacity = pulse;
     });
 
-    // 0b. Subtle living shimmer across baked zero-cost neon floor light-bounce reflection pools
+    // 0b. Subtle living shimmer across baked zero-cost neon floor light-bounce reflection pools & overhead beam reflections
     floorBouncePoolRefs.current.forEach((mat, idx) => {
       if (!mat) return;
-      const baseOp = idx === 0 ? 0.095 : idx === 1 ? 0.085 : 0.065;
-      mat.opacity = baseOp + Math.sin(t * 1.15 + idx * 1.3) * 0.018;
+      const baseOp = idx === 0 ? 0.105 : idx === 1 ? 0.092 : idx < 6 ? 0.068 : 0.052;
+      mat.opacity = baseOp + Math.sin(t * 1.15 + idx * 1.3) * 0.015;
     });
 
     // 0c. Smooth traveling cyber-neon energy tracer pulses along Left/Right perimeter coves & skirting
@@ -281,49 +281,24 @@ export const MuseumRoom: React.FC = () => {
         </mesh>
       </RigidBody>
 
-      {/* Main Hall Floor: Deep Pitch-Obsidian Clearcoat + Glowing Neon Circuit Veins */}
+      {/* Main Hall Floor: High-FPS Single-Pass Pitch-Obsidian Clearcoat + Glowing Neon Circuit Veins */}
       <mesh position={[0, 0.002, -5]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[31.8, 25.8]} />
-        {graphicsQuality === 'high' ? (
-          <MeshReflectorMaterial
-            key="floor-reflector-high"
-            blur={[180, 56]}
-            resolution={256}
-            mixBlur={0.86}
-            mixStrength={0.72}
-            roughness={0.32}
-            depthScale={0.85}
-            minDepthThreshold={0.35}
-            maxDepthThreshold={1.4}
-            color="#040812"
-            metalness={0.44}
-            mirror={0.58}
-            map={floorMaps.map}
-            roughnessMap={floorMaps.roughnessMap}
-            bumpMap={floorMaps.bumpMap}
-            bumpScale={0.004}
-            emissive="#ffffff"
-            emissiveMap={floorMaps.emissiveMap}
-            emissiveIntensity={0.56}
-          />
-        ) : (
-          <meshPhysicalMaterial
-            key="floor-glossy-balanced"
-            color="#040812"
-            map={floorMaps.map}
-            roughnessMap={floorMaps.roughnessMap}
-            bumpMap={floorMaps.bumpMap}
-            bumpScale={0.004}
-            emissive="#ffffff"
-            emissiveMap={floorMaps.emissiveMap}
-            emissiveIntensity={0.62}
-            roughness={0.3}
-            metalness={0.44}
-            clearcoat={0.28}
-            clearcoatRoughness={0.36}
-            envMapIntensity={0.68}
-          />
-        )}
+        <meshPhysicalMaterial
+          color="#03060e"
+          map={floorMaps.map}
+          roughnessMap={floorMaps.roughnessMap}
+          bumpMap={floorMaps.bumpMap}
+          bumpScale={0.004}
+          emissive="#ffffff"
+          emissiveMap={floorMaps.emissiveMap}
+          emissiveIntensity={0.58}
+          roughness={0.24}
+          metalness={0.5}
+          clearcoat={graphicsQuality === 'high' ? 0.52 : 0.28}
+          clearcoatRoughness={0.24}
+          envMapIntensity={graphicsQuality === 'high' ? 0.85 : 0.65}
+        />
       </mesh>
 
       {/* Entrance Tunnel Deep Obsidian Runway Strip */}
@@ -344,14 +319,19 @@ export const MuseumRoom: React.FC = () => {
         />
       </mesh>
 
-      {/* Zero-Cost Additive Neon Floor Reflection Bounce Pools (subtle colored glow tint on dark obsidian floor) */}
+      {/* Zero-Cost Additive Neon Floor Reflection Pools & Overhead Beam Specular Streaks (replaces heavy multi-pass Mirror!) */}
       {[
-        { pos: [0, 0.006, -5] as [number, number, number], args: [9.6, 9.6] as [number, number], color: '#ffd466', opacity: 0.095 },
-        { pos: [0, 0.006, -15.4] as [number, number, number], args: [16.5, 5.8] as [number, number], color: '#00F5FF', opacity: 0.085 },
-        { pos: [-13.6, 0.006, -5] as [number, number, number], args: [6.4, 21.5] as [number, number], color: '#b84dff', opacity: 0.065 },
-        { pos: [13.6, 0.006, -5] as [number, number, number], args: [6.4, 21.5] as [number, number], color: '#00e5ff', opacity: 0.065 },
-        { pos: [9.6, 0.006, 5.8] as [number, number, number], args: [9.0, 4.8] as [number, number], color: '#38bdf8', opacity: 0.065 },
-        { pos: [-10.4, 0.006, 5.8] as [number, number, number], args: [9.0, 4.8] as [number, number], color: '#a855f7', opacity: 0.065 },
+        { pos: [0, 0.006, -5] as [number, number, number], args: [9.8, 9.8] as [number, number], color: '#ffd466', opacity: 0.105, useSoft: false },
+        { pos: [0, 0.006, -15.4] as [number, number, number], args: [16.5, 5.8] as [number, number], color: '#00F5FF', opacity: 0.092, useSoft: false },
+        { pos: [-13.6, 0.006, -5] as [number, number, number], args: [6.4, 21.5] as [number, number], color: '#b84dff', opacity: 0.068, useSoft: false },
+        { pos: [13.6, 0.006, -5] as [number, number, number], args: [6.4, 21.5] as [number, number], color: '#00e5ff', opacity: 0.068, useSoft: false },
+        { pos: [9.6, 0.006, 5.8] as [number, number, number], args: [9.0, 4.8] as [number, number], color: '#38bdf8', opacity: 0.068, useSoft: false },
+        { pos: [-10.4, 0.006, 5.8] as [number, number, number], args: [9.0, 4.8] as [number, number], color: '#a855f7', opacity: 0.068, useSoft: false },
+        // Soft overhead ceiling beam neon reflections mirrored along dark obsidian floor
+        { pos: [0, 0.005, -12] as [number, number, number], args: [24, 2.2] as [number, number], color: '#00F5FF', opacity: 0.052, useSoft: true },
+        { pos: [0, 0.005, -7] as [number, number, number], args: [24, 2.2] as [number, number], color: '#b84dff', opacity: 0.052, useSoft: true },
+        { pos: [0, 0.005, -2] as [number, number, number], args: [24, 2.2] as [number, number], color: '#00F5FF', opacity: 0.052, useSoft: true },
+        { pos: [0, 0.005, 3] as [number, number, number], args: [24, 2.2] as [number, number], color: '#b84dff', opacity: 0.052, useSoft: true },
       ].map((pool, pIdx) => (
         <mesh key={`floor-bounce-pool-${pIdx}`} position={pool.pos} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={pool.args} />
@@ -359,7 +339,7 @@ export const MuseumRoom: React.FC = () => {
             ref={(el) => {
               floorBouncePoolRefs.current[pIdx] = el;
             }}
-            map={radialPoolTex}
+            map={pool.useSoft ? softGlowTex : radialPoolTex}
             color={pool.color}
             transparent
             opacity={pool.opacity}
@@ -368,6 +348,32 @@ export const MuseumRoom: React.FC = () => {
           />
         </mesh>
       ))}
+
+      {/* Subtle Zero-Cost Volumetric Museum Light Shafts (Hero Island Gold + Center Wall Cool Cyan) */}
+      <mesh position={[0, 3.6, -5]} rotation={[0.08, 0, 0]}>
+        <cylinderGeometry args={[0.95, 3.3, 5.5, 28, 1, true]} />
+        <meshBasicMaterial
+          map={softGlowTex}
+          color="#ffe299"
+          transparent
+          opacity={0.036}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      <mesh position={[0, 3.8, -14.8]} rotation={[0.52, 0, 0]}>
+        <cylinderGeometry args={[0.85, 3.5, 5.8, 28, 1, true]} />
+        <meshBasicMaterial
+          map={softGlowTex}
+          color="#bae6fd"
+          transparent
+          opacity={0.034}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
 
       {/* Perimeter Translucent Cosmic-Glass Floor Viewing Borders (peek into starry void beneath the station!) */}
       {[

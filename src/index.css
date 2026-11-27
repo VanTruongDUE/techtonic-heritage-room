@@ -6,6 +6,12 @@
   color-scheme: dark;
 }
 
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
 ::selection {
   background: rgba(0, 240, 255, 0.28);
   color: #ffffff;
@@ -20,6 +26,19 @@
   font-variant-numeric: tabular-nums;
 }
 
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-pretty {
+  text-wrap: pretty;
+}
+
+.img-crisp-outline {
+  outline: 1px solid rgba(255, 255, 255, 0.12);
+  outline-offset: -1px;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -27,16 +46,53 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(8, 12, 22, 0.85);
+  background: rgba(5, 9, 18, 0.9);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 240, 255, 0.32);
+  background: rgba(0, 240, 255, 0.34);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 240, 255, 0.62);
+  background: rgba(0, 240, 255, 0.65);
+}
+
+/* Bespoke Neon Range Sliders */
+input[type='range'].tech-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+}
+
+input[type='range'].tech-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #00F5FF;
+  border: 2px solid #030712;
+  box-shadow: 0 0 10px rgba(0, 245, 255, 0.65);
+  transition: transform 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+input[type='range'].tech-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 14px rgba(0, 245, 255, 0.9);
+}
+
+input[type='range'].tech-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #00F5FF;
+  border: 2px solid #030712;
+  box-shadow: 0 0 10px rgba(0, 245, 255, 0.65);
+  transition: transform 150ms ease-out, box-shadow 150ms ease-out;
 }
 
 @keyframes museum-fade-in {
@@ -51,7 +107,7 @@
 @keyframes museum-panel-in {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.985);
+    transform: translateY(8px) scale(0.985);
   }
   to {
     opacity: 1;
@@ -62,7 +118,7 @@
 @keyframes museum-toast-in {
   from {
     opacity: 0;
-    transform: translateY(-8px) scale(0.96);
+    transform: translateY(-6px) scale(0.97);
   }
   to {
     opacity: 1;
@@ -117,32 +173,32 @@
   }
 }
 
-/* Grounded HUD & Overlay Surfaces */
+/* Grounded HUD & Overlay Surfaces — High-Contrast Moody Obsidian */
 @layer components {
   .animate-fade-in {
-    animation: museum-fade-in 0.22s ease-out both;
+    animation: museum-fade-in 0.2s ease-out both;
   }
 
   .animate-panel-in {
-    animation: museum-panel-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: museum-panel-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .animate-toast-in {
-    animation: museum-toast-in 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: museum-toast-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .glass-panel {
     background: linear-gradient(
       180deg,
-      rgba(7, 12, 24, 0.92) 0%,
-      rgba(4, 8, 16, 0.95) 100%
+      rgba(5, 9, 19, 0.90) 0%,
+      rgba(3, 6, 14, 0.95) 100%
     );
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(0, 245, 255, 0.2);
+    border: 1px solid rgba(0, 240, 255, 0.22);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      0 8px 22px rgba(1, 4, 12, 0.52);
+      0 10px 26px rgba(0, 2, 8, 0.62);
   }
 
   .glass-panel-glow {
@@ -150,16 +206,16 @@
     overflow: hidden;
     background: linear-gradient(
       180deg,
-      rgba(7, 13, 26, 0.96) 0%,
-      rgba(4, 7, 15, 0.98) 100%
+      rgba(5, 10, 22, 0.95) 0%,
+      rgba(3, 6, 13, 0.98) 100%
     );
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 245, 255, 0.38);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 240, 255, 0.36);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.12),
-      0 18px 44px rgba(0, 0, 0, 0.68),
-      0 0 24px rgba(0, 245, 255, 0.11);
+      inset 0 1px 0 rgba(255, 255, 255, 0.11),
+      0 20px 48px rgba(0, 0, 0, 0.76),
+      0 0 26px rgba(0, 245, 255, 0.10);
   }
 
   .glass-panel-glow::before {
@@ -169,8 +225,8 @@
     pointer-events: none;
     background: linear-gradient(
       135deg,
-      rgba(0, 245, 255, 0.08) 0%,
-      rgba(184, 77, 255, 0.04) 38%,
+      rgba(0, 245, 255, 0.07) 0%,
+      rgba(184, 77, 255, 0.035) 38%,
       transparent 68%
     );
   }
@@ -193,7 +249,7 @@
   }
 
   .keycap-chip {
-    background: linear-gradient(180deg, rgba(22, 34, 58, 0.95) 0%, rgba(10, 17, 32, 0.98) 100%);
+    background: linear-gradient(180deg, rgba(18, 28, 50, 0.96) 0%, rgba(8, 14, 28, 0.98) 100%);
     border: 1px solid rgba(0, 245, 255, 0.28);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.14),

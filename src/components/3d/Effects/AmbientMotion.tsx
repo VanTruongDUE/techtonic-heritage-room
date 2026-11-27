@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Float } from '@react-three/drei';
 import * as THREE from 'three';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import type { HoverPreview } from '../../../types/heritage';
 
@@ -203,7 +204,12 @@ const ORG_PREVIEW: HoverPreview = {
  */
 export const OrgConstellationOrbit: React.FC = () => {
   const reducedMotion = useReducedMotionPreference();
-  const { setHoveringInteractive, openModal } = useHeritageStore();
+  const { setHoveringInteractive, openModal } = useHeritageStore(
+    useShallow((s) => ({
+      setHoveringInteractive: s.setHoveringInteractive,
+      openModal: s.openModal,
+    }))
+  );
   const groupRef = useRef<THREE.Group>(null);
   const ringRef = useRef<THREE.Group>(null);
   const nodeRefs = useRef<Array<THREE.Group | null>>([]);

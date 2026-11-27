@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
+import { useShallow } from 'zustand/react/shallow';
 import { useHeritageStore } from '../../../store/useHeritageStore';
 import { CLUB_PROFILE } from '../../../data/heritageSeed';
 import { useReducedMotionPreference } from '../Effects/AmbientMotion';
@@ -203,7 +204,24 @@ export const CenterWall: React.FC = () => {
     setCinemaProgress,
     clearCinemaSeek,
     pushToast,
-  } = useHeritageStore();
+  } = useHeritageStore(
+    useShallow((s) => ({
+      setHoveringInteractive: s.setHoveringInteractive,
+      openModal: s.openModal,
+      activityHighlights: s.activityHighlights,
+      isCenterWallCinemaActive: s.isCenterWallCinemaActive,
+      isCinemaPaused: s.isCinemaPaused,
+      isCinemaMuted: s.isCinemaMuted,
+      cinemaSeekRequest: s.cinemaSeekRequest,
+      audioVolume: s.audioVolume,
+      isMuted: s.isMuted,
+      startCenterWallCinema: s.startCenterWallCinema,
+      stopCenterWallCinema: s.stopCenterWallCinema,
+      setCinemaProgress: s.setCinemaProgress,
+      clearCinemaSeek: s.clearCinemaSeek,
+      pushToast: s.pushToast,
+    }))
+  );
   const reducedMotion = useReducedMotionPreference();
   const emblemRef = useRef<THREE.Group>(null);
   const haloRef = useRef<THREE.Mesh>(null);
