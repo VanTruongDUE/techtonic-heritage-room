@@ -318,7 +318,7 @@ const PortraitCard: React.FC<{
           dw = PORTRAIT_CANVAS_H * imgRatio;
           dx = (PORTRAIT_CANVAS_W - dw) / 2;
         }
-        ctx.filter = 'brightness(0.93) contrast(1.04) saturate(1.04)';
+        ctx.filter = 'brightness(1.12) contrast(1.06) saturate(1.06)';
         ctx.drawImage(img, 0, 0, img.width, img.height, dx, dy, dw, dh);
         ctx.filter = 'none';
       }
@@ -378,19 +378,26 @@ const PortraitCard: React.FC<{
           bumpMap={metalMaps.bumpMap}
           bumpScale={0.004}
           emissive={accent}
-          emissiveIntensity={hovered ? 0.48 : isTopTier ? 0.2 : 0.08}
+          emissiveIntensity={hovered ? 0.65 : isTopTier ? 0.34 : 0.18}
           metalness={0.86}
           roughness={0.24}
         />
       </RoundedBox>
 
-      {/* Anti-glare museum portrait plane: immune to harsh spotlight specular blowout */}
+      {/* Top-edge museum gallery picture-light bar illuminating the portrait */}
+      <mesh position={[0, height / 2 - 0.016, 0.014]}>
+        <boxGeometry args={[innerW * 0.72, 0.012, 0.012]} />
+        <meshBasicMaterial color={hovered ? '#ffffff' : '#e0f2fe'} toneMapped={false} />
+      </mesh>
+
+      {/* Anti-glare museum portrait plane: full true luminance without spotlight blowout */}
       <mesh position={[0, photoY, 0.006]}>
         <planeGeometry args={[innerW, photoH]} />
         <meshBasicMaterial
           key={photoTex ? 'portrait-ready' : 'portrait-fallback'}
           map={photoTex ?? fallbackTex}
-          color={hovered ? '#dfe9f6' : '#bcc8d8'}
+          color="#ffffff"
+          toneMapped={false}
         />
       </mesh>
 
@@ -398,7 +405,8 @@ const PortraitCard: React.FC<{
         <planeGeometry args={[innerW, labelH]} />
         <meshBasicMaterial
           map={labelTex}
-          color={hovered ? '#f4f8ff' : '#d8e3f2'}
+          color="#ffffff"
+          toneMapped={false}
         />
       </mesh>
     </group>

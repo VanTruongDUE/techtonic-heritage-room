@@ -448,11 +448,12 @@ const FloatingTestimonialCard: React.FC<FloatingCardProps> = ({
         >
           <circleGeometry args={[0.175, 32]} />
           <meshStandardMaterial
+            color="#ffffff"
             map={portraitBundle.texture}
             emissive="#ffffff"
             emissiveMap={portraitBundle.texture}
-            emissiveIntensity={hovered ? 0.55 : 0.4}
-            roughness={0.28}
+            emissiveIntensity={hovered ? 0.95 : 0.78}
+            roughness={0.22}
             metalness={0.04}
           />
         </mesh>

@@ -338,6 +338,14 @@ export const CenterWall: React.FC = () => {
 
   const cinemaCurtainTex = useMemo(() => buildCinemaCurtainTexture(), []);
   const floorBounceTex = useMemo(() => buildFloorBounceTexture(), []);
+  // 1x1 fallback DataTexture ensures Three.js compiles #define USE_MAP from frame 0 (prevents white-screen bug)
+  const fallbackVideoTex = useMemo(() => {
+    const data = new Uint8Array([4, 8, 20, 255]);
+    const tex = new THREE.DataTexture(data, 1, 1, THREE.RGBAFormat);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.needsUpdate = true;
+    return tex;
+  }, []);
 
   // Attach listeners to shared singleton video element when Cinema TV mode activates
   useEffect(() => {
@@ -353,6 +361,11 @@ export const CenterWall: React.FC = () => {
     const { video, texture } = getCinemaMedia();
     videoElRef.current = video;
     setVideoTex(texture);
+    if (videoMatRef.current) {
+      videoMatRef.current.map = texture;
+      videoMatRef.current.needsUpdate = true;
+    }
+    texture.needsUpdate = true;
 
     const storeNow = useHeritageStore.getState();
     video.muted = storeNow.isCinemaMuted || storeNow.isMuted;
@@ -377,6 +390,14 @@ export const CenterWall: React.FC = () => {
       }
     };
 
+    const syncTextureFrame = () => {
+      texture.needsUpdate = true;
+      if (videoMatRef.current && videoMatRef.current.map !== texture) {
+        videoMatRef.current.map = texture;
+        videoMatRef.current.needsUpdate = true;
+      }
+    };
+
     const handleEnded = () => {
       pushToast(
         'Đã phát xong thước phim hành trình TechTonic',
@@ -389,6 +410,8 @@ export const CenterWall: React.FC = () => {
     video.addEventListener('loadedmetadata', syncMetadataAndReady);
     video.addEventListener('canplay', syncMetadataAndReady);
     video.addEventListener('canplaythrough', syncMetadataAndReady);
+    video.addEventListener('playing', syncTextureFrame);
+    video.addEventListener('seeked', syncTextureFrame);
     video.addEventListener('ended', handleEnded);
     syncMetadataAndReady();
 
@@ -396,6 +419,8 @@ export const CenterWall: React.FC = () => {
       video.removeEventListener('loadedmetadata', syncMetadataAndReady);
       video.removeEventListener('canplay', syncMetadataAndReady);
       video.removeEventListener('canplaythrough', syncMetadataAndReady);
+      video.removeEventListener('playing', syncTextureFrame);
+      video.removeEventListener('seeked', syncTextureFrame);
       video.removeEventListener('ended', handleEnded);
       video.pause();
       videoElRef.current = null;
@@ -667,6 +692,7 @@ export const CenterWall: React.FC = () => {
       eventsWingTexture.dispose();
       cinemaCurtainTex.dispose();
       floorBounceTex.dispose();
+      fallbackVideoTex.dispose();
     };
   }, [
     outerHexGeom,
@@ -676,6 +702,7 @@ export const CenterWall: React.FC = () => {
     eventsWingTexture,
     cinemaCurtainTex,
     floorBounceTex,
+    fallbackVideoTex,
   ]);
 
   useEffect(() => {
@@ -878,7 +905,7 @@ export const CenterWall: React.FC = () => {
           <planeGeometry args={[screenW, screenH]} />
           <meshBasicMaterial
             ref={videoMatRef}
-            map={videoTex}
+            map={videoTex ?? fallbackVideoTex}
             transparent
             opacity={0}
             toneMapped={false}
